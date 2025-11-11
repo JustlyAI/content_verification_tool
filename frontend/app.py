@@ -118,18 +118,19 @@ def check_backend_health() -> bool:
         return False
 
 
-def upload_document(file_content: bytes, filename: str) -> Optional[Dict[str, Any]]:
+def upload_document(file_content: bytes, filename: str, progress_bar=None, status_text=None) -> Optional[Dict[str, Any]]:
     """Upload document to backend API with comprehensive error handling"""
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-
     try:
-        status_text.text("Preparing upload...")
-        progress_bar.progress(10)
+        if status_text:
+            status_text.text("Preparing upload...")
+        if progress_bar:
+            progress_bar.progress(10)
         logger.info(f"User uploaded file: {filename}, size: {len(file_content) / (1024 * 1024):.2f} MB")
 
-        status_text.text("Uploading document to server...")
-        progress_bar.progress(30)
+        if status_text:
+            status_text.text("Uploading document to server...")
+        if progress_bar:
+            progress_bar.progress(30)
 
         files = {"file": (filename, file_content)}
         file_size_mb = len(file_content) / (1024 * 1024)
@@ -138,14 +139,18 @@ def upload_document(file_content: bytes, filename: str) -> Optional[Dict[str, An
         cprint(f"[FRONTEND] Uploading document: {filename}", "cyan")
         response = API_SESSION.post(f"{BACKEND_URL}/upload", files=files, timeout=timeout)
 
-        progress_bar.progress(70)
-        status_text.text("Processing document with Docling...")
+        if progress_bar:
+            progress_bar.progress(70)
+        if status_text:
+            status_text.text("Processing document with Docling...")
 
         response.raise_for_status()
         result = response.json()
 
-        progress_bar.progress(100)
-        status_text.text("✅ Upload complete!")
+        if progress_bar:
+            progress_bar.progress(100)
+        if status_text:
+            status_text.text("✅ Upload complete!")
 
         cprint(f"[FRONTEND] Upload successful: {filename}", "green")
         return result
@@ -179,10 +184,6 @@ def upload_document(file_content: bytes, filename: str) -> Optional[Dict[str, An
         cprint(f"[FRONTEND] Unexpected error: {e}", "red")
         logger.error(f"Unexpected error during upload: {e}")
         return None
-
-    finally:
-        progress_bar.empty()
-        status_text.empty()
 
 
 def export_document(payload: Dict[str, str]) -> Optional[Dict[str, Any]]:
@@ -275,26 +276,6 @@ def init_session_state():
         st.session_state.last_generated = None
 
 
-def handle_upload():
-    """Callback for document upload button"""
-    if st.session_state.uploaded_file is None:
-        return
-
-    st.session_state.upload_in_progress = True
-    file_content = st.session_state.uploaded_file.getvalue()
-    filename = st.session_state.uploaded_file.name
-
-    result = upload_document(file_content, filename)
-
-    if result and validate_upload_response(result):
-        st.session_state.document_id = result["document_id"]
-        st.session_state.document_info = result
-        st.success(f"✅ {result['message']}")
-        st.balloons()
-    elif result:
-        st.error("⚠️ Invalid response from server. Please try again.")
-
-    st.session_state.upload_in_progress = False
 
 
 def main() -> None:
@@ -404,14 +385,42 @@ def main() -> None:
         else:
             st.info(f"📄 **File**: {uploaded_file.name} ({file_size_mb:.2f} MB)")
 
-        # Upload button with callback
-        st.button(
+        # Upload button
+        upload_button = st.button(
             "🚀 Upload and Process",
             type="primary",
             use_container_width=True,
-            on_click=handle_upload,
             disabled=st.session_state.upload_in_progress
         )
+
+        # Handle upload after button click (progress indicators appear below)
+        if upload_button:
+            st.session_state.upload_in_progress = True
+
+            # Create progress indicators below the button
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+
+            # Upload the document
+            file_content = uploaded_file.getvalue()
+            filename = uploaded_file.name
+
+            result = upload_document(file_content, filename, progress_bar, status_text)
+
+            # Clear progress indicators
+            progress_bar.empty()
+            status_text.empty()
+
+            # Handle result
+            if result and validate_upload_response(result):
+                st.session_state.document_id = result["document_id"]
+                st.session_state.document_info = result
+                st.success(f"✅ {result['message']}")
+                st.session_state.upload_in_progress = False
+                st.rerun()
+            elif result:
+                st.error("⚠️ Invalid response from server. Please try again.")
+                st.session_state.upload_in_progress = False
 
     # Show document info and processing options if available
     if st.session_state.document_info:
