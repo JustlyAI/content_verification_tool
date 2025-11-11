@@ -1,0 +1,31 @@
+# FastAPI and server
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# Document processing
+docling==1.16.2
+docling-core==1.8.2
+
+# LangChain for chunking
+langchain==0.1.0
+langchain-text-splitters==0.0.1
+
+# SpaCy for sentence splitting
+spacy==3.7.2
+
+# Document generation
+python-docx==1.1.0
+pandas==2.1.4
+openpyxl==3.1.2
+
+# Data validation
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# Caching
+redis==5.0.1
+
+# Utilities
+python-dateutil==2.8.2
+termcolor==2.4.0
