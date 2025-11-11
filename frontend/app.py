@@ -190,7 +190,6 @@ def main():
                     st.session_state.document_id = result["document_id"]
                     st.session_state.document_info = result
                     st.success(f"✅ {result['message']}")
-                    st.balloons()
 
     # Show document info if available
     if st.session_state.document_info:

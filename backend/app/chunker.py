@@ -215,13 +215,13 @@ class DocumentChunker:
             base_chunks: Base chunks from HierarchicalChunker
 
         Returns:
-            List of sentence-level chunks (one sentence per chunk)
+            List of sentence-level chunks (one sentence per chunk) with base_chunk_index tracking
         """
         cprint("[CHUNKER] Applying sentence-level splitting with SpaCy...", "cyan")
 
         sentence_chunks = []
 
-        for base_chunk in base_chunks:
+        for base_index, base_chunk in enumerate(base_chunks):
             text = base_chunk["text"]
             page_number = base_chunk["page_number"]
             is_overlap = base_chunk["is_overlap"]
@@ -236,48 +236,107 @@ class DocumentChunker:
                     sentence_chunks.append({
                         "text": sentence_text,
                         "page_number": page_number,
-                        "is_overlap": is_overlap
+                        "is_overlap": is_overlap,
+                        "base_chunk_index": base_index  # Track which base chunk this sentence came from
                     })
 
         cprint(f"[CHUNKER] Sentence splitting produced {len(sentence_chunks)} individual sentences", "green")
         return sentence_chunks
 
-    def _assign_item_numbers(self, chunks: List[Dict[str, Any]]) -> List[DocumentChunk]:
+    def _assign_item_numbers(self, chunks: List[Dict[str, Any]], mode: ChunkingMode) -> List[DocumentChunk]:
         """
         Assign item numbers to chunks (resets per page)
 
+        For paragraph mode: Simple sequential numbering (1, 2, 3...)
+        For sentence mode: Hierarchical numbering (1.1, 1.2, 2.1, 2.2...)
+
         Args:
             chunks: List of chunk dictionaries
+            mode: Chunking mode (determines numbering scheme)
 
         Returns:
             List of DocumentChunk objects with item numbers
         """
-        cprint("[CHUNKER] Assigning item numbers...", "cyan")
+        cprint(f"[CHUNKER] Assigning item numbers ({mode.value} mode)...", "cyan")
 
         # Sort by page number first
         chunks.sort(key=lambda x: x["page_number"])
 
         result = []
-        current_page = None
-        item_number = 0
 
-        for chunk in chunks:
-            page_number = chunk["page_number"]
+        if mode == ChunkingMode.PARAGRAPH:
+            # Simple sequential numbering for paragraph mode
+            current_page = None
+            item_number = 0
 
-            # Reset item number when page changes
-            if current_page != page_number:
-                current_page = page_number
-                item_number = 1
-            else:
-                item_number += 1
+            for chunk in chunks:
+                page_number = chunk["page_number"]
 
-            # Create DocumentChunk object
-            result.append(DocumentChunk(
-                page_number=page_number,
-                item_number=item_number,
-                text=chunk["text"],
-                is_overlap=chunk["is_overlap"]
-            ))
+                # Reset item number when page changes
+                if current_page != page_number:
+                    current_page = page_number
+                    item_number = 1
+                else:
+                    item_number += 1
+
+                result.append(DocumentChunk(
+                    page_number=page_number,
+                    item_number=str(item_number),  # Convert to string
+                    text=chunk["text"],
+                    is_overlap=chunk["is_overlap"]
+                ))
+
+        elif mode == ChunkingMode.SENTENCE:
+            # Hierarchical numbering for sentence mode
+            # First, assign base chunk numbers per page
+            current_page = None
+            base_item_number = 0
+            base_chunk_to_item = {}  # Maps (page, base_chunk_index) -> base_item_number
+
+            # First pass: assign base item numbers to each unique base_chunk_index per page
+            for chunk in chunks:
+                page_number = chunk["page_number"]
+                base_chunk_index = chunk.get("base_chunk_index", 0)
+
+                # Reset base item number when page changes
+                if current_page != page_number:
+                    current_page = page_number
+                    base_item_number = 0
+
+                # Assign base item number if this base_chunk hasn't been numbered yet on this page
+                key = (page_number, base_chunk_index)
+                if key not in base_chunk_to_item:
+                    base_item_number += 1
+                    base_chunk_to_item[key] = base_item_number
+
+            # Second pass: assign hierarchical sub-numbers within each base chunk
+            sub_number_counters = {}  # Maps (page, base_chunk_index) -> current sub_number
+
+            for chunk in chunks:
+                page_number = chunk["page_number"]
+                base_chunk_index = chunk.get("base_chunk_index", 0)
+                key = (page_number, base_chunk_index)
+
+                # Get the base item number for this chunk
+                base_num = base_chunk_to_item[key]
+
+                # Increment sub-number for this base chunk
+                if key not in sub_number_counters:
+                    sub_number_counters[key] = 1
+                else:
+                    sub_number_counters[key] += 1
+
+                sub_num = sub_number_counters[key]
+
+                # Create hierarchical item number (e.g., "2.3")
+                hierarchical_number = f"{base_num}.{sub_num}"
+
+                result.append(DocumentChunk(
+                    page_number=page_number,
+                    item_number=hierarchical_number,
+                    text=chunk["text"],
+                    is_overlap=chunk["is_overlap"]
+                ))
 
         cprint(f"[CHUNKER] Assigned item numbers to {len(result)} chunks", "green")
         return result
@@ -310,8 +369,8 @@ class DocumentChunker:
         else:
             raise ValueError(f"Unknown chunking mode: {mode}")
 
-        # Step 3: Assign item numbers
-        final_chunks = self._assign_item_numbers(chunks)
+        # Step 3: Assign item numbers (pass mode for hierarchical numbering in sentence mode)
+        final_chunks = self._assign_item_numbers(chunks, mode)
 
         cprint(f"[CHUNKER] Chunking complete: {len(final_chunks)} total chunks", "green")
         return final_chunks

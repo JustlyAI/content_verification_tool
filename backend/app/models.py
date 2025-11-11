@@ -23,7 +23,7 @@ class OutputFormat(str, Enum):
 class DocumentChunk(BaseModel):
     """Represents a single chunk with metadata"""
     page_number: int = Field(..., description="Page number where the chunk appears")
-    item_number: int = Field(..., description="Item number on the page (resets per page)")
+    item_number: str = Field(..., description="Item number on the page (e.g., '1' or '1.2' for hierarchical)")
     text: str = Field(..., description="The chunk text content")
     is_overlap: bool = Field(False, description="True if item continues from previous page")
 
@@ -31,7 +31,7 @@ class DocumentChunk(BaseModel):
         json_schema_extra = {
             "example": {
                 "page_number": 1,
-                "item_number": 1,
+                "item_number": "1.1",
                 "text": "This is a sample paragraph or sentence.",
                 "is_overlap": False
             }
