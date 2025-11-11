@@ -193,13 +193,6 @@ def main():
 
     # Show document info if available
     if st.session_state.document_info:
-        st.divider()
-
-        file_size_mb = st.session_state.document_info["file_size"] / (1024 * 1024)
-        st.markdown(f"""
-        **Document:** {st.session_state.document_info["filename"]} | **Pages:** {st.session_state.document_info["page_count"]} | **Size:** {file_size_mb:.2f} MB
-        """)
-
         # Step 2: Chunking Mode Selection
         st.divider()
         st.header("Step 2: Select Chunking Mode")
