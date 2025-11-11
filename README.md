@@ -37,26 +37,47 @@ All outputs include 6 columns optimized for verification workflows:
 ## Quick Start
 
 ### Prerequisites
-- Docker and Docker Compose installed
+- Docker and Docker Compose installed (recommended) **OR** Python 3.11+
 - 4GB+ RAM recommended
 - Modern web browser
 
-### Installation
+### Option 1: Docker (Recommended)
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/document-verification-assistant.git
-cd document-verification-assistant
+git clone <repository-url>
+cd content_verification_tool
 
 # Start the application with Docker Compose
-docker-compose up -d
+docker-compose up --build
 
 # Access the application
 # Streamlit UI: http://localhost:8501
 # FastAPI Docs: http://localhost:8000/docs
+# Health Check: http://localhost:8000/health
 ```
 
 That's it! The application is now running.
+
+### Option 2: Local Development
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd content_verification_tool
+
+# Make scripts executable
+chmod +x start_*.sh
+
+# Start both services (uses tmux or separate terminals)
+./start_all.sh
+
+# OR start services separately:
+# Terminal 1: ./start_backend.sh
+# Terminal 2: ./start_frontend.sh
+```
+
+For detailed setup instructions, see [SETUP.md](SETUP.md).
 
 ---
 
@@ -108,7 +129,7 @@ The FastAPI backend can be used independently for programmatic access.
 ### Upload Document
 
 ```bash
-curl -X POST "http://localhost:8000/api/v1/upload" \
+curl -X POST "http://localhost:8000/upload" \
   -H "Content-Type: multipart/form-data" \
   -F "file=@document.pdf"
 ```
@@ -119,46 +140,66 @@ curl -X POST "http://localhost:8000/api/v1/upload" \
   "document_id": "abc123...",
   "filename": "document.pdf",
   "page_count": 25,
-  "cached": false
+  "file_size": 26214400,
+  "message": "Document uploaded and converted successfully (25 pages)"
 }
 ```
 
 ### Chunk Document
 
 ```bash
-curl -X POST "http://localhost:8000/api/v1/chunk" \
+curl -X POST "http://localhost:8000/chunk" \
   -H "Content-Type: application/json" \
   -d '{
     "document_id": "abc123...",
-    "mode": "sentence"
+    "chunking_mode": "sentence"
   }'
 ```
 
 **Response:**
 ```json
 {
+  "document_id": "abc123...",
+  "chunking_mode": "sentence",
   "chunks": [
     {
       "page_number": 1,
       "item_number": 1,
       "text": "This is the first sentence.",
       "is_overlap": false
-    },
-    ...
+    }
   ],
-  "total_chunks": 342
+  "total_chunks": 342,
+  "message": "Document chunked successfully (342 chunks in sentence mode)"
 }
 ```
 
 ### Export Document
 
 ```bash
-curl -X POST "http://localhost:8000/api/v1/export" \
+curl -X POST "http://localhost:8000/export" \
   -H "Content-Type: application/json" \
   -d '{
     "document_id": "abc123...",
-    "format": "word_landscape"
-  }' \
+    "chunking_mode": "sentence",
+    "output_format": "word_landscape"
+  }'
+```
+
+**Response:**
+```json
+{
+  "document_id": "abc123...",
+  "output_format": "word_landscape",
+  "filename": "document_verification_20251111_123456.docx",
+  "message": "Document exported successfully as word_landscape"
+}
+```
+
+### Download File
+
+```bash
+curl -X GET "http://localhost:8000/download/abc123..." \
   --output verification.docx
 ```
 
@@ -172,7 +213,7 @@ curl -X POST "http://localhost:8000/api/v1/export" \
 
 Full interactive API documentation available at:
 - **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
+- **Health Check**: http://localhost:8000/health
 
 ---
 
@@ -264,81 +305,84 @@ BODY_FONT_SIZE = 10
 
 ### Local Development Setup
 
+#### Quick Start with Scripts
+
 ```bash
 # Clone repository
-git clone https://github.com/your-org/document-verification-assistant.git
-cd document-verification-assistant
+git clone <repository-url>
+cd content_verification_tool
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Make scripts executable
+chmod +x start_*.sh
 
-# Install dependencies
-pip install -r backend/requirements.txt
-pip install -r frontend/requirements.txt
+# Option 1: Start both services together (recommended)
+./start_all.sh
 
-# Install spaCy model
-python -m spacy download en_core_web_sm
+# Option 2: Start services separately
+# Terminal 1:
+./start_backend.sh
 
-# Run backend (in terminal 1)
+# Terminal 2:
+./start_frontend.sh
+```
+
+The scripts automatically:
+- Create virtual environments
+- Install dependencies
+- Download SpaCy models
+- Start the services
+
+#### Manual Setup
+
+```bash
+# Backend setup
 cd backend
-uvicorn main:app --reload --port 8000
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python -m spacy download en_core_web_sm
+cd app
+python main.py
 
-# Run frontend (in terminal 2)
+# Frontend setup (new terminal)
 cd frontend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 streamlit run app.py
 ```
+
+For detailed setup instructions and troubleshooting, see [SETUP.md](SETUP.md).
 
 ### Project Structure
 
 ```
-document-verification-assistant/
+content_verification_tool/
 ├── backend/
-│   ├── api/
-│   │   ├── v1/
-│   │   │   ├── upload.py
-│   │   │   ├── chunk.py
-│   │   │   └── export.py
-│   │   └── dependencies.py
-│   ├── core/
-│   │   ├── docling_processor.py
-│   │   ├── chunker.py
-│   │   ├── metadata_tracker.py
-│   │   └── cache.py
-│   ├── output/
-│   │   ├── word_generator.py
-│   │   ├── excel_generator.py
-│   │   └── styles.py
-│   ├── models/
-│   │   ├── document.py
-│   │   ├── chunk.py
-│   │   └── export.py
-│   ├── main.py
-│   ├── config.py
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── main.py                 # FastAPI application
+│   │   ├── models.py               # Pydantic data models
+│   │   ├── document_processor.py   # Docling integration
+│   │   ├── chunker.py              # Chunking strategies
+│   │   ├── output_generator.py     # Word/Excel/CSV generation
+│   │   └── cache.py                # Document caching
+│   ├── Dockerfile
+│   ├── .dockerignore
 │   └── requirements.txt
 ├── frontend/
-│   ├── app.py
-│   ├── components/
-│   │   ├── upload.py
-│   │   ├── settings.py
-│   │   └── download.py
-│   ├── utils/
-│   │   └── api_client.py
+│   ├── app.py                      # Streamlit application
+│   ├── Dockerfile
+│   ├── .dockerignore
 │   └── requirements.txt
-├── tests/
-│   ├── backend/
-│   │   ├── test_docling_processor.py
-│   │   ├── test_chunker.py
-│   │   └── test_api.py
-│   └── frontend/
-│       └── test_ui.py
-├── docker-compose.yml
-├── Dockerfile.backend
-├── Dockerfile.frontend
-├── .env.example
+├── docker-compose.yml               # Multi-container orchestration
+├── start_backend.sh                 # Backend startup script
+├── start_frontend.sh                # Frontend startup script
+├── start_all.sh                     # Combined startup script
 ├── .gitignore
-├── README.md
-└── LICENSE
+├── CLAUDE.md                        # Project plan and specifications
+├── SETUP.md                         # Detailed setup guide
+└── README.md                        # This file
 ```
 
 ### Running Tests
