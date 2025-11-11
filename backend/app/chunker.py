@@ -5,7 +5,7 @@ from typing import List, Dict, Any
 from termcolor import cprint
 from docling_core.types.doc import DoclingDocument
 from docling.chunking import HybridChunker
-from langchain_text_splitters import RecursiveCharacterTextSplitter, SpacyTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from app.models import DocumentChunk, ChunkingMode
 
@@ -21,40 +21,39 @@ class DocumentChunker:
         self.hierarchical_chunker = HybridChunker()
 
         # Initialize paragraph-level splitter (LangChain)
+        # Enhanced with legal document-specific separators and keep_separator
         self.paragraph_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000,
             chunk_overlap=100,
             length_function=len,
-            separators=["\n\n", "\n", ". ", " ", ""]
+            separators=["\n\n", "\n", ". ", ".\n", "! ", "? ", "; ", ": ", " ", ""],
+            keep_separator='end'  # Preserve punctuation at chunk boundaries
         )
 
-        # Initialize sentence-level splitter (LangChain SpaCy)
+        # Initialize SpaCy for sentence-level splitting
         # This will be lazy-loaded when needed to avoid loading spacy model at startup
-        self._sentence_splitter = None
+        self._nlp = None
 
         cprint("[CHUNKER] Chunking strategies initialized", "green")
 
     @property
-    def sentence_splitter(self):
-        """Lazy load sentence splitter"""
-        if self._sentence_splitter is None:
+    def nlp(self):
+        """Lazy load SpaCy NLP model for sentence splitting"""
+        if self._nlp is None:
             cprint("[CHUNKER] Loading SpaCy model for sentence splitting...", "cyan")
             # Download spacy model if not already installed
             import spacy
             try:
-                spacy.load("en_core_web_sm")
+                self._nlp = spacy.load("en_core_web_sm")
             except OSError:
                 cprint("[CHUNKER] Downloading spacy model en_core_web_sm...", "yellow")
                 import subprocess
                 subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"], check=True)
+                self._nlp = spacy.load("en_core_web_sm")
 
-            self._sentence_splitter = SpacyTextSplitter(
-                pipeline="en_core_web_sm",
-                chunk_size=1000
-            )
-            cprint("[CHUNKER] SpaCy sentence splitter ready", "green")
+            cprint("[CHUNKER] SpaCy model ready for sentence splitting", "green")
 
-        return self._sentence_splitter
+        return self._nlp
 
     def _get_page_number_from_chunk(self, chunk: Any) -> int:
         """
@@ -205,15 +204,20 @@ class DocumentChunker:
 
     def _apply_sentence_splitting(self, base_chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        Apply sentence-level splitting on top of hierarchical chunks
+        Apply TRUE sentence-level splitting using SpaCy directly
+
+        This implementation uses SpaCy's sentence boundary detection (doc.sents)
+        to extract individual sentences, ensuring each chunk contains exactly one sentence.
+        This fixes the previous issue where SpacyTextSplitter with chunk_size=1000
+        was grouping multiple sentences together.
 
         Args:
             base_chunks: Base chunks from HierarchicalChunker
 
         Returns:
-            List of sentence-level chunks
+            List of sentence-level chunks (one sentence per chunk)
         """
-        cprint("[CHUNKER] Applying sentence-level splitting...", "cyan")
+        cprint("[CHUNKER] Applying sentence-level splitting with SpaCy...", "cyan")
 
         sentence_chunks = []
 
@@ -222,18 +226,20 @@ class DocumentChunker:
             page_number = base_chunk["page_number"]
             is_overlap = base_chunk["is_overlap"]
 
-            # Split text into sentences
-            sentences = self.sentence_splitter.split_text(text)
+            # Use SpaCy to detect sentence boundaries
+            doc = self.nlp(text)
 
-            for sentence in sentences:
-                if sentence.strip():
+            # Extract individual sentences
+            for sent in doc.sents:
+                sentence_text = sent.text.strip()
+                if sentence_text:
                     sentence_chunks.append({
-                        "text": sentence.strip(),
+                        "text": sentence_text,
                         "page_number": page_number,
                         "is_overlap": is_overlap
                     })
 
-        cprint(f"[CHUNKER] Sentence splitting produced {len(sentence_chunks)} chunks", "green")
+        cprint(f"[CHUNKER] Sentence splitting produced {len(sentence_chunks)} individual sentences", "green")
         return sentence_chunks
 
     def _assign_item_numbers(self, chunks: List[Dict[str, Any]]) -> List[DocumentChunk]:

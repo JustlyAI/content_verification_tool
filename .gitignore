@@ -230,6 +230,9 @@ sample_documents/
 *.swp
 *.swo
 *~
+.claude/
+CLAUDE.md
+**/CLAUDE.md
 
 # OS specific
 .DS_Store
