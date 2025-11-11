@@ -12,7 +12,7 @@ Convert legal documents (PDF/DOCX) into structured verification checklists for s
 
 ## Features
 
-- **Multi-Format Support**: PDF or DOCX documents (up to 100 MB)
+- **Multi-Format Support**: PDF or DOCX documents (up to 10 MB)
 - **Chunking Modes**: Sentence-level or paragraph-level verification
 - **Structure Preservation**: Maintains document hierarchy, footnotes, and tables
 - **Output Formats**: Word (landscape/portrait), Excel, or CSV
@@ -68,7 +68,7 @@ See [SETUP.md](SETUP.md) for detailed instructions.
 ## Usage
 
 1. **Open** `http://localhost:8501`
-2. **Upload** PDF or DOCX file (max 100 MB)
+2. **Upload** PDF or DOCX file (max 10 MB)
 3. **Select chunking mode**:
    - Paragraph-level: Groups related sentences
    - Sentence-level: Individual sentence verification
@@ -82,12 +82,14 @@ See [SETUP.md](SETUP.md) for detailed instructions.
 ### Endpoints
 
 **Upload Document**
+
 ```bash
 curl -X POST "http://localhost:8000/upload" \
   -F "file=@document.pdf"
 ```
 
 **Export Document**
+
 ```bash
 curl -X POST "http://localhost:8000/export" \
   -H "Content-Type: application/json" \
@@ -99,6 +101,7 @@ curl -X POST "http://localhost:8000/export" \
 ```
 
 **Download File**
+
 ```bash
 curl -X GET "http://localhost:8000/download/abc123..." \
   --output verification.docx
@@ -144,6 +147,7 @@ curl -X GET "http://localhost:8000/download/abc123..." \
 ### Manual Setup
 
 **Backend:**
+
 ```bash
 cd backend
 python3 -m venv venv
@@ -154,6 +158,7 @@ cd app && python main.py
 ```
 
 **Frontend:**
+
 ```bash
 cd frontend
 python3 -m venv venv
@@ -189,7 +194,7 @@ content_verification_tool/
 
 **Backend not available**: Ensure Docker containers are running with `docker-compose ps`
 
-**File too large**: Maximum file size is 100 MB
+**File too large**: Maximum file size is 10 MB
 
 **Slow processing**: Ensure Docker has 4GB+ RAM allocated
 

@@ -47,6 +47,7 @@ docker-compose up --build
 ```
 
 This will:
+
 - Build both backend and frontend Docker images
 - Start the backend API on http://localhost:8000
 - Start the frontend UI on http://localhost:8501
@@ -163,10 +164,11 @@ The frontend will be available at http://localhost:8501
 
 - Click **"Choose a file"** or drag and drop
 - Supported formats: **PDF**, **DOCX**
-- Maximum file size: **100 MB**
+- Maximum file size: **10 MB**
 - Click **"🚀 Upload and Process"**
 
 The system will:
+
 - Validate the file
 - Convert it using Docling
 - Extract document structure
@@ -177,11 +179,13 @@ The system will:
 Choose how to split your document:
 
 **📝 Paragraph-level chunking**
+
 - Groups related sentences together
 - Best for contextual verification
 - Produces fewer, larger chunks
 
 **📄 Sentence-level chunking**
+
 - Splits into individual sentences
 - Best for detailed verification
 - Produces more, smaller chunks
@@ -191,21 +195,25 @@ Choose how to split your document:
 Select your preferred output:
 
 **📄 Word Document (Landscape)**
+
 - More horizontal space
 - Better for long text
 - Ideal for detailed notes
 
 **📄 Word Document (Portrait)**
+
 - Standard page layout
 - Suitable for printing
 - Traditional format
 
 **📊 Excel Spreadsheet**
+
 - Filtering and sorting capabilities
 - Formula support
 - Data analysis features
 
 **📋 CSV File**
+
 - Universal compatibility
 - Lightweight format
 - Easy import/export
@@ -220,14 +228,14 @@ Select your preferred output:
 
 All outputs contain a table with these columns:
 
-| Column | Description |
-|--------|-------------|
-| **Page #** | Page number where the item appears |
-| **Item #** | Item number on that page (resets per page) |
-| **Text** | The sentence or paragraph text |
-| **Verified ☑** | Checkbox for marking verification status |
+| Column                  | Description                                      |
+| ----------------------- | ------------------------------------------------ |
+| **Page #**              | Page number where the item appears               |
+| **Item #**              | Item number on that page (resets per page)       |
+| **Text**                | The sentence or paragraph text                   |
+| **Verified ☑**          | Checkbox for marking verification status         |
 | **Verification Source** | Field to record the source used for verification |
-| **Verification Note** | Field for additional notes or comments |
+| **Verification Note**   | Field for additional notes or comments           |
 
 ---
 
@@ -332,7 +340,7 @@ netstat -ano | findstr :8000    # Windows
 #### Docling Conversion Fails
 
 - Ensure the PDF is not corrupted
-- Check file size (max 100 MB)
+- Check file size (max 10 MB)
 - Try with a different PDF
 - Check backend logs for detailed error
 
@@ -341,11 +349,13 @@ netstat -ano | findstr :8000    # Windows
 #### "Backend API is not available"
 
 1. Ensure backend is running:
+
    ```bash
    curl http://localhost:8000/health
    ```
 
 2. Check BACKEND_URL environment variable:
+
    ```bash
    echo $BACKEND_URL  # Should be http://localhost:8000
    ```
@@ -355,7 +365,7 @@ netstat -ano | findstr :8000    # Windows
 #### Upload Fails
 
 - Check file format (PDF or DOCX only)
-- Verify file size (< 100 MB)
+- Verify file size (< 10 MB)
 - Check backend logs for errors
 - Try a smaller test document
 
@@ -462,6 +472,7 @@ Frontend logs appear in Streamlit terminal.
 ### Security Considerations
 
 1. **Change CORS settings** in `backend/app/main.py`:
+
    ```python
    allow_origins=["https://your-frontend-domain.com"]
    ```

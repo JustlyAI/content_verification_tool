@@ -1,6 +1,7 @@
 """
 Document processing module using Docling for PDF/DOCX conversion
 """
+
 from pathlib import Path
 from typing import Dict, Any, Optional
 import subprocess
@@ -12,7 +13,7 @@ from docling.datamodel.pipeline_options import PdfPipelineOptions
 from app.cache import document_cache
 
 
-# Maximum file size: 100 MB
+# Maximum file size: 10 MB
 MAX_FILE_SIZE = 100 * 1024 * 1024
 
 # Supported file extensions
@@ -26,17 +27,29 @@ class DocumentProcessor:
         """Initialize the document processor"""
         cprint("[PROCESSOR] Initializing Docling DocumentConverter...", "cyan")
 
-        # Configure pipeline options for PDF processing
+        # Configure pipeline options for PDF processing with OCR
         # Enable table parsing and footnote extraction
-        pipeline_options = PdfPipelineOptions()
-        pipeline_options.do_table_structure = True
-        pipeline_options.do_ocr = True
+        pipeline_options_ocr = PdfPipelineOptions()
+        pipeline_options_ocr.do_table_structure = True
+        pipeline_options_ocr.do_ocr = True
 
-        # Initialize DocumentConverter with format-specific options
-        # According to Docling API, pipeline_options must be passed via format_options
-        self.converter = DocumentConverter(
+        # Configure pipeline options for PDF processing WITHOUT OCR
+        # (for DOCX-converted PDFs which are already digital)
+        pipeline_options_no_ocr = PdfPipelineOptions()
+        pipeline_options_no_ocr.do_table_structure = True
+        pipeline_options_no_ocr.do_ocr = False
+
+        # Initialize converter with OCR enabled (for native PDFs)
+        self.converter_with_ocr = DocumentConverter(
             format_options={
-                InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+                InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options_ocr)
+            }
+        )
+
+        # Initialize converter without OCR (for DOCX-converted PDFs)
+        self.converter_no_ocr = DocumentConverter(
+            format_options={
+                InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options_no_ocr)
             }
         )
 
@@ -69,23 +82,29 @@ class DocumentProcessor:
                 [
                     "libreoffice",
                     "--headless",
-                    "--convert-to", "pdf",
-                    "--outdir", str(output_dir),
-                    str(docx_path)
+                    "--convert-to",
+                    "pdf",
+                    "--outdir",
+                    str(output_dir),
+                    str(docx_path),
                 ],
                 capture_output=True,
                 text=True,
                 timeout=60,
-                check=True
+                check=True,
             )
 
             # LibreOffice creates PDF with same name as DOCX but .pdf extension
             pdf_path = output_dir / f"{docx_path.stem}.pdf"
 
             if not pdf_path.exists():
-                raise Exception(f"LibreOffice conversion completed but PDF not found: {pdf_path}")
+                raise Exception(
+                    f"LibreOffice conversion completed but PDF not found: {pdf_path}"
+                )
 
-            cprint(f"[PROCESSOR] DOCX→PDF conversion successful: {pdf_path.name}", "green")
+            cprint(
+                f"[PROCESSOR] DOCX→PDF conversion successful: {pdf_path.name}", "green"
+            )
             return pdf_path
 
         except subprocess.TimeoutExpired:
@@ -125,13 +144,13 @@ class DocumentProcessor:
                 f"Supported formats: {', '.join(SUPPORTED_EXTENSIONS)}"
             )
 
-        cprint(f"[PROCESSOR] File validation passed: {filename} ({file_size / 1024:.2f} KB)", "green")
+        cprint(
+            f"[PROCESSOR] File validation passed: {filename} ({file_size / 1024:.2f} KB)",
+            "green",
+        )
 
     def convert_document(
-        self,
-        file_content: bytes,
-        filename: str,
-        use_cache: bool = True
+        self, file_content: bytes, filename: str, use_cache: bool = True
     ) -> Dict[str, Any]:
         """
         Convert document to Docling format
@@ -165,6 +184,7 @@ class DocumentProcessor:
 
         # Create temporary file for conversion
         import tempfile
+
         file_ext = Path(filename).suffix.lower()
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp_file:
@@ -177,24 +197,44 @@ class DocumentProcessor:
         try:
             # For DOCX files, convert to PDF first using LibreOffice
             # This gives us accurate page numbers
-            if file_ext == '.docx':
-                cprint(f"[PROCESSOR] DOCX file detected, converting to PDF first for accurate pagination...", "yellow")
+            # IMPORTANT: DOCX files don't need OCR (they're digital text)
+            is_docx = file_ext == ".docx"
+
+            if is_docx:
+                cprint(
+                    f"[PROCESSOR] DOCX file detected, converting to PDF first for accurate pagination...",
+                    "yellow",
+                )
                 pdf_path = self._convert_docx_to_pdf(tmp_path)
                 pdf_path_to_cleanup = pdf_path
                 conversion_path = pdf_path
-                cprint(f"[PROCESSOR] Will process converted PDF: {pdf_path.name}", "cyan")
+                cprint(
+                    f"[PROCESSOR] Will process converted PDF (OCR disabled - digital text): {pdf_path.name}",
+                    "cyan"
+                )
             else:
                 conversion_path = tmp_path
+                cprint(
+                    f"[PROCESSOR] Native PDF detected, will use OCR for accurate text extraction",
+                    "cyan"
+                )
 
             # Convert document using Docling
-            cprint(f"[PROCESSOR] Running Docling conversion on {conversion_path.name}...", "cyan")
-            result = self.converter.convert(conversion_path)
+            # Use OCR for native PDFs (may be scanned), skip OCR for DOCX (already digital)
+            converter = self.converter_no_ocr if is_docx else self.converter_with_ocr
+            cprint(
+                f"[PROCESSOR] Running Docling conversion on {conversion_path.name}...",
+                "cyan",
+            )
+            result = converter.convert(conversion_path)
 
             # Extract the document
             docling_document = result.document
 
             # Get page count
-            page_count = len(docling_document.pages) if hasattr(docling_document, 'pages') else 0
+            page_count = (
+                len(docling_document.pages) if hasattr(docling_document, "pages") else 0
+            )
 
             cprint(f"[PROCESSOR] Conversion successful: {page_count} pages", "green")
 
@@ -203,7 +243,7 @@ class DocumentProcessor:
                 "docling_document": docling_document,
                 "filename": filename,
                 "page_count": page_count,
-                "file_size": len(file_content)
+                "file_size": len(file_content),
             }
 
             # Cache the result
