@@ -190,20 +190,15 @@ def main():
                     st.session_state.document_id = result["document_id"]
                     st.session_state.document_info = result
                     st.success(f"✅ {result['message']}")
-                    st.balloons()
 
     # Show document info if available
     if st.session_state.document_info:
         st.divider()
 
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Document", st.session_state.document_info["filename"])
-        with col2:
-            st.metric("Pages", st.session_state.document_info["page_count"])
-        with col3:
-            file_size_mb = st.session_state.document_info["file_size"] / (1024 * 1024)
-            st.metric("Size", f"{file_size_mb:.2f} MB")
+        file_size_mb = st.session_state.document_info["file_size"] / (1024 * 1024)
+        st.markdown(f"""
+        **Document:** {st.session_state.document_info["filename"]} | **Pages:** {st.session_state.document_info["page_count"]} | **Size:** {file_size_mb:.2f} MB
+        """)
 
         # Step 2: Chunking Mode Selection
         st.divider()

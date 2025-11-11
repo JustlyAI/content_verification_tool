@@ -3,8 +3,10 @@
 A professional document verification tool that converts legal briefs, contracts, and other documents into structured verification checklists. Built for legal professionals who need to systematically verify document content against source materials.
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-red.svg)](https://streamlit.io/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.121+-green.svg)](https://fastapi.tiangolo.com/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.51+-red.svg)](https://streamlit.io/)
+[![Docling](https://img.shields.io/badge/Docling-2.61.2-orange.svg)](https://github.com/DS4SD/docling)
+[![LangChain](https://img.shields.io/badge/LangChain-1.0.5-brightgreen.svg)](https://www.langchain.com/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
 
 ---
@@ -12,6 +14,7 @@ A professional document verification tool that converts legal briefs, contracts,
 ## Features
 
 ### 🎯 Core Capabilities
+
 - **Multi-Format Support**: Upload PDF or DOCX documents (up to 100 MB)
 - **Intelligent Chunking**: Choose between sentence-level or paragraph-level verification
 - **Structure Preservation**: Maintains document hierarchy, footnotes, and tables
@@ -19,6 +22,7 @@ A professional document verification tool that converts legal briefs, contracts,
 - **Smart Metadata**: Tracks page numbers, item numbers, and cross-page overlaps
 
 ### 🔬 Advanced Processing
+
 - **Docling Integration**: State-of-the-art document parsing with OCR support
 - **Page-Aware Numbering**: Item numbers reset on each page for easy reference
 - **Overlap Detection**: Identifies text spanning multiple pages
@@ -26,10 +30,11 @@ A professional document verification tool that converts legal briefs, contracts,
 - **Caching**: Avoid re-processing with intelligent document caching
 
 ### 📊 Output Formats
+
 All outputs include 6 columns optimized for verification workflows:
 
 | Page # | Item # | Text | Verified ☑ | Verification Source | Verification Note |
-|--------|--------|------|------------|---------------------|-------------------|
+| ------ | ------ | ---- | ---------- | ------------------- | ----------------- |
 | 1      | 1      | ...  |            |                     |                   |
 
 ---
@@ -37,6 +42,7 @@ All outputs include 6 columns optimized for verification workflows:
 ## Quick Start
 
 ### Prerequisites
+
 - Docker and Docker Compose installed (recommended) **OR** Python 3.11+
 - 4GB+ RAM recommended
 - Modern web browser
@@ -88,15 +94,18 @@ For detailed setup instructions, see [SETUP.md](SETUP.md).
 1. **Open the Streamlit UI** at `http://localhost:8501`
 
 2. **Upload Your Document**
+
    - Drag and drop your PDF or DOCX file
    - Or use the file picker
    - Maximum file size: 100 MB
 
 3. **Select Chunking Mode**
+
    - **Paragraph-level**: Groups related sentences together (recommended for contracts)
    - **Sentence-level**: Individual sentence verification (recommended for briefs with citations)
 
 4. **Choose Output Format**
+
    - **Word (Landscape)**: Best for detailed review on desktop
    - **Word (Portrait)**: Standard printable format
    - **Excel/CSV**: For data analysis or import into other tools
@@ -135,6 +144,7 @@ curl -X POST "http://localhost:8000/upload" \
 ```
 
 **Response:**
+
 ```json
 {
   "document_id": "abc123...",
@@ -157,6 +167,7 @@ curl -X POST "http://localhost:8000/chunk" \
 ```
 
 **Response:**
+
 ```json
 {
   "document_id": "abc123...",
@@ -187,6 +198,7 @@ curl -X POST "http://localhost:8000/export" \
 ```
 
 **Response:**
+
 ```json
 {
   "document_id": "abc123...",
@@ -204,6 +216,7 @@ curl -X GET "http://localhost:8000/download/abc123..." \
 ```
 
 **Supported formats:**
+
 - `word_landscape`
 - `word_portrait`
 - `excel`
@@ -212,6 +225,7 @@ curl -X GET "http://localhost:8000/download/abc123..." \
 ### API Documentation
 
 Full interactive API documentation available at:
+
 - **Swagger UI**: http://localhost:8000/docs
 - **Health Check**: http://localhost:8000/health
 
@@ -327,6 +341,7 @@ chmod +x start_*.sh
 ```
 
 The scripts automatically:
+
 - Create virtual environments
 - Install dependencies
 - Download SpaCy models
@@ -460,20 +475,23 @@ docker stats
 ### Common Issues
 
 **Issue**: "File too large" error
+
 ```
 Solution: Check MAX_FILE_SIZE_MB in .env file
 Default: 100 MB
 ```
 
 **Issue**: Docling conversion fails
+
 ```
-Solution: 
+Solution:
 1. Check if PDF is password-protected
 2. Verify OCR settings in config
 3. Try re-uploading the file
 ```
 
 **Issue**: Slow processing
+
 ```
 Solution:
 1. Ensure Docker has adequate memory (4GB+)
@@ -482,6 +500,7 @@ Solution:
 ```
 
 **Issue**: Missing footnotes in output
+
 ```
 Solution:
 1. Verify Docling parsed footnotes (check logs)
@@ -499,80 +518,17 @@ STREAMLIT_LOG_LEVEL=debug
 ```
 
 View detailed logs:
+
 ```bash
 docker-compose logs -f --tail=100 backend
 ```
 
 ---
 
-## Performance
-
-### Benchmarks
-
-Tested on: MacBook Pro M1 (16GB RAM)
-
-| Document Size | Pages | Chunking Mode | Processing Time |
-|---------------|-------|---------------|-----------------|
-| 5 MB          | 10    | Paragraph     | ~8 seconds      |
-| 5 MB          | 10    | Sentence      | ~12 seconds     |
-| 25 MB         | 50    | Paragraph     | ~35 seconds     |
-| 25 MB         | 50    | Sentence      | ~48 seconds     |
-| 50 MB         | 100   | Paragraph     | ~70 seconds     |
-| 50 MB         | 100   | Sentence      | ~95 seconds     |
-
-*Note: First conversion is slower; cached conversions are ~90% faster*
-
-### Optimization Tips
-
-1. **Use caching**: Re-chunking with different modes uses cached conversion
-2. **Batch processing**: Process multiple documents in sequence for better throughput
-3. **Resource allocation**: Increase Docker memory for large documents (>50 pages)
-4. **Output format**: CSV/Excel generation is ~2x faster than Word
-
----
-
-## Contributing
-
-We welcome contributions! Please follow these steps:
-
-1. **Fork the repository**
-2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
-3. **Make your changes**
-4. **Run tests**: `pytest tests/ -v`
-5. **Commit**: `git commit -m 'Add amazing feature'`
-6. **Push**: `git push origin feature/amazing-feature`
-7. **Open a Pull Request**
-
-### Contribution Guidelines
-
-- Follow PEP 8 style guide
-- Add tests for new features
-- Update documentation
-- Keep commits atomic and descriptive
-- Run `black` and `isort` before committing
-
----
-
-## Roadmap
-
-### Version 1.1 (Planned)
-- [ ] Batch document processing
-- [ ] Preview mode before export
-- [ ] Custom column configuration
-- [ ] Advanced OCR (Tesseract) option
-
-### Version 1.2 (Future)
-- [ ] Cloud storage integration (Google Drive, S3)
-- [ ] Citation linking and validation
-- [ ] Real-time collaboration features
-- [ ] Multi-language support
-- [ ] API rate limiting and authentication
-
----
-
 ## Tech Stack
 
 ### Backend
+
 - **FastAPI** - High-performance API framework
 - **Docling** - Document parsing and conversion
 - **LangChain** - Text splitting and chunking
@@ -582,36 +538,15 @@ We welcome contributions! Please follow these steps:
 - **spaCy** - Sentence tokenization
 
 ### Frontend
+
 - **Streamlit** - Interactive web UI
 - **Requests** - API client
 
 ### Infrastructure
+
 - **Docker** - Containerization
 - **Docker Compose** - Multi-container orchestration
 - **Redis** (optional) - Caching backend
-
----
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## Support
-
-### Documentation
-- [Full Documentation](https://docs.example.com)
-- [API Reference](https://docs.example.com/api)
-- [User Guide](https://docs.example.com/guide)
-
-### Community
-- [GitHub Issues](https://github.com/your-org/document-verification-assistant/issues)
-- [Discussions](https://github.com/your-org/document-verification-assistant/discussions)
-- Email: support@example.com
-
-### Professional Support
-For enterprise support, custom integrations, or consulting services, contact: enterprise@example.com
 
 ---
 
@@ -621,24 +556,3 @@ For enterprise support, custom integrations, or consulting services, contact: en
 - **LangChain** - For flexible text processing tools
 - **FastAPI** - For the outstanding API framework
 - **Streamlit** - For making web UIs simple
-
----
-
-## Citation
-
-If you use this tool in your research or work, please cite:
-
-```bibtex
-@software{document_verification_assistant,
-  title = {Document Verification Assistant},
-  author = {Your Name},
-  year = {2025},
-  url = {https://github.com/your-org/document-verification-assistant}
-}
-```
-
----
-
-**Built with ❤️ for legal professionals**
-
-*Last updated: November 2025*

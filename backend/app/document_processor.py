@@ -4,10 +4,9 @@ Document processing module using Docling for PDF/DOCX conversion
 from pathlib import Path
 from typing import Dict, Any, Optional
 from termcolor import cprint
-from docling.document_converter import DocumentConverter
+from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
-from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 
 from app.cache import document_cache
 
@@ -32,10 +31,12 @@ class DocumentProcessor:
         pipeline_options.do_table_structure = True
         pipeline_options.do_ocr = True
 
-        # Initialize DocumentConverter with options
+        # Initialize DocumentConverter with format-specific options
+        # According to Docling API, pipeline_options must be passed via format_options
         self.converter = DocumentConverter(
-            allowed_formats=[InputFormat.PDF, InputFormat.DOCX],
-            pipeline_options=pipeline_options
+            format_options={
+                InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+            }
         )
 
         cprint("[PROCESSOR] DocumentConverter initialized successfully", "green")
