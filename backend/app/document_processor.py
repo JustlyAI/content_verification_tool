@@ -3,6 +3,7 @@ Document processing module using Docling for PDF/DOCX conversion
 """
 from pathlib import Path
 from typing import Dict, Any, Optional
+import subprocess
 from termcolor import cprint
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.datamodel.base_models import InputFormat
@@ -40,6 +41,62 @@ class DocumentProcessor:
         )
 
         cprint("[PROCESSOR] DocumentConverter initialized successfully", "green")
+
+    def _convert_docx_to_pdf(self, docx_path: Path) -> Path:
+        """
+        Convert DOCX to PDF using LibreOffice
+
+        Args:
+            docx_path: Path to DOCX file
+
+        Returns:
+            Path to generated PDF file
+
+        Raises:
+            Exception: If conversion fails
+        """
+        cprint(f"[PROCESSOR] Converting DOCX to PDF using LibreOffice...", "cyan")
+
+        # Get output directory (same as input file directory)
+        output_dir = docx_path.parent
+
+        # Run LibreOffice conversion
+        # --headless: run without GUI
+        # --convert-to pdf: convert to PDF format
+        # --outdir: output directory
+        try:
+            result = subprocess.run(
+                [
+                    "libreoffice",
+                    "--headless",
+                    "--convert-to", "pdf",
+                    "--outdir", str(output_dir),
+                    str(docx_path)
+                ],
+                capture_output=True,
+                text=True,
+                timeout=60,
+                check=True
+            )
+
+            # LibreOffice creates PDF with same name as DOCX but .pdf extension
+            pdf_path = output_dir / f"{docx_path.stem}.pdf"
+
+            if not pdf_path.exists():
+                raise Exception(f"LibreOffice conversion completed but PDF not found: {pdf_path}")
+
+            cprint(f"[PROCESSOR] DOCX→PDF conversion successful: {pdf_path.name}", "green")
+            return pdf_path
+
+        except subprocess.TimeoutExpired:
+            cprint("[PROCESSOR] LibreOffice conversion timed out", "red")
+            raise Exception("DOCX to PDF conversion timed out after 60 seconds")
+        except subprocess.CalledProcessError as e:
+            cprint(f"[PROCESSOR] LibreOffice conversion failed: {e.stderr}", "red")
+            raise Exception(f"DOCX to PDF conversion failed: {e.stderr}")
+        except Exception as e:
+            cprint(f"[PROCESSOR] Unexpected error during DOCX conversion: {e}", "red")
+            raise
 
     def validate_file(self, file_content: bytes, filename: str) -> None:
         """
@@ -108,14 +165,30 @@ class DocumentProcessor:
 
         # Create temporary file for conversion
         import tempfile
-        with tempfile.NamedTemporaryFile(delete=False, suffix=Path(filename).suffix) as tmp_file:
+        file_ext = Path(filename).suffix.lower()
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp_file:
             tmp_path = Path(tmp_file.name)
             tmp_file.write(file_content)
 
+        # Track if we need to clean up a converted PDF
+        pdf_path_to_cleanup = None
+
         try:
+            # For DOCX files, convert to PDF first using LibreOffice
+            # This gives us accurate page numbers
+            if file_ext == '.docx':
+                cprint(f"[PROCESSOR] DOCX file detected, converting to PDF first for accurate pagination...", "yellow")
+                pdf_path = self._convert_docx_to_pdf(tmp_path)
+                pdf_path_to_cleanup = pdf_path
+                conversion_path = pdf_path
+                cprint(f"[PROCESSOR] Will process converted PDF: {pdf_path.name}", "cyan")
+            else:
+                conversion_path = tmp_path
+
             # Convert document using Docling
-            cprint(f"[PROCESSOR] Running Docling conversion on {tmp_path}...", "cyan")
-            result = self.converter.convert(tmp_path)
+            cprint(f"[PROCESSOR] Running Docling conversion on {conversion_path.name}...", "cyan")
+            result = self.converter.convert(conversion_path)
 
             # Extract the document
             docling_document = result.document
@@ -144,10 +217,15 @@ class DocumentProcessor:
             raise Exception(f"Document conversion failed: {str(e)}")
 
         finally:
-            # Clean up temporary file
+            # Clean up temporary files
             if tmp_path.exists():
                 tmp_path.unlink()
-                cprint(f"[PROCESSOR] Cleaned up temporary file", "cyan")
+                cprint(f"[PROCESSOR] Cleaned up temporary DOCX file", "cyan")
+
+            # Clean up converted PDF if it was created
+            if pdf_path_to_cleanup and pdf_path_to_cleanup.exists():
+                pdf_path_to_cleanup.unlink()
+                cprint(f"[PROCESSOR] Cleaned up converted PDF file", "cyan")
 
 
 # Global processor instance

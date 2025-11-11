@@ -11,6 +11,7 @@ services:
       - output_files:/tmp/output
     environment:
       - PYTHONUNBUFFERED=1
+      - DOCLING_LIBREOFFICE_CMD=/usr/bin/libreoffice
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
