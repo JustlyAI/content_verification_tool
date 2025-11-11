@@ -1,11 +1,12 @@
 # Streamlit
-streamlit==1.51.0
+streamlit>=1.28.0
 
 # HTTP client
-requests==2.32.5
+requests>=2.31.0
+urllib3>=2.0.0
 
 # Data validation
-pydantic==2.12.4
+pydantic>=2.12.0
 
 # Utilities
-termcolor==3.2.0
+termcolor>=2.3.0
