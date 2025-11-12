@@ -14,7 +14,7 @@ from app.cache import document_cache
 
 
 # Maximum file size: 10 MB
-MAX_FILE_SIZE = 100 * 1024 * 1024
+MAX_FILE_SIZE = 10 * 1024 * 1024
 
 # Supported file extensions
 SUPPORTED_EXTENSIONS = {".pdf", ".docx"}
@@ -49,7 +49,9 @@ class DocumentProcessor:
         # Initialize converter without OCR (for DOCX-converted PDFs)
         self.converter_no_ocr = DocumentConverter(
             format_options={
-                InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options_no_ocr)
+                InputFormat.PDF: PdfFormatOption(
+                    pipeline_options=pipeline_options_no_ocr
+                )
             }
         )
 
@@ -210,13 +212,13 @@ class DocumentProcessor:
                 conversion_path = pdf_path
                 cprint(
                     f"[PROCESSOR] Will process converted PDF (OCR disabled - digital text): {pdf_path.name}",
-                    "cyan"
+                    "cyan",
                 )
             else:
                 conversion_path = tmp_path
                 cprint(
                     f"[PROCESSOR] Native PDF detected, will use OCR for accurate text extraction",
-                    "cyan"
+                    "cyan",
                 )
 
             # Convert document using Docling

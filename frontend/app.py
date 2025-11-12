@@ -9,7 +9,7 @@ st.set_page_config(
     page_title="Content Verification Tool",
     page_icon="📋",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
 # Then other imports
@@ -26,13 +26,13 @@ import logging
 # Configure logging
 logging.basicConfig(
     level=logging.INFO if os.getenv("DEBUG") != "true" else logging.DEBUG,
-    format='[%(levelname)s] %(message)s'
+    format="[%(levelname)s] %(message)s",
 )
 logger = logging.getLogger(__name__)
 
 # Configuration Constants
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
-MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", "100"))
+MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", "10"))
 UPLOAD_TIMEOUT_BASE = int(os.getenv("UPLOAD_TIMEOUT_BASE", "180"))
 EXPORT_TIMEOUT = int(os.getenv("EXPORT_TIMEOUT", "300"))
 DOWNLOAD_TIMEOUT = int(os.getenv("DOWNLOAD_TIMEOUT", "60"))
@@ -44,14 +44,14 @@ OUTPUT_FORMAT_LABELS = {
     "word_landscape": "📄 Word Document (Landscape) - More space for text and notes",
     "word_portrait": "📄 Word Document (Portrait) - Standard layout",
     "excel": "📊 Excel Spreadsheet - Compatible with Excel and Google Sheets",
-    "csv": "📋 CSV File - Universal compatibility"
+    "csv": "📋 CSV File - Universal compatibility",
 }
 
 MIME_TYPES = {
     "word_landscape": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "word_portrait": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "excel": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "csv": "text/csv"
+    "csv": "text/csv",
 }
 
 # Feature flags
@@ -67,7 +67,9 @@ try:
         raise ValueError("Invalid BACKEND_URL format")
 except Exception as e:
     st.error(f"❌ Configuration error: Invalid BACKEND_URL - {BACKEND_URL}")
-    st.info("Please set a valid BACKEND_URL environment variable (e.g., http://localhost:8000)")
+    st.info(
+        "Please set a valid BACKEND_URL environment variable (e.g., http://localhost:8000)"
+    )
     st.stop()
 
 
@@ -78,7 +80,7 @@ def get_session_with_retries() -> requests.Session:
         total=3,
         backoff_factor=1,
         status_forcelist=[429, 500, 502, 503, 504],
-        allowed_methods=["HEAD", "GET", "POST"]
+        allowed_methods=["HEAD", "GET", "POST"],
     )
     adapter = HTTPAdapter(max_retries=retry_strategy)
     session.mount("http://", adapter)
@@ -118,14 +120,18 @@ def check_backend_health() -> bool:
         return False
 
 
-def upload_document(file_content: bytes, filename: str, progress_bar=None, status_text=None) -> Optional[Dict[str, Any]]:
+def upload_document(
+    file_content: bytes, filename: str, progress_bar=None, status_text=None
+) -> Optional[Dict[str, Any]]:
     """Upload document to backend API with comprehensive error handling"""
     try:
         if status_text:
             status_text.text("Preparing upload...")
         if progress_bar:
             progress_bar.progress(10)
-        logger.info(f"User uploaded file: {filename}, size: {len(file_content) / (1024 * 1024):.2f} MB")
+        logger.info(
+            f"User uploaded file: {filename}, size: {len(file_content) / (1024 * 1024):.2f} MB"
+        )
 
         if status_text:
             status_text.text("Uploading document to server...")
@@ -137,7 +143,9 @@ def upload_document(file_content: bytes, filename: str, progress_bar=None, statu
         timeout = calculate_upload_timeout(file_size_mb)
 
         cprint(f"[FRONTEND] Uploading document: {filename}", "cyan")
-        response = API_SESSION.post(f"{BACKEND_URL}/upload", files=files, timeout=timeout)
+        response = API_SESSION.post(
+            f"{BACKEND_URL}/upload", files=files, timeout=timeout
+        )
 
         if progress_bar:
             progress_bar.progress(70)
@@ -148,7 +156,7 @@ def upload_document(file_content: bytes, filename: str, progress_bar=None, statu
         result = response.json()
 
         if progress_bar:
-            progress_bar.progress(100)
+            progress_bar.progress(10)
         if status_text:
             status_text.text("✅ Upload complete!")
 
@@ -156,7 +164,9 @@ def upload_document(file_content: bytes, filename: str, progress_bar=None, statu
         return result
 
     except requests.exceptions.Timeout:
-        st.error("⚠️ Upload timed out. Please try again with a smaller file or check your connection.")
+        st.error(
+            "⚠️ Upload timed out. Please try again with a smaller file or check your connection."
+        )
         cprint(f"[FRONTEND] Upload timeout for {filename}", "red")
         logger.error(f"Upload timeout for {filename}")
         return None
@@ -169,7 +179,7 @@ def upload_document(file_content: bytes, filename: str, progress_bar=None, statu
 
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 400:
-            error_detail = e.response.json().get('detail', 'Unknown error')
+            error_detail = e.response.json().get("detail", "Unknown error")
             st.error(f"⚠️ Invalid file: {error_detail}")
         elif e.response.status_code == 413:
             st.error(f"⚠️ File too large. Maximum size is {MAX_FILE_SIZE_MB} MB.")
@@ -197,7 +207,9 @@ def export_document(payload: Dict[str, str]) -> Optional[Dict[str, Any]]:
             "cyan",
         )
 
-        response = API_SESSION.post(f"{BACKEND_URL}/export", json=payload, timeout=EXPORT_TIMEOUT)
+        response = API_SESSION.post(
+            f"{BACKEND_URL}/export", json=payload, timeout=EXPORT_TIMEOUT
+        )
         response.raise_for_status()
 
         cprint(f"[FRONTEND] Export successful", "green")
@@ -233,7 +245,9 @@ def download_document(document_id: str) -> Optional[bytes]:
     try:
         cprint(f"[FRONTEND] Downloading file for document: {document_id}", "cyan")
 
-        response = API_SESSION.get(f"{BACKEND_URL}/download/{document_id}", timeout=DOWNLOAD_TIMEOUT)
+        response = API_SESSION.get(
+            f"{BACKEND_URL}/download/{document_id}", timeout=DOWNLOAD_TIMEOUT
+        )
         response.raise_for_status()
 
         cprint(f"[FRONTEND] Download successful", "green")
@@ -276,8 +290,6 @@ def init_session_state():
         st.session_state.last_generated = None
 
 
-
-
 def main() -> None:
     """Main Streamlit application"""
 
@@ -299,7 +311,9 @@ def main() -> None:
     col1, col2 = st.columns([6, 1])
     with col1:
         if not check_backend_health():
-            st.error("⚠️ Backend API is not available. Please ensure the backend is running.")
+            st.error(
+                "⚠️ Backend API is not available. Please ensure the backend is running."
+            )
             st.code(f"Expected backend at: {BACKEND_URL}", language="text")
             st.stop()
         st.success("✅ Connected to backend")
@@ -356,12 +370,14 @@ def main() -> None:
         if FEATURES["show_debug_info"]:
             st.divider()
             with st.expander("🔍 Debug Information"):
-                st.json({
-                    "document_id": st.session_state.document_id,
-                    "document_info": st.session_state.document_info,
-                    "upload_in_progress": st.session_state.upload_in_progress,
-                    "has_generated": st.session_state.last_generated is not None,
-                })
+                st.json(
+                    {
+                        "document_id": st.session_state.document_id,
+                        "document_info": st.session_state.document_info,
+                        "upload_in_progress": st.session_state.upload_in_progress,
+                        "has_generated": st.session_state.last_generated is not None,
+                    }
+                )
 
     # Step 1: Document Upload
     st.header("Step 1: Upload Document")
@@ -372,7 +388,7 @@ def main() -> None:
         type=SUPPORTED_FILE_TYPES,
         help="Supported formats: PDF, DOCX",
         label_visibility="collapsed",
-        key="uploaded_file"
+        key="uploaded_file",
     )
 
     if uploaded_file is not None:
@@ -380,7 +396,9 @@ def main() -> None:
         file_size_mb = len(uploaded_file.getvalue()) / (1024 * 1024)
 
         if file_size_mb > MAX_FILE_SIZE_MB:
-            st.error(f"⚠️ File too large: {file_size_mb:.2f} MB. Maximum allowed size is {MAX_FILE_SIZE_MB} MB.")
+            st.error(
+                f"⚠️ File too large: {file_size_mb:.2f} MB. Maximum allowed size is {MAX_FILE_SIZE_MB} MB."
+            )
             st.stop()
         else:
             st.info(f"📄 **File**: {uploaded_file.name} ({file_size_mb:.2f} MB)")
@@ -390,7 +408,7 @@ def main() -> None:
             "🚀 Upload and Process",
             type="primary",
             use_container_width=True,
-            disabled=st.session_state.upload_in_progress
+            disabled=st.session_state.upload_in_progress,
         )
 
         # Handle upload after button click (progress indicators appear below)
@@ -435,14 +453,18 @@ def main() -> None:
             index=0,  # Explicit default to paragraph
             format_func=lambda x: {
                 "paragraph": "📝 Paragraph-level chunking",
-                "sentence": "📄 Sentence-level chunking"
+                "sentence": "📄 Sentence-level chunking",
             }[x],
             help="Paragraph mode groups related content (recommended for most documents). Sentence mode provides finer granularity.",
             label_visibility="collapsed",
         )
 
-        st.caption("**Paragraph mode** (default): Groups related sentences together for coherent verification.")
-        st.caption("**Sentence mode**: Individual sentences for detailed line-by-line verification.")
+        st.caption(
+            "**Paragraph mode** (default): Groups related sentences together for coherent verification."
+        )
+        st.caption(
+            "**Sentence mode**: Individual sentences for detailed line-by-line verification."
+        )
 
         # Step 3: Output Format Selection
         st.divider()
@@ -454,7 +476,7 @@ def main() -> None:
             options=list(OUTPUT_FORMAT_LABELS.keys()),
             format_func=lambda x: OUTPUT_FORMAT_LABELS[x],
             help="Select the format that best suits your workflow",
-            label_visibility="collapsed"
+            label_visibility="collapsed",
         )
 
         # Show format description
@@ -491,11 +513,13 @@ def main() -> None:
                 )
 
             if generate_button:
-                with st.spinner("Generating verification document... This may take a moment."):
+                with st.spinner(
+                    "Generating verification document... This may take a moment."
+                ):
                     payload = {
                         "document_id": st.session_state.document_id,
                         "output_format": output_format,
-                        "chunking_mode": chunking_mode
+                        "chunking_mode": chunking_mode,
                     }
 
                     export_result = export_document(payload)
@@ -508,7 +532,7 @@ def main() -> None:
                                 "filename": export_result["filename"],
                                 "content": file_content,
                                 "mime_type": MIME_TYPES[output_format],
-                                "format": output_format
+                                "format": output_format,
                             }
                             st.rerun()
                     elif export_result:
@@ -525,7 +549,7 @@ def main() -> None:
                 file_name=st.session_state.last_generated["filename"],
                 mime=st.session_state.last_generated["mime_type"],
                 type="primary",
-                use_container_width=True
+                use_container_width=True,
             )
 
             col1, col2 = st.columns(2)

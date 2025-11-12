@@ -1,6 +1,7 @@
 """
 Document chunking module with HierarchicalChunker, paragraph, and sentence modes
 """
+
 from typing import List, Dict, Any
 from termcolor import cprint
 from docling_core.types.doc import DoclingDocument
@@ -23,11 +24,11 @@ class DocumentChunker:
         # Initialize paragraph-level splitter (LangChain)
         # Enhanced with legal document-specific separators and keep_separator
         self.paragraph_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=100,
+            chunk_size=100,
+            chunk_overlap=10,
             length_function=len,
             separators=["\n\n", "\n", ". ", ".\n", "! ", "? ", "; ", ": ", " ", ""],
-            keep_separator='end'  # Preserve punctuation at chunk boundaries
+            keep_separator="end",  # Preserve punctuation at chunk boundaries
         )
 
         # Initialize SpaCy for sentence-level splitting
@@ -43,12 +44,16 @@ class DocumentChunker:
             cprint("[CHUNKER] Loading SpaCy model for sentence splitting...", "cyan")
             # Download spacy model if not already installed
             import spacy
+
             try:
                 self._nlp = spacy.load("en_core_web_sm")
             except OSError:
                 cprint("[CHUNKER] Downloading spacy model en_core_web_sm...", "yellow")
                 import subprocess
-                subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"], check=True)
+
+                subprocess.run(
+                    ["python", "-m", "spacy", "download", "en_core_web_sm"], check=True
+                )
                 self._nlp = spacy.load("en_core_web_sm")
 
             cprint("[CHUNKER] SpaCy model ready for sentence splitting", "green")
@@ -67,20 +72,24 @@ class DocumentChunker:
         """
         try:
             # Try to get page number from chunk metadata
-            if hasattr(chunk, 'meta') and hasattr(chunk.meta, 'doc_items'):
+            if hasattr(chunk, "meta") and hasattr(chunk.meta, "doc_items"):
                 # Get the first doc_item to determine page
                 doc_items = chunk.meta.doc_items
                 if doc_items and len(doc_items) > 0:
                     # doc_items contain references to source elements
                     # Try to get page from first item
                     first_item = doc_items[0]
-                    if hasattr(first_item, 'prov') and first_item.prov:
+                    if hasattr(first_item, "prov") and first_item.prov:
                         # Provenance contains page information
-                        page_no = first_item.prov[0].page_no if first_item.prov[0].page_no is not None else 1
+                        page_no = (
+                            first_item.prov[0].page_no
+                            if first_item.prov[0].page_no is not None
+                            else 1
+                        )
                         return page_no + 1  # Convert to 1-indexed
 
             # Fallback: try direct page attribute
-            if hasattr(chunk, 'page'):
+            if hasattr(chunk, "page"):
                 return chunk.page + 1
 
             # Default to page 1 if we can't determine
@@ -101,12 +110,12 @@ class DocumentChunker:
             True if chunk continues from previous page
         """
         try:
-            if hasattr(chunk, 'meta') and hasattr(chunk.meta, 'doc_items'):
+            if hasattr(chunk, "meta") and hasattr(chunk.meta, "doc_items"):
                 doc_items = chunk.meta.doc_items
                 if doc_items and len(doc_items) > 0:
                     # Check if first item has provenance indicating multi-page span
                     first_item = doc_items[0]
-                    if hasattr(first_item, 'prov') and first_item.prov:
+                    if hasattr(first_item, "prov") and first_item.prov:
                         # If there are multiple provenance entries, it spans pages
                         if len(first_item.prov) > 1:
                             return True
@@ -114,7 +123,7 @@ class DocumentChunker:
                         # Check if the provenance indicates partial text
                         # (This is a heuristic - may need adjustment based on actual Docling behavior)
                         prov = first_item.prov[0]
-                        if hasattr(prov, 'charspan'):
+                        if hasattr(prov, "charspan"):
                             # If charspan starts at 0, it's likely the beginning of content
                             # Otherwise, it might be a continuation
                             return prov.charspan[0] > 0
@@ -125,7 +134,9 @@ class DocumentChunker:
             cprint(f"[CHUNKER] Warning: Could not detect overlap: {e}", "yellow")
             return False
 
-    def _apply_hierarchical_chunking(self, docling_document: DoclingDocument) -> List[Dict[str, Any]]:
+    def _apply_hierarchical_chunking(
+        self, docling_document: DoclingDocument
+    ) -> List[Dict[str, Any]]:
         """
         Apply HierarchicalChunker (base processing)
 
@@ -144,7 +155,7 @@ class DocumentChunker:
 
             for chunk in chunk_iter:
                 # Extract text
-                text = chunk.text if hasattr(chunk, 'text') else str(chunk)
+                text = chunk.text if hasattr(chunk, "text") else str(chunk)
 
                 # Skip empty chunks
                 if not text or not text.strip():
@@ -154,14 +165,18 @@ class DocumentChunker:
                 page_number = self._get_page_number_from_chunk(chunk)
                 is_overlap = self._detect_overlap(chunk)
 
-                chunks.append({
-                    "text": text.strip(),
-                    "page_number": page_number,
-                    "is_overlap": is_overlap,
-                    "chunk_obj": chunk  # Keep reference for debugging
-                })
+                chunks.append(
+                    {
+                        "text": text.strip(),
+                        "page_number": page_number,
+                        "is_overlap": is_overlap,
+                        "chunk_obj": chunk,  # Keep reference for debugging
+                    }
+                )
 
-            cprint(f"[CHUNKER] HierarchicalChunker produced {len(chunks)} chunks", "green")
+            cprint(
+                f"[CHUNKER] HierarchicalChunker produced {len(chunks)} chunks", "green"
+            )
 
         except Exception as e:
             cprint(f"[CHUNKER] Error in hierarchical chunking: {e}", "red")
@@ -169,7 +184,9 @@ class DocumentChunker:
 
         return chunks
 
-    def _apply_paragraph_splitting(self, base_chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _apply_paragraph_splitting(
+        self, base_chunks: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """
         Apply paragraph-level splitting on top of hierarchical chunks
 
@@ -193,22 +210,29 @@ class DocumentChunker:
 
             for para in paragraphs:
                 if para.strip():
-                    paragraph_chunks.append({
-                        "text": para.strip(),
-                        "page_number": page_number,
-                        "is_overlap": is_overlap
-                    })
+                    paragraph_chunks.append(
+                        {
+                            "text": para.strip(),
+                            "page_number": page_number,
+                            "is_overlap": is_overlap,
+                        }
+                    )
 
-        cprint(f"[CHUNKER] Paragraph splitting produced {len(paragraph_chunks)} chunks", "green")
+        cprint(
+            f"[CHUNKER] Paragraph splitting produced {len(paragraph_chunks)} chunks",
+            "green",
+        )
         return paragraph_chunks
 
-    def _apply_sentence_splitting(self, base_chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _apply_sentence_splitting(
+        self, base_chunks: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """
         Apply TRUE sentence-level splitting using SpaCy directly
 
         This implementation uses SpaCy's sentence boundary detection (doc.sents)
         to extract individual sentences, ensuring each chunk contains exactly one sentence.
-        This fixes the previous issue where SpacyTextSplitter with chunk_size=1000
+        This fixes the previous issue where SpacyTextSplitter with chunk_size=100
         was grouping multiple sentences together.
 
         Args:
@@ -233,17 +257,24 @@ class DocumentChunker:
             for sent in doc.sents:
                 sentence_text = sent.text.strip()
                 if sentence_text:
-                    sentence_chunks.append({
-                        "text": sentence_text,
-                        "page_number": page_number,
-                        "is_overlap": is_overlap,
-                        "base_chunk_index": base_index  # Track which base chunk this sentence came from
-                    })
+                    sentence_chunks.append(
+                        {
+                            "text": sentence_text,
+                            "page_number": page_number,
+                            "is_overlap": is_overlap,
+                            "base_chunk_index": base_index,  # Track which base chunk this sentence came from
+                        }
+                    )
 
-        cprint(f"[CHUNKER] Sentence splitting produced {len(sentence_chunks)} individual sentences", "green")
+        cprint(
+            f"[CHUNKER] Sentence splitting produced {len(sentence_chunks)} individual sentences",
+            "green",
+        )
         return sentence_chunks
 
-    def _assign_item_numbers(self, chunks: List[Dict[str, Any]], mode: ChunkingMode) -> List[DocumentChunk]:
+    def _assign_item_numbers(
+        self, chunks: List[Dict[str, Any]], mode: ChunkingMode
+    ) -> List[DocumentChunk]:
         """
         Assign item numbers to chunks (resets per page)
 
@@ -279,12 +310,14 @@ class DocumentChunker:
                 else:
                     item_number += 1
 
-                result.append(DocumentChunk(
-                    page_number=page_number,
-                    item_number=str(item_number),  # Convert to string
-                    text=chunk["text"],
-                    is_overlap=chunk["is_overlap"]
-                ))
+                result.append(
+                    DocumentChunk(
+                        page_number=page_number,
+                        item_number=str(item_number),  # Convert to string
+                        text=chunk["text"],
+                        is_overlap=chunk["is_overlap"],
+                    )
+                )
 
         elif mode == ChunkingMode.SENTENCE:
             # Hierarchical numbering for sentence mode
@@ -310,7 +343,9 @@ class DocumentChunker:
                     base_chunk_to_item[key] = base_item_number
 
             # Second pass: assign hierarchical sub-numbers within each base chunk
-            sub_number_counters = {}  # Maps (page, base_chunk_index) -> current sub_number
+            sub_number_counters = (
+                {}
+            )  # Maps (page, base_chunk_index) -> current sub_number
 
             for chunk in chunks:
                 page_number = chunk["page_number"]
@@ -331,20 +366,20 @@ class DocumentChunker:
                 # Create hierarchical item number (e.g., "2.3")
                 hierarchical_number = f"{base_num}.{sub_num}"
 
-                result.append(DocumentChunk(
-                    page_number=page_number,
-                    item_number=hierarchical_number,
-                    text=chunk["text"],
-                    is_overlap=chunk["is_overlap"]
-                ))
+                result.append(
+                    DocumentChunk(
+                        page_number=page_number,
+                        item_number=hierarchical_number,
+                        text=chunk["text"],
+                        is_overlap=chunk["is_overlap"],
+                    )
+                )
 
         cprint(f"[CHUNKER] Assigned item numbers to {len(result)} chunks", "green")
         return result
 
     def chunk_document(
-        self,
-        docling_document: DoclingDocument,
-        mode: ChunkingMode
+        self, docling_document: DoclingDocument, mode: ChunkingMode
     ) -> List[DocumentChunk]:
         """
         Chunk document according to specified mode
@@ -372,7 +407,9 @@ class DocumentChunker:
         # Step 3: Assign item numbers (pass mode for hierarchical numbering in sentence mode)
         final_chunks = self._assign_item_numbers(chunks, mode)
 
-        cprint(f"[CHUNKER] Chunking complete: {len(final_chunks)} total chunks", "green")
+        cprint(
+            f"[CHUNKER] Chunking complete: {len(final_chunks)} total chunks", "green"
+        )
         return final_chunks
 
 
