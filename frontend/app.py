@@ -407,19 +407,20 @@ def main() -> None:
 
             result = upload_document(file_content, filename, progress_bar, status_text)
 
-            # Clear progress indicators
+            # Clear only the progress bar, keep status_text for final message
             progress_bar.empty()
-            status_text.empty()
 
             # Handle result
             if result and validate_upload_response(result):
                 st.session_state.document_id = result["document_id"]
                 st.session_state.document_info = result
-                st.success(f"✅ {result['message']}")
                 st.session_state.upload_in_progress = False
-                st.rerun()
+                # Show success message in place of progress bar
+                status_text.success(f"✅ {result['message']}")
             elif result:
-                st.error("⚠️ Invalid response from server. Please try again.")
+                st.session_state.upload_in_progress = False
+                status_text.error("⚠️ Invalid response from server. Please try again.")
+            else:
                 st.session_state.upload_in_progress = False
 
     # Show document info and processing options if available
