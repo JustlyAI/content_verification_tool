@@ -4,9 +4,11 @@ FastAPI Backend for Content Verification Tool
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Dict
+from typing import Dict, List
 from pathlib import Path
 import logging
+import tempfile
+import shutil
 from termcolor import cprint
 
 from app.models import (
@@ -17,12 +19,16 @@ from app.models import (
     ExportResponse,
     ErrorResponse,
     ChunkingMode,
-    OutputFormat
+    OutputFormat,
+    UploadReferencesResponse,
+    VerificationRequest,
+    VerificationResponse
 )
 from app.document_processor import document_processor
 from app.chunker import document_chunker
 from app.output_generator import output_generator
 from app.cache import document_cache
+from app.gemini_service import gemini_service
 
 
 # Configure logging
@@ -143,6 +149,164 @@ async def upload_document(file: UploadFile = File(...)):
     except Exception as e:
         cprint(f"[API] Error processing upload: {e}", "red")
         raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
+
+
+@app.post("/api/verify/upload-references", response_model=UploadReferencesResponse)
+async def upload_references(
+    case_context: str = Form(...),
+    files: List[UploadFile] = File(...)
+):
+    """
+    Upload reference documents and create File Search store
+
+    Args:
+        case_context: Context about the verification case
+        files: List of reference documents (PDF/DOCX)
+
+    Returns:
+        UploadReferencesResponse with store information and metadata
+    """
+    cprint(f"\n[API] Received reference upload request: {len(files)} files", "cyan", attrs=["bold"])
+    cprint(f"[API] Case context: {case_context[:100]}...", "cyan")
+
+    try:
+        # Generate a case ID
+        import hashlib
+        import time
+        case_id = hashlib.md5(f"{case_context}{time.time()}".encode()).hexdigest()[:8]
+
+        # Create File Search store
+        store_name, display_name = gemini_service.create_store(case_id)
+        cprint(f"[API] Created store: {store_name}", "green")
+
+        # Process each file
+        metadata_list = []
+        temp_files = []
+
+        for idx, file in enumerate(files):
+            cprint(f"[API] Processing file {idx + 1}/{len(files)}: {file.filename}", "cyan")
+
+            # Save file temporarily
+            file_content = await file.read()
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=Path(file.filename).suffix)
+            temp_file.write(file_content)
+            temp_file.close()
+            temp_files.append(temp_file.name)
+
+            try:
+                # Generate metadata
+                metadata = gemini_service.generate_metadata(
+                    file_path=temp_file.name,
+                    filename=file.filename,
+                    case_context=case_context
+                )
+                metadata_list.append(metadata)
+
+                # Upload to store
+                gemini_service.upload_to_store(
+                    file_path=temp_file.name,
+                    store_name=store_name,
+                    metadata=metadata
+                )
+                cprint(f"[API] ✓ Uploaded {file.filename} to store", "green")
+
+            except Exception as e:
+                cprint(f"[API] ✗ Error processing {file.filename}: {e}", "red")
+                # Continue with other files
+
+        # Clean up temp files
+        for temp_file in temp_files:
+            try:
+                Path(temp_file).unlink()
+            except:
+                pass
+
+        cprint(f"[API] Reference upload complete: {len(metadata_list)} documents", "green")
+
+        return UploadReferencesResponse(
+            store_id=store_name,
+            store_name=display_name,
+            documents_uploaded=len(metadata_list),
+            metadata=metadata_list
+        )
+
+    except ValueError as e:
+        cprint(f"[API] Validation error: {e}", "red")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        cprint(f"[API] Error uploading references: {e}", "red")
+        raise HTTPException(status_code=500, detail=f"Error uploading references: {str(e)}")
+
+
+@app.post("/api/verify/execute", response_model=VerificationResponse)
+async def execute_verification(request: VerificationRequest):
+    """
+    Execute AI verification on chunked document
+
+    Args:
+        request: VerificationRequest with document_id, store_id, case_context, chunking_mode
+
+    Returns:
+        VerificationResponse with verified chunks and statistics
+    """
+    cprint(f"\n[API] Received verification request: {request.document_id}", "cyan", attrs=["bold"])
+    cprint(f"[API] Store ID: {request.store_id}", "cyan")
+    cprint(f"[API] Chunking mode: {request.chunking_mode.value}", "cyan")
+
+    import time
+    start_time = time.time()
+
+    try:
+        # Get document from store
+        if request.document_id not in DOCUMENT_STORE:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        doc_data = DOCUMENT_STORE[request.document_id]
+
+        # Get or generate chunks
+        if request.chunking_mode.value in doc_data["chunks_cache"]:
+            chunks = doc_data["chunks_cache"][request.chunking_mode.value]
+            cprint(f"[API] Using cached chunks: {len(chunks)} chunks", "green")
+        else:
+            # Chunk document
+            chunks = document_chunker.chunk_document(
+                docling_document=doc_data["docling_document"],
+                mode=request.chunking_mode
+            )
+            doc_data["chunks_cache"][request.chunking_mode.value] = chunks
+            cprint(f"[API] Generated chunks: {len(chunks)} chunks", "green")
+
+        # Verify chunks using Gemini
+        cprint(f"[API] Starting AI verification for {len(chunks)} chunks...", "cyan")
+        verified_chunks = await gemini_service.verify_batch(
+            chunks=chunks,
+            store_name=request.store_id,
+            case_context=request.case_context
+        )
+
+        # Update cached chunks with verification results
+        doc_data["chunks_cache"][request.chunking_mode.value] = verified_chunks
+
+        # Calculate statistics
+        total_verified = sum(1 for c in verified_chunks if c.verified)
+        processing_time = time.time() - start_time
+
+        cprint(f"[API] ✓ Verification complete: {total_verified}/{len(verified_chunks)} verified in {processing_time:.2f}s", "green")
+
+        return VerificationResponse(
+            document_id=request.document_id,
+            verified_chunks=verified_chunks,
+            total_verified=total_verified,
+            total_chunks=len(verified_chunks),
+            processing_time_seconds=processing_time,
+            store_id=request.store_id
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        cprint(f"[API] Error executing verification: {e}", "red")
+        raise HTTPException(status_code=500, detail=f"Error executing verification: {str(e)}")
 
 
 @app.post("/chunk", response_model=ChunkingResponse)
@@ -293,6 +457,8 @@ async def download_file(document_id: str):
             media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         elif export_data["format"] == "excel":
             media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        elif export_data["format"] == "json":
+            media_type = "application/json"
         else:  # CSV
             media_type = "text/csv"
 

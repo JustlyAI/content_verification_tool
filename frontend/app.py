@@ -45,6 +45,7 @@ OUTPUT_FORMAT_LABELS = {
     "word_portrait": "📄 Word Document (Portrait) - Standard layout",
     "excel": "📊 Excel Spreadsheet - Compatible with Excel and Google Sheets",
     "csv": "📋 CSV File - Universal compatibility",
+    "json": "📊 JSON File - Full verification metadata with citations",
 }
 
 MIME_TYPES = {
@@ -52,6 +53,7 @@ MIME_TYPES = {
     "word_portrait": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "excel": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     "csv": "text/csv",
+    "json": "application/json",
 }
 
 # Feature flags
@@ -288,6 +290,15 @@ def init_session_state():
         st.session_state.upload_in_progress = False
     if "last_generated" not in st.session_state:
         st.session_state.last_generated = None
+    # AI Verification state
+    if "store_id" not in st.session_state:
+        st.session_state.store_id = None
+    if "reference_docs_uploaded" not in st.session_state:
+        st.session_state.reference_docs_uploaded = False
+    if "verification_complete" not in st.session_state:
+        st.session_state.verification_complete = False
+    if "verification_results" not in st.session_state:
+        st.session_state.verification_results = None
 
 
 def main() -> None:

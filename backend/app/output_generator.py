@@ -4,6 +4,7 @@ Output generation module for Word and Excel/CSV formats
 from pathlib import Path
 from typing import List
 from datetime import datetime
+import json
 import pandas as pd
 from docx import Document
 from docx.shared import Inches, Pt
@@ -46,8 +47,12 @@ class OutputGenerator:
             ext = "docx"
         elif output_format == OutputFormat.EXCEL:
             ext = "xlsx"
-        else:  # CSV
+        elif output_format == OutputFormat.CSV:
             ext = "csv"
+        elif output_format == OutputFormat.JSON:
+            ext = "json"
+        else:
+            ext = "txt"
 
         return f"{base_name}_verification_{timestamp}.{ext}"
 
@@ -170,15 +175,27 @@ class OutputGenerator:
             row_cells[2].text = chunk.text
             row_cells[2].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT
 
-            # Verified checkbox (empty for user to fill)
-            row_cells[3].text = "☐"
+            # Verified checkbox - show AI result if available
+            if chunk.verified is not None:
+                row_cells[3].text = "✅" if chunk.verified else "☐"
+            else:
+                row_cells[3].text = "☐"
             row_cells[3].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-            # Verification Source (empty)
-            row_cells[4].text = ""
+            # Verification Source - populate from AI if available
+            if chunk.verification_source:
+                row_cells[4].text = chunk.verification_source
+            else:
+                row_cells[4].text = ""
 
-            # Verification Note (empty)
-            row_cells[5].text = ""
+            # Verification Note - include AI reasoning and confidence score
+            if chunk.verification_note:
+                note_text = chunk.verification_note
+                if chunk.verification_score:
+                    note_text += f" (Confidence: {chunk.verification_score}/10)"
+                row_cells[5].text = note_text
+            else:
+                row_cells[5].text = ""
 
             # Set font size for all cells
             for cell in row_cells:
@@ -216,14 +233,37 @@ class OutputGenerator:
         file_type = "Excel" if as_excel else "CSV"
         cprint(f"[OUTPUT] Generating {file_type} file...", "cyan")
 
-        # Create DataFrame
+        # Create DataFrame with AI verification results
+        verified_values = []
+        source_values = []
+        note_values = []
+
+        for chunk in chunks:
+            # Verified column - show checkmark if AI verified
+            if chunk.verified is not None:
+                verified_values.append("✅" if chunk.verified else "☐")
+            else:
+                verified_values.append("☐")
+
+            # Source column - populate from AI if available
+            source_values.append(chunk.verification_source if chunk.verification_source else "")
+
+            # Note column - include AI reasoning and confidence score
+            if chunk.verification_note:
+                note_text = chunk.verification_note
+                if chunk.verification_score:
+                    note_text += f" (Confidence: {chunk.verification_score}/10)"
+                note_values.append(note_text)
+            else:
+                note_values.append("")
+
         data = {
             "Page #": [chunk.page_number for chunk in chunks],
             "Item #": [chunk.item_number for chunk in chunks],
             "Text": [chunk.text for chunk in chunks],
-            "Verified ☑": ["☐"] * len(chunks),
-            "Verification Source": [""] * len(chunks),
-            "Verification Note": [""] * len(chunks)
+            "Verified ☑": verified_values,
+            "Verification Source": source_values,
+            "Verification Note": note_values
         }
 
         df = pd.DataFrame(data)
@@ -262,6 +302,58 @@ class OutputGenerator:
 
         return output_path
 
+    def generate_json(
+        self,
+        chunks: List[DocumentChunk],
+        original_filename: str
+    ) -> Path:
+        """
+        Generate JSON file with full verification metadata
+
+        Args:
+            chunks: List of document chunks
+            original_filename: Original document filename
+
+        Returns:
+            Path to generated JSON file
+        """
+        cprint(f"[OUTPUT] Generating JSON file...", "cyan")
+
+        # Convert chunks to dict format
+        chunks_data = []
+        for chunk in chunks:
+            chunk_dict = {
+                "page_number": chunk.page_number,
+                "item_number": chunk.item_number,
+                "text": chunk.text,
+                "is_overlap": chunk.is_overlap,
+                "verified": chunk.verified,
+                "verification_score": chunk.verification_score,
+                "verification_source": chunk.verification_source,
+                "verification_note": chunk.verification_note,
+                "citations": chunk.citations
+            }
+            chunks_data.append(chunk_dict)
+
+        # Create output structure
+        output_data = {
+            "document": original_filename,
+            "generated_at": datetime.now().isoformat(),
+            "total_chunks": len(chunks),
+            "verified_chunks": sum(1 for c in chunks if c.verified),
+            "chunks": chunks_data
+        }
+
+        # Generate filename and save
+        filename = self._generate_filename(original_filename, OutputFormat.JSON)
+        output_path = self.output_dir / filename
+
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(output_data, f, indent=2, ensure_ascii=False)
+
+        cprint(f"[OUTPUT] JSON file saved: {output_path}", "green")
+        return output_path
+
     def generate_output(
         self,
         chunks: List[DocumentChunk],
@@ -289,6 +381,8 @@ class OutputGenerator:
             return self.generate_excel_csv(chunks, original_filename, as_excel=True)
         elif output_format == OutputFormat.CSV:
             return self.generate_excel_csv(chunks, original_filename, as_excel=False)
+        elif output_format == OutputFormat.JSON:
+            return self.generate_json(chunks, original_filename)
         else:
             raise ValueError(f"Unknown output format: {output_format}")
 

@@ -15,8 +15,13 @@ Convert legal documents (PDF/DOCX) into structured verification checklists for s
 - **Multi-Format Support**: PDF or DOCX documents (up to 10 MB)
 - **Chunking Modes**: Sentence-level or paragraph-level verification
 - **Structure Preservation**: Maintains document hierarchy, footnotes, and tables
-- **Output Formats**: Word (landscape/portrait), Excel, or CSV
+- **Output Formats**: Word (landscape/portrait), Excel, CSV, or JSON
 - **Metadata Tracking**: Page numbers, item numbers, and cross-page overlap detection
+- **🆕 AI Verification**: Automated content verification using Google Gemini AI
+  - Upload reference documents for verification
+  - AI-powered chunk verification with confidence scores
+  - Citation-backed results with source references
+  - Batch processing with rate limiting
 
 ### Output Structure
 
@@ -107,9 +112,143 @@ curl -X GET "http://localhost:8000/download/abc123..." \
   --output verification.docx
 ```
 
-**Formats**: `word_landscape`, `word_portrait`, `excel`, `csv`
+**Formats**: `word_landscape`, `word_portrait`, `excel`, `csv`, `json`
 
 **Documentation**: http://localhost:8000/docs
+
+---
+
+## AI Verification (NEW)
+
+Automatically verify document chunks against reference documents using Google Gemini AI.
+
+### Setup
+
+1. **Get Gemini API Key**:
+   - Visit https://aistudio.google.com/apikey
+   - Create a new API key
+
+2. **Configure Environment**:
+   ```bash
+   # Create .env file in the root directory
+   cp .env.example .env
+
+   # Add your API key
+   echo "GEMINI_API_KEY=your_api_key_here" >> .env
+   ```
+
+3. **Restart Services** (if running):
+   ```bash
+   docker-compose down
+   docker-compose up --build
+   ```
+
+### AI Verification Workflow
+
+1. **Upload Reference Documents**
+   ```bash
+   curl -X POST "http://localhost:8000/api/verify/upload-references" \
+     -F "case_context=This is a contract verification case" \
+     -F "files=@reference1.pdf" \
+     -F "files=@reference2.pdf"
+   ```
+
+   Response:
+   ```json
+   {
+     "store_id": "corpora/verification_case_abc123",
+     "store_name": "verification_case_abc123",
+     "documents_uploaded": 2,
+     "metadata": [...]
+   }
+   ```
+
+2. **Upload Document to Verify**
+   ```bash
+   curl -X POST "http://localhost:8000/upload" \
+     -F "file=@document_to_verify.pdf"
+   ```
+
+3. **Execute AI Verification**
+   ```bash
+   curl -X POST "http://localhost:8000/api/verify/execute" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "document_id": "abc123...",
+       "store_id": "corpora/verification_case_abc123",
+       "case_context": "Contract verification case",
+       "chunking_mode": "paragraph"
+     }'
+   ```
+
+   Response:
+   ```json
+   {
+     "document_id": "abc123...",
+     "verified_chunks": [...],
+     "total_verified": 45,
+     "total_chunks": 50,
+     "processing_time_seconds": 120.5,
+     "store_id": "corpora/verification_case_abc123"
+   }
+   ```
+
+4. **Export with Verification Results**
+   ```bash
+   curl -X POST "http://localhost:8000/export" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "document_id": "abc123...",
+       "chunking_mode": "paragraph",
+       "output_format": "json"
+     }'
+   ```
+
+### Verification Output
+
+AI-verified chunks include:
+- **verified**: Boolean indicating if content was found in references
+- **verification_score**: Confidence level (1-10)
+- **verification_source**: Citation with document name and location
+- **verification_note**: AI reasoning and explanation
+- **citations**: Detailed citation objects with excerpts
+
+Example verified chunk in JSON export:
+```json
+{
+  "page_number": 1,
+  "item_number": "3",
+  "text": "The contract term is 12 months.",
+  "verified": true,
+  "verification_score": 9,
+  "verification_source": "Contract.pdf, Section 2.1",
+  "verification_note": "Exact match found in contract terms section",
+  "citations": [
+    {
+      "title": "Contract.pdf",
+      "excerpt": "The contract term shall be twelve (12) months..."
+    }
+  ]
+}
+```
+
+### Cost Estimation
+
+Typical costs using Gemini 2.0 Flash:
+- **Metadata generation**: ~$0.00003 per document
+- **Verification**: ~$0.0042 per 100 chunks
+- **Total for 50-page document**: ~$0.01
+
+Storage and embeddings are **FREE** with Gemini File Search.
+
+### Features
+
+✅ **Automated Verification**: AI checks each chunk against reference documents
+✅ **Confidence Scores**: 1-10 scale for reliability assessment
+✅ **Source Citations**: Exact references with document names and excerpts
+✅ **Batch Processing**: Handles hundreds of chunks efficiently
+✅ **Rate Limiting**: Built-in delays to respect API limits
+✅ **Export Integration**: Pre-populated verification columns in all formats
 
 ---
 
@@ -175,6 +314,7 @@ content_verification_tool/
 │   ├── app/
 │   │   ├── main.py              # FastAPI application
 │   │   ├── models.py            # Pydantic models
+│   │   ├── gemini_service.py    # AI verification service
 │   │   ├── document_processor.py
 │   │   ├── chunker.py
 │   │   ├── output_generator.py
@@ -183,6 +323,7 @@ content_verification_tool/
 ├── frontend/
 │   ├── app.py                   # Streamlit UI
 │   └── requirements.txt
+├── .env.example                 # Environment variables template
 ├── docker-compose.yml
 ├── start_all.sh
 └── SETUP.md
@@ -204,7 +345,7 @@ content_verification_tool/
 
 ## Tech Stack
 
-**Backend**: FastAPI • Docling • LangChain • python-docx • pandas • spaCy
+**Backend**: FastAPI • Docling • LangChain • python-docx • pandas • spaCy • Google Gemini AI
 
 **Frontend**: Streamlit
 
