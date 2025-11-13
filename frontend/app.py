@@ -454,6 +454,69 @@ def main() -> None:
 
     # Show document info and processing options if available
     if st.session_state.document_info:
+        # Step 1.5: Upload Reference Documents for AI Verification (Optional)
+        if not st.session_state.reference_docs_uploaded:
+            st.divider()
+            st.header("🤖 Step 1.5: AI Verification (Optional)")
+            st.markdown("Upload reference documents to automatically verify content using AI.")
+
+            with st.expander("📚 Upload Reference Documents", expanded=False):
+                case_context = st.text_area(
+                    "Case Context",
+                    placeholder="Describe what you're verifying (e.g., 'Contract verification for Project X')",
+                    max_chars=500,
+                    help="Provide context to help AI understand the verification case",
+                    key="case_context_input"
+                )
+
+                reference_files = st.file_uploader(
+                    "Select Reference Documents",
+                    type=["pdf", "docx"],
+                    accept_multiple_files=True,
+                    help="Upload documents to verify against (PDF or DOCX)",
+                    key="reference_uploader"
+                )
+
+                if st.button("Create Reference Library", disabled=not reference_files or not case_context, type="primary"):
+                    with st.spinner("Creating reference library..."):
+                        try:
+                            # Prepare files for upload
+                            files = [
+                                ("files", (file.name, file.getvalue(), file.type))
+                                for file in reference_files
+                            ]
+
+                            # Call API
+                            response = API_SESSION.post(
+                                f"{BACKEND_URL}/api/verify/upload-references",
+                                data={"case_context": case_context},
+                                files=files,
+                                timeout=300
+                            )
+
+                            if response.status_code == 200:
+                                result = response.json()
+                                st.session_state.store_id = result["store_id"]
+                                st.session_state.reference_docs_uploaded = True
+                                st.session_state.case_context = case_context
+
+                                st.success(f"✅ Uploaded {result['documents_uploaded']} reference documents")
+                                st.info(f"📦 Store ID: `{result['store_id']}`")
+
+                                # Show metadata
+                                with st.expander("View Document Metadata"):
+                                    for meta in result["metadata"]:
+                                        st.markdown(f"**{meta['filename']}**")
+                                        st.caption(f"Type: {meta['document_type']}")
+                                        st.caption(f"Summary: {meta['summary']}")
+
+                                st.rerun()
+                            else:
+                                st.error(f"❌ Failed to upload references: {response.text}")
+
+                        except Exception as e:
+                            st.error(f"❌ Error: {str(e)}")
+
         # Step 2: Chunking Mode Selection
         st.divider()
         st.header("Step 2: Select Chunking Mode")
@@ -477,6 +540,109 @@ def main() -> None:
         st.caption(
             "**Sentence mode**: Individual sentences for detailed line-by-line verification."
         )
+
+        # Step 2.5: Run AI Verification (if references uploaded)
+        if st.session_state.reference_docs_uploaded and not st.session_state.verification_complete:
+            st.divider()
+            st.header("✨ Step 2.5: Run AI Verification")
+
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.info("📊 Ready to verify chunks against reference documents")
+            with col2:
+                if st.button("🚀 Verify Now", type="primary", use_container_width=True):
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+
+                    try:
+                        status_text.text("Starting verification...")
+
+                        # Call verification API
+                        response = API_SESSION.post(
+                            f"{BACKEND_URL}/api/verify/execute",
+                            json={
+                                "document_id": st.session_state.document_id,
+                                "store_id": st.session_state.store_id,
+                                "case_context": st.session_state.case_context,
+                                "chunking_mode": chunking_mode
+                            },
+                            timeout=600
+                        )
+
+                        progress_bar.progress(50)
+                        status_text.text("Processing verification results...")
+
+                        if response.status_code == 200:
+                            result = response.json()
+                            st.session_state.verification_complete = True
+                            st.session_state.verification_results = result
+                            st.session_state.chunking_mode = chunking_mode
+
+                            progress_bar.progress(100)
+                            status_text.text("Verification complete!")
+
+                            # Show statistics
+                            st.success("✅ AI Verification Complete!")
+
+                            col1, col2, col3, col4 = st.columns(4)
+                            with col1:
+                                st.metric("Total Chunks", result["total_chunks"])
+                            with col2:
+                                verified_count = result["total_verified"]
+                                verified_pct = (verified_count / result["total_chunks"] * 100) if result["total_chunks"] > 0 else 0
+                                st.metric("Verified", f"{verified_count}", f"{verified_pct:.1f}%")
+                            with col3:
+                                st.metric("Processing Time", f"{result['processing_time_seconds']:.1f}s")
+                            with col4:
+                                # Calculate average confidence
+                                scores = [c.get("verification_score", 0) for c in result["verified_chunks"] if c.get("verified") and c.get("verification_score")]
+                                avg_score = sum(scores) / len(scores) if scores else 0
+                                st.metric("Avg Confidence", f"{avg_score:.1f}/10")
+
+                            st.rerun()
+                        else:
+                            progress_bar.empty()
+                            status_text.empty()
+                            st.error(f"❌ Verification failed: {response.text}")
+
+                    except Exception as e:
+                        progress_bar.empty()
+                        status_text.empty()
+                        st.error(f"❌ Error during verification: {str(e)}")
+
+        # Show verification results summary if complete
+        if st.session_state.verification_complete:
+            st.divider()
+            st.header("📊 Verification Results Summary")
+
+            results = st.session_state.verification_results
+            verified_count = results.get("total_verified", 0)
+            total_count = results.get("total_chunks", 0)
+            unverified_count = total_count - verified_count
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.success(f"✅ **Verified:** {verified_count} chunks")
+            with col2:
+                st.warning(f"⚠️ **Unverified:** {unverified_count} chunks")
+
+            # Show confidence breakdown
+            if results.get("verified_chunks"):
+                scores = [c.get("verification_score", 0) for c in results["verified_chunks"] if c.get("verified") and c.get("verification_score")]
+
+                if scores:
+                    low_confidence = sum(1 for s in scores if s < 5)
+                    medium_confidence = sum(1 for s in scores if 5 <= s < 8)
+                    high_confidence = sum(1 for s in scores if s >= 8)
+
+                    st.markdown("**Confidence Distribution:**")
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("🔴 Low (<5)", low_confidence)
+                    with col2:
+                        st.metric("🟡 Medium (5-7)", medium_confidence)
+                    with col3:
+                        st.metric("🟢 High (8-10)", high_confidence)
 
         # Step 3: Output Format Selection
         st.divider()
@@ -554,6 +720,10 @@ def main() -> None:
         if st.session_state.last_generated:
             st.header("Step 4: Download Your Document")
             st.success("🎉 Document ready for download!")
+
+            # Show verification status if available
+            if st.session_state.verification_complete:
+                st.info("📊 This document includes AI verification results with confidence scores and citations")
 
             st.download_button(
                 label="⬇️ Download Verification Document",

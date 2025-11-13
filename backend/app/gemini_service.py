@@ -205,6 +205,42 @@ Return only valid JSON, no markdown formatting."""
             cprint(f"[Gemini] ✗ Error uploading to store: {e}", "red")
             raise
 
+    def _retry_with_backoff(self, func, *args, max_retries=3, **kwargs):
+        """
+        Retry a function with exponential backoff
+
+        Args:
+            func: Function to retry
+            max_retries: Maximum number of retry attempts
+            *args, **kwargs: Arguments to pass to function
+
+        Returns:
+            Function result
+        """
+        for attempt in range(max_retries):
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    # Last attempt, raise error
+                    raise
+
+                # Check if error is retryable
+                error_str = str(e).lower()
+                is_retryable = any(x in error_str for x in [
+                    'rate limit', '429', 'timeout', '500', '503',
+                    'temporarily', 'unavailable', 'deadline'
+                ])
+
+                if not is_retryable:
+                    # Don't retry client errors
+                    raise
+
+                # Exponential backoff: 1s, 2s, 4s
+                wait_time = 2 ** attempt
+                cprint(f"[Gemini] Retry {attempt + 1}/{max_retries} in {wait_time}s: {e}", "yellow")
+                time.sleep(wait_time)
+
     def verify_chunk(
         self, chunk: DocumentChunk, store_name: str, case_context: str
     ) -> DocumentChunk:
@@ -241,34 +277,71 @@ Please verify if this content appears in or is supported by the reference docume
 
 Return only valid JSON, no markdown formatting."""
 
-            # Configure tool with grounding
+            # Configure File Search tool with corpus
             tool = types.Tool(
-                google_search_retrieval=types.GoogleSearchRetrieval(
-                    dynamic_retrieval_config=types.DynamicRetrievalConfig(
-                        mode="MODE_DYNAMIC"
-                    )
+                file_search=types.FileSearch(
+                    corpora=[store_name]
                 )
             )
 
-            # Generate verification using Gemini Flash
+            # Generate verification using Gemini Flash with File Search
             response = self.client.models.generate_content(
                 model="gemini-2.0-flash-exp",
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     temperature=0.1,  # Low temperature for consistent results
-                    response_mime_type="application/json"
+                    response_mime_type="application/json",
+                    tools=[tool]  # Pass the File Search tool here
                 )
             )
 
             # Parse response
             result = json.loads(response.text)
 
+            # Extract grounding metadata if available
+            actual_citations = []
+            if hasattr(response, 'candidates') and response.candidates:
+                candidate = response.candidates[0]
+                if hasattr(candidate, 'grounding_metadata') and candidate.grounding_metadata:
+                    if hasattr(candidate.grounding_metadata, 'grounding_chunks'):
+                        cprint(f"[Gemini] Found {len(candidate.grounding_metadata.grounding_chunks)} grounding chunks", "cyan")
+
+                        for grounding_chunk in candidate.grounding_metadata.grounding_chunks:
+                            citation = {}
+
+                            # Extract title from document or web source
+                            if hasattr(grounding_chunk, 'document') and grounding_chunk.document:
+                                citation["title"] = grounding_chunk.document.title if hasattr(grounding_chunk.document, 'title') else "Document"
+                            elif hasattr(grounding_chunk, 'web') and grounding_chunk.web:
+                                citation["title"] = grounding_chunk.web.title if hasattr(grounding_chunk.web, 'title') else "Web Source"
+                            else:
+                                citation["title"] = "Unknown Source"
+
+                            # Extract excerpt
+                            if hasattr(grounding_chunk, 'content') and hasattr(grounding_chunk.content, 'text'):
+                                citation["excerpt"] = grounding_chunk.content.text
+                            else:
+                                citation["excerpt"] = ""
+
+                            # Add URI if available
+                            if hasattr(grounding_chunk, 'web') and hasattr(grounding_chunk.web, 'uri'):
+                                citation["uri"] = grounding_chunk.web.uri
+
+                            actual_citations.append(citation)
+
+            # Prefer grounding metadata citations over AI-generated ones
+            if actual_citations:
+                cprint(f"[Gemini] Using {len(actual_citations)} actual grounding citations", "green")
+                chunk.citations = actual_citations
+            else:
+                cprint(f"[Gemini] No grounding metadata, using AI-generated citations", "yellow")
+                chunk.citations = result.get("citations", [])
+
             # Update chunk with verification results
             chunk.verified = result.get("verified", False)
             chunk.verification_score = min(10, max(1, result.get("confidence_score", 5)))
             chunk.verification_source = result.get("verification_source", "No source found")
             chunk.verification_note = result.get("verification_note", "")
-            chunk.citations = result.get("citations", [])
 
             return chunk
 
@@ -320,7 +393,9 @@ Return only valid JSON, no markdown formatting."""
             batch_results = []
             for chunk in batch:
                 try:
-                    verified_chunk = self.verify_chunk(chunk, store_name, case_context)
+                    verified_chunk = self._retry_with_backoff(
+                        self.verify_chunk, chunk, store_name, case_context
+                    )
                     batch_results.append(verified_chunk)
 
                     # Small delay between individual verifications to avoid rate limits
