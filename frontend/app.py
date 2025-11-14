@@ -1,5 +1,6 @@
 """
 Streamlit Frontend for Content Verification Tool
+Main application entry point with modular architecture
 """
 
 import streamlit as st
@@ -13,15 +14,36 @@ st.set_page_config(
 )
 
 # Then other imports
-import requests
-from pathlib import Path
-from typing import Optional, Dict, Any
 import os
-from termcolor import cprint
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
-from urllib.parse import urlparse
 import logging
+from termcolor import cprint
+
+# Import application modules
+from app.config import (
+    validate_backend_url,
+    SUPPORTED_FILE_TYPES,
+    MAX_FILE_SIZE_MB,
+    OUTPUT_FORMAT_LABELS,
+    FORMAT_DESCRIPTIONS,
+    MIME_TYPES,
+)
+from app.state import init_session_state
+from app.api_client import (
+    upload_document,
+    export_document,
+    download_document,
+    execute_verification,
+    validate_upload_response,
+    validate_export_response,
+)
+from app.ui_components import (
+    render_header,
+    render_backend_status,
+    render_sidebar,
+    render_footer,
+    render_verification_results_summary,
+)
+from app.corpus import render_corpus_management
 
 # Configure logging
 logging.basicConfig(
@@ -30,369 +52,17 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Configuration Constants
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
-MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", "100"))
-UPLOAD_TIMEOUT_BASE = int(os.getenv("UPLOAD_TIMEOUT_BASE", "180"))
-EXPORT_TIMEOUT = int(os.getenv("EXPORT_TIMEOUT", "300"))
-DOWNLOAD_TIMEOUT = int(os.getenv("DOWNLOAD_TIMEOUT", "60"))
-HEALTH_CHECK_TIMEOUT = int(os.getenv("HEALTH_CHECK_TIMEOUT", "5"))
-SUPPORTED_FILE_TYPES = ["pdf", "docx"]
 
-# Output format mappings
-OUTPUT_FORMAT_LABELS = {
-    "word_landscape": "📄 Word Document (Landscape) - More space for text and notes",
-    "word_portrait": "📄 Word Document (Portrait) - Standard layout",
-    "excel": "📊 Excel Spreadsheet - Compatible with Excel and Google Sheets",
-    "csv": "📋 CSV File - Universal compatibility",
-    "json": "📊 JSON File - Full verification metadata with citations",
-}
-
-MIME_TYPES = {
-    "word_landscape": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "word_portrait": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "excel": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "csv": "text/csv",
-    "json": "application/json",
-}
-
-# Feature flags
-FEATURES = {
-    "show_debug_info": os.getenv("DEBUG", "false").lower() == "true",
-    "show_advanced_options": os.getenv("SHOW_ADVANCED", "false").lower() == "true",
-}
-
-# Validate BACKEND_URL format
-try:
-    parsed = urlparse(BACKEND_URL)
-    if not all([parsed.scheme, parsed.netloc]):
-        raise ValueError("Invalid BACKEND_URL format")
-except Exception as e:
-    st.error(f"❌ Configuration error: Invalid BACKEND_URL - {BACKEND_URL}")
-    st.info(
-        "Please set a valid BACKEND_URL environment variable (e.g., http://localhost:8000)"
-    )
-    st.stop()
-
-
-def get_session_with_retries() -> requests.Session:
-    """Create requests session with retry strategy"""
-    session = requests.Session()
-    retry_strategy = Retry(
-        total=3,
-        backoff_factor=1,
-        status_forcelist=[429, 500, 502, 503, 504],
-        allowed_methods=["HEAD", "GET", "POST"],
-    )
-    adapter = HTTPAdapter(max_retries=retry_strategy)
-    session.mount("http://", adapter)
-    session.mount("https://", adapter)
-    return session
-
-
-# Create API session at module level
-API_SESSION = get_session_with_retries()
-
-
-def calculate_upload_timeout(file_size_mb: float) -> int:
-    """Calculate appropriate timeout based on file size (10s per MB minimum)"""
-    size_based_timeout = int(file_size_mb * 10)
-    return max(UPLOAD_TIMEOUT_BASE, size_based_timeout)
-
-
-def validate_upload_response(result: dict) -> bool:
-    """Validate upload response has required fields"""
-    required_fields = ["document_id", "filename", "page_count", "file_size", "message"]
-    return all(field in result for field in required_fields)
-
-
-def validate_export_response(result: dict) -> bool:
-    """Validate export response has required fields"""
-    required_fields = ["document_id", "filename", "message"]
-    return all(field in result for field in required_fields)
-
-
-@st.cache_data(ttl=30)  # Cache for 30 seconds
-def check_backend_health() -> bool:
-    """Check if backend is available (cached)"""
-    try:
-        response = requests.get(f"{BACKEND_URL}/health", timeout=HEALTH_CHECK_TIMEOUT)
-        return response.status_code == 200
-    except Exception:
-        return False
-
-
-def upload_document(
-    file_content: bytes, filename: str, progress_bar=None, status_text=None
-) -> Optional[Dict[str, Any]]:
-    """Upload document to backend API with comprehensive error handling"""
-    try:
-        if status_text:
-            status_text.text("Preparing upload...")
-        if progress_bar:
-            progress_bar.progress(10)
-        logger.info(
-            f"User uploaded file: {filename}, size: {len(file_content) / (1024 * 1024):.2f} MB"
-        )
-
-        if status_text:
-            status_text.text("Uploading document to server...")
-        if progress_bar:
-            progress_bar.progress(30)
-
-        files = {"file": (filename, file_content)}
-        file_size_mb = len(file_content) / (1024 * 1024)
-        timeout = calculate_upload_timeout(file_size_mb)
-
-        cprint(f"[FRONTEND] Uploading document: {filename}", "cyan")
-        response = API_SESSION.post(
-            f"{BACKEND_URL}/upload", files=files, timeout=timeout
-        )
-
-        if progress_bar:
-            progress_bar.progress(70)
-        if status_text:
-            status_text.text("Processing document with Docling...")
-
-        response.raise_for_status()
-        result = response.json()
-
-        if progress_bar:
-            progress_bar.progress(10)
-        if status_text:
-            status_text.text("✅ Upload complete!")
-
-        cprint(f"[FRONTEND] Upload successful: {filename}", "green")
-        return result
-
-    except requests.exceptions.Timeout:
-        st.error(
-            "⚠️ Upload timed out. Please try again with a smaller file or check your connection."
-        )
-        cprint(f"[FRONTEND] Upload timeout for {filename}", "red")
-        logger.error(f"Upload timeout for {filename}")
-        return None
-
-    except requests.exceptions.ConnectionError:
-        st.error("⚠️ Cannot connect to backend server. Please contact support.")
-        cprint(f"[FRONTEND] Connection error", "red")
-        logger.error("Connection error to backend")
-        return None
-
-    except requests.exceptions.HTTPError as e:
-        if e.response.status_code == 400:
-            error_detail = e.response.json().get("detail", "Unknown error")
-            st.error(f"⚠️ Invalid file: {error_detail}")
-        elif e.response.status_code == 413:
-            st.error(f"⚠️ File too large. Maximum size is {MAX_FILE_SIZE_MB} MB.")
-        else:
-            st.error("⚠️ An error occurred processing your file. Please try again.")
-        cprint(f"[FRONTEND] HTTP error: {e}", "red")
-        logger.error(f"HTTP error during upload: {e}")
-        return None
-
-    except Exception as e:
-        st.error("⚠️ An unexpected error occurred. Please try again or contact support.")
-        cprint(f"[FRONTEND] Unexpected error: {e}", "red")
-        logger.error(f"Unexpected error during upload: {e}")
-        return None
-
-
-def export_document(payload: Dict[str, str]) -> Optional[Dict[str, Any]]:
-    """Export document to specified format with comprehensive error handling"""
-    try:
-        logger.info(f"User selected chunking mode: {payload.get('chunking_mode')}")
-        logger.info(f"User generated export: {payload.get('output_format')}")
-
-        cprint(
-            f"[FRONTEND] Exporting document: {payload['document_id']} ({payload['chunking_mode']} -> {payload['output_format']})",
-            "cyan",
-        )
-
-        response = API_SESSION.post(
-            f"{BACKEND_URL}/export", json=payload, timeout=EXPORT_TIMEOUT
-        )
-        response.raise_for_status()
-
-        cprint(f"[FRONTEND] Export successful", "green")
-        return response.json()
-
-    except requests.exceptions.Timeout:
-        st.error("⚠️ Export timed out. Please try again.")
-        cprint(f"[FRONTEND] Export timeout", "red")
-        logger.error("Export timeout")
-        return None
-
-    except requests.exceptions.ConnectionError:
-        st.error("⚠️ Cannot connect to backend server. Please contact support.")
-        cprint(f"[FRONTEND] Connection error", "red")
-        logger.error("Connection error during export")
-        return None
-
-    except requests.exceptions.HTTPError as e:
-        st.error(f"⚠️ Export failed: {e.response.status_code}")
-        cprint(f"[FRONTEND] Export error: {e}", "red")
-        logger.error(f"HTTP error during export: {e}")
-        return None
-
-    except Exception as e:
-        st.error("⚠️ An unexpected error occurred. Please try again or contact support.")
-        cprint(f"[FRONTEND] Unexpected error: {e}", "red")
-        logger.error(f"Unexpected error during export: {e}")
-        return None
-
-
-def download_document(document_id: str) -> Optional[bytes]:
-    """Download generated verification document with comprehensive error handling"""
-    try:
-        cprint(f"[FRONTEND] Downloading file for document: {document_id}", "cyan")
-
-        response = API_SESSION.get(
-            f"{BACKEND_URL}/download/{document_id}", timeout=DOWNLOAD_TIMEOUT
-        )
-        response.raise_for_status()
-
-        cprint(f"[FRONTEND] Download successful", "green")
-        return response.content
-
-    except requests.exceptions.Timeout:
-        st.error("⚠️ Download timed out. Please try again.")
-        cprint(f"[FRONTEND] Download timeout", "red")
-        logger.error("Download timeout")
-        return None
-
-    except requests.exceptions.ConnectionError:
-        st.error("⚠️ Cannot connect to backend server. Please contact support.")
-        cprint(f"[FRONTEND] Connection error", "red")
-        logger.error("Connection error during download")
-        return None
-
-    except requests.exceptions.HTTPError as e:
-        st.error(f"⚠️ Download failed: {e.response.status_code}")
-        cprint(f"[FRONTEND] Download error: {e}", "red")
-        logger.error(f"HTTP error during download: {e}")
-        return None
-
-    except Exception as e:
-        st.error("⚠️ An unexpected error occurred. Please try again or contact support.")
-        cprint(f"[FRONTEND] Unexpected error: {e}", "red")
-        logger.error(f"Unexpected error during download: {e}")
-        return None
-
-
-def init_session_state():
-    """Initialize session state variables"""
-    if "document_id" not in st.session_state:
-        st.session_state.document_id = None
-    if "document_info" not in st.session_state:
-        st.session_state.document_info = None
-    if "upload_in_progress" not in st.session_state:
-        st.session_state.upload_in_progress = False
-    if "last_generated" not in st.session_state:
-        st.session_state.last_generated = None
-    # AI Verification state
-    if "store_id" not in st.session_state:
-        st.session_state.store_id = None
-    if "reference_docs_uploaded" not in st.session_state:
-        st.session_state.reference_docs_uploaded = False
-    if "verification_complete" not in st.session_state:
-        st.session_state.verification_complete = False
-    if "verification_results" not in st.session_state:
-        st.session_state.verification_results = None
-
-
-def main() -> None:
-    """Main Streamlit application"""
-
-    # Initialize session state
-    init_session_state()
-
-    # Header
-    st.title("📋 Content Verification Tool")
-    st.markdown(
-        """
-    Convert legal documents (PDF/DOCX) into structured verification checklists.
-    Upload your document and generate a table for systematic verification of each sentence or paragraph.
-    """
-    )
-
-    st.divider()
-
-    # Check backend health with refresh button
-    col1, col2 = st.columns([6, 1])
-    with col1:
-        if not check_backend_health():
-            st.error(
-                "⚠️ Backend API is not available. Please ensure the backend is running."
-            )
-            st.code(f"Expected backend at: {BACKEND_URL}", language="text")
-            st.stop()
-        st.success("✅ Connected to backend")
-    with col2:
-        if st.button("🔄", help="Refresh connection status"):
-            check_backend_health.clear()
-            st.rerun()
-
-    # Sidebar for information
-    with st.sidebar:
-        st.header("ℹ️ About")
-        st.markdown(
-            f"""
-        ### Features
-        - **Document Upload**: PDF or DOCX files (max {MAX_FILE_SIZE_MB} MB)
-        - **Chunking Modes**:
-          - Paragraph-level (default)
-          - Sentence-level
-        - **Output Formats**:
-          - Word (Landscape)
-          - Word (Portrait)
-          - Excel
-          - CSV
-
-        ### How It Works
-        1. Upload your document
-        2. Select chunking mode
-        3. Choose output format
-        4. Generate and download
-
-        ### Output Structure
-        Each verification table contains:
-        - Page #
-        - Item #
-        - Text
-        - Verified ☑
-        - Verification Source
-        - Verification Note
-        """
-        )
-
-        # Reset functionality
-        st.divider()
-        if st.session_state.document_info or st.session_state.last_generated:
-            if st.button("🔄 Start Over", use_container_width=True, type="secondary"):
-                st.session_state.document_id = None
-                st.session_state.document_info = None
-                st.session_state.last_generated = None
-                st.session_state.upload_in_progress = False
-                check_backend_health.clear()
-                st.rerun()
-
-        # Debug info (if enabled)
-        if FEATURES["show_debug_info"]:
-            st.divider()
-            with st.expander("🔍 Debug Information"):
-                st.json(
-                    {
-                        "document_id": st.session_state.document_id,
-                        "document_info": st.session_state.document_info,
-                        "upload_in_progress": st.session_state.upload_in_progress,
-                        "has_generated": st.session_state.last_generated is not None,
-                    }
-                )
-
-    # Step 1: Document Upload
+def render_document_upload() -> None:
+    """Render Step 1: Document Upload section"""
     st.header("Step 1: Upload Document To Verify")
     st.markdown(f"Upload a PDF or DOCX file (maximum {MAX_FILE_SIZE_MB} MB)")
+
+    # Tip about corpus if not configured
+    if not st.session_state.reference_docs_uploaded:
+        st.info(
+            "💡 **Tip**: Expand 'AI Reference Corpus' above to enable automated verification"
+        )
 
     uploaded_file = st.file_uploader(
         "Choose a file",
@@ -422,11 +92,11 @@ def main() -> None:
             disabled=st.session_state.upload_in_progress,
         )
 
-        # Handle upload after button click (progress indicators appear below)
+        # Handle upload after button click
         if upload_button:
             st.session_state.upload_in_progress = True
 
-            # Create progress indicators below the button
+            # Create progress indicators
             progress_bar = st.progress(0)
             status_text = st.empty()
 
@@ -436,7 +106,7 @@ def main() -> None:
 
             result = upload_document(file_content, filename, progress_bar, status_text)
 
-            # Clear only the progress bar, keep status_text for final message
+            # Clear only the progress bar
             progress_bar.empty()
 
             # Handle result
@@ -452,339 +122,272 @@ def main() -> None:
             else:
                 st.session_state.upload_in_progress = False
 
-    # Show document info and processing options if available
-    if st.session_state.document_info:
-        # Step 1.5: Upload Reference Documents for AI Verification (Optional)
-        if not st.session_state.reference_docs_uploaded:
-            st.divider()
-            st.header("🤖 Step 1.5: AI Verification (Optional)")
-            st.markdown(
-                "Upload reference documents to automatically verify content using AI."
+
+def render_chunking_selection() -> str:
+    """Render Step 2: Chunking Mode Selection and return selected mode"""
+    st.divider()
+    st.header("Step 2: Select Chunking Mode")
+    st.markdown("Choose how to split the document for verification")
+
+    # Tip about AI verification if corpus is active
+    if st.session_state.reference_docs_uploaded:
+        st.success(
+            "🤖 AI Verification is enabled - you'll be able to run verification after selecting chunking mode"
+        )
+
+    chunking_mode = st.radio(
+        "Chunking Mode",
+        options=["paragraph", "sentence"],
+        index=0,  # Explicit default to paragraph
+        format_func=lambda x: {
+            "paragraph": "📝 Paragraph-level chunking",
+            "sentence": "📄 Sentence-level chunking",
+        }[x],
+        help="Paragraph mode groups related content (recommended for most documents). Sentence mode provides finer granularity.",
+        label_visibility="collapsed",
+    )
+
+    st.caption(
+        "**Paragraph mode** (default): Groups related sentences together for coherent verification."
+    )
+    st.caption(
+        "**Sentence mode**: Individual sentences for detailed line-by-line verification."
+    )
+
+    return chunking_mode
+
+
+def render_ai_verification(chunking_mode: str) -> None:
+    """Render Step 2.5: AI Verification section (if corpus is active)"""
+    if (
+        not st.session_state.reference_docs_uploaded
+        or st.session_state.verification_complete
+    ):
+        return
+
+    st.divider()
+    st.header("✨ Step 2.5: Run AI Verification")
+
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.info("📊 Ready to verify chunks against reference documents")
+    with col2:
+        if st.button("🚀 Verify Now", type="primary", use_container_width=True):
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+
+            status_text.text("Starting verification...")
+
+            result = execute_verification(
+                document_id=st.session_state.document_id,
+                store_id=st.session_state.store_id,
+                case_context=st.session_state.case_context,
+                chunking_mode=chunking_mode,
             )
 
-            with st.expander("📚 Upload Reference Documents", expanded=False):
-                case_context = st.text_area(
-                    "Case Context",
-                    placeholder="Describe what you're verifying (e.g., 'Contract verification for Project X')",
-                    max_chars=500,
-                    help="Provide context to help AI understand the verification case",
-                    key="case_context_input",
-                )
+            if result:
+                progress_bar.progress(50)
+                status_text.text("Processing verification results...")
 
-                reference_files = st.file_uploader(
-                    "Select Reference Documents",
-                    type=["pdf", "docx"],
-                    accept_multiple_files=True,
-                    help="Upload documents to verify against (PDF or DOCX)",
-                    key="reference_uploader",
-                )
+                st.session_state.verification_complete = True
+                st.session_state.verification_results = result
+                st.session_state.chunking_mode = chunking_mode
 
-                if st.button(
-                    "Create Reference Library",
-                    disabled=not reference_files or not case_context,
-                    type="primary",
-                ):
-                    with st.spinner("Creating reference library..."):
-                        try:
-                            # Prepare files for upload
-                            files = [
-                                ("files", (file.name, file.getvalue(), file.type))
-                                for file in reference_files
-                            ]
+                progress_bar.progress(100)
+                status_text.text("Verification complete!")
 
-                            # Call API
-                            response = API_SESSION.post(
-                                f"{BACKEND_URL}/api/verify/upload-references",
-                                data={"case_context": case_context},
-                                files=files,
-                                timeout=300,
-                            )
+                # Show statistics
+                st.success("✅ AI Verification Complete!")
 
-                            if response.status_code == 200:
-                                result = response.json()
-                                st.session_state.store_id = result["store_id"]
-                                st.session_state.reference_docs_uploaded = True
-                                st.session_state.case_context = case_context
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Total Chunks", result["total_chunks"])
+                with col2:
+                    verified_count = result["total_verified"]
+                    verified_pct = (
+                        (verified_count / result["total_chunks"] * 100)
+                        if result["total_chunks"] > 0
+                        else 0
+                    )
+                    st.metric(
+                        "Verified",
+                        f"{verified_count}",
+                        f"{verified_pct:.1f}%",
+                    )
+                with col3:
+                    st.metric(
+                        "Processing Time",
+                        f"{result['processing_time_seconds']:.1f}s",
+                    )
+                with col4:
+                    # Calculate average confidence
+                    scores = [
+                        c.get("verification_score", 0)
+                        for c in result["verified_chunks"]
+                        if c.get("verified") and c.get("verification_score")
+                    ]
+                    avg_score = sum(scores) / len(scores) if scores else 0
+                    st.metric("Avg Confidence", f"{avg_score:.1f}/10")
 
-                                st.success(
-                                    f"✅ Uploaded {result['documents_uploaded']} reference documents"
-                                )
-                                st.info(f"📦 Store ID: `{result['store_id']}`")
+                st.rerun()
+            else:
+                progress_bar.empty()
+                status_text.empty()
 
-                                # Show metadata
-                                with st.expander("View Document Metadata"):
-                                    for meta in result["metadata"]:
-                                        st.markdown(f"**{meta['filename']}**")
-                                        st.caption(f"Type: {meta['document_type']}")
-                                        st.caption(f"Summary: {meta['summary']}")
 
-                                st.rerun()
-                            else:
-                                st.error(
-                                    f"❌ Failed to upload references: {response.text}"
-                                )
+def render_output_format_selection() -> str:
+    """Render Step 3: Output Format Selection and return selected format"""
+    st.divider()
+    st.header("Step 3: Select Output Format")
+    st.markdown("Choose your preferred output format")
 
-                        except Exception as e:
-                            st.error(f"❌ Error: {str(e)}")
+    output_format = st.selectbox(
+        "Output Format",
+        options=list(OUTPUT_FORMAT_LABELS.keys()),
+        format_func=lambda x: OUTPUT_FORMAT_LABELS[x],
+        help="Select the format that best suits your workflow",
+        label_visibility="collapsed",
+    )
 
-        # Step 2: Chunking Mode Selection
-        st.divider()
-        st.header("Step 2: Select Chunking Mode")
-        st.markdown("Choose how to split the document for verification")
+    # Show format description
+    st.info(f"ℹ️ {FORMAT_DESCRIPTIONS[output_format]}")
 
-        chunking_mode = st.radio(
-            "Chunking Mode",
-            options=["paragraph", "sentence"],
-            index=0,  # Explicit default to paragraph
-            format_func=lambda x: {
-                "paragraph": "📝 Paragraph-level chunking",
-                "sentence": "📄 Sentence-level chunking",
-            }[x],
-            help="Paragraph mode groups related content (recommended for most documents). Sentence mode provides finer granularity.",
-            label_visibility="collapsed",
-        )
+    return output_format
 
-        st.caption(
-            "**Paragraph mode** (default): Groups related sentences together for coherent verification."
-        )
-        st.caption(
-            "**Sentence mode**: Individual sentences for detailed line-by-line verification."
-        )
 
-        # Step 2.5: Run AI Verification (if references uploaded)
-        if (
-            st.session_state.reference_docs_uploaded
-            and not st.session_state.verification_complete
-        ):
-            st.divider()
-            st.header("✨ Step 2.5: Run AI Verification")
+def render_generate_document(chunking_mode: str, output_format: str) -> None:
+    """Render Step 4: Generate Document section"""
+    st.divider()
 
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                st.info("📊 Ready to verify chunks against reference documents")
-            with col2:
-                if st.button("🚀 Verify Now", type="primary", use_container_width=True):
-                    progress_bar = st.progress(0)
-                    status_text = st.empty()
+    if st.session_state.last_generated is None:
+        st.header("Step 4: Generate Verification Document")
 
-                    try:
-                        status_text.text("Starting verification...")
+        col1, col2 = st.columns([2, 1])
 
-                        # Call verification API
-                        response = API_SESSION.post(
-                            f"{BACKEND_URL}/api/verify/execute",
-                            json={
-                                "document_id": st.session_state.document_id,
-                                "store_id": st.session_state.store_id,
-                                "case_context": st.session_state.case_context,
-                                "chunking_mode": chunking_mode,
-                            },
-                            timeout=600,
-                        )
+        with col1:
+            st.markdown(
+                f"""
+            **Ready to generate!**
+            - Chunking Mode: **{chunking_mode.title()}**
+            - Output Format: **{output_format.replace('_', ' ').title()}**
+            """
+            )
 
-                        progress_bar.progress(50)
-                        status_text.text("Processing verification results...")
-
-                        if response.status_code == 200:
-                            result = response.json()
-                            st.session_state.verification_complete = True
-                            st.session_state.verification_results = result
-                            st.session_state.chunking_mode = chunking_mode
-
-                            progress_bar.progress(100)
-                            status_text.text("Verification complete!")
-
-                            # Show statistics
-                            st.success("✅ AI Verification Complete!")
-
-                            col1, col2, col3, col4 = st.columns(4)
-                            with col1:
-                                st.metric("Total Chunks", result["total_chunks"])
-                            with col2:
-                                verified_count = result["total_verified"]
-                                verified_pct = (
-                                    (verified_count / result["total_chunks"] * 100)
-                                    if result["total_chunks"] > 0
-                                    else 0
-                                )
-                                st.metric(
-                                    "Verified",
-                                    f"{verified_count}",
-                                    f"{verified_pct:.1f}%",
-                                )
-                            with col3:
-                                st.metric(
-                                    "Processing Time",
-                                    f"{result['processing_time_seconds']:.1f}s",
-                                )
-                            with col4:
-                                # Calculate average confidence
-                                scores = [
-                                    c.get("verification_score", 0)
-                                    for c in result["verified_chunks"]
-                                    if c.get("verified") and c.get("verification_score")
-                                ]
-                                avg_score = sum(scores) / len(scores) if scores else 0
-                                st.metric("Avg Confidence", f"{avg_score:.1f}/10")
-
-                            st.rerun()
-                        else:
-                            progress_bar.empty()
-                            status_text.empty()
-                            st.error(f"❌ Verification failed: {response.text}")
-
-                    except Exception as e:
-                        progress_bar.empty()
-                        status_text.empty()
-                        st.error(f"❌ Error during verification: {str(e)}")
-
-        # Show verification results summary if complete
-        if st.session_state.verification_complete:
-            st.divider()
-            st.header("📊 Verification Results Summary")
-
-            results = st.session_state.verification_results
-            verified_count = results.get("total_verified", 0)
-            total_count = results.get("total_chunks", 0)
-            unverified_count = total_count - verified_count
-
-            col1, col2 = st.columns(2)
-            with col1:
-                st.success(f"✅ **Verified:** {verified_count} chunks")
-            with col2:
-                st.warning(f"⚠️ **Unverified:** {unverified_count} chunks")
-
-            # Show confidence breakdown
-            if results.get("verified_chunks"):
-                scores = [
-                    c.get("verification_score", 0)
-                    for c in results["verified_chunks"]
-                    if c.get("verified") and c.get("verification_score")
-                ]
-
-                if scores:
-                    low_confidence = sum(1 for s in scores if s < 5)
-                    medium_confidence = sum(1 for s in scores if 5 <= s < 8)
-                    high_confidence = sum(1 for s in scores if s >= 8)
-
-                    st.markdown("**Confidence Distribution:**")
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("🔴 Low (<5)", low_confidence)
-                    with col2:
-                        st.metric("🟡 Medium (5-7)", medium_confidence)
-                    with col3:
-                        st.metric("🟢 High (8-10)", high_confidence)
-
-        # Step 3: Output Format Selection
-        st.divider()
-        st.header("Step 3: Select Output Format")
-        st.markdown("Choose your preferred output format")
-
-        output_format = st.selectbox(
-            "Output Format",
-            options=list(OUTPUT_FORMAT_LABELS.keys()),
-            format_func=lambda x: OUTPUT_FORMAT_LABELS[x],
-            help="Select the format that best suits your workflow",
-            label_visibility="collapsed",
-        )
-
-        # Show format description
-        format_descriptions = {
-            "word_landscape": "Landscape orientation provides more horizontal space for longer text and detailed notes.",
-            "word_portrait": "Portrait orientation offers a standard page layout suitable for printing.",
-            "excel": "Excel format allows for advanced filtering, sorting, and formula capabilities.",
-            "csv": "CSV format ensures maximum compatibility with all spreadsheet applications.",
-        }
-        st.info(f"ℹ️ {format_descriptions[output_format]}")
-
-        # Step 4: Generate Document (only if not already generated)
-        st.divider()
-        if st.session_state.last_generated is None:
-            st.header("Step 4: Generate Verification Document")
-
-            col1, col2 = st.columns([2, 1])
-
-            with col1:
-                st.markdown(
-                    f"""
-                **Ready to generate!**
-                - Chunking Mode: **{chunking_mode.title()}**
-                - Output Format: **{output_format.replace('_', ' ').title()}**
-                """
-                )
-
-            with col2:
-                generate_button = st.button(
-                    "🎯 Generate Document",
-                    type="primary",
-                    use_container_width=True,
-                    help="Click to generate the verification document",
-                )
-
-            if generate_button:
-                with st.spinner(
-                    "Generating verification document... This may take a moment."
-                ):
-                    payload = {
-                        "document_id": st.session_state.document_id,
-                        "output_format": output_format,
-                        "chunking_mode": chunking_mode,
-                    }
-
-                    export_result = export_document(payload)
-
-                    if export_result and validate_export_response(export_result):
-                        file_content = download_document(st.session_state.document_id)
-
-                        if file_content:
-                            st.session_state.last_generated = {
-                                "filename": export_result["filename"],
-                                "content": file_content,
-                                "mime_type": MIME_TYPES[output_format],
-                                "format": output_format,
-                            }
-                            st.rerun()
-                    elif export_result:
-                        st.error("⚠️ Invalid export response. Please try again.")
-
-        # Download section (separate from generation)
-        if st.session_state.last_generated:
-            st.header("Step 4: Download Your Document")
-            st.success("🎉 Document ready for download!")
-
-            # Show verification status if available
-            if st.session_state.verification_complete:
-                st.info(
-                    "📊 This document includes AI verification results with confidence scores and citations"
-                )
-
-            st.download_button(
-                label="⬇️ Download Verification Document",
-                data=st.session_state.last_generated["content"],
-                file_name=st.session_state.last_generated["filename"],
-                mime=st.session_state.last_generated["mime_type"],
+        with col2:
+            generate_button = st.button(
+                "🎯 Generate Document",
                 type="primary",
                 use_container_width=True,
+                help="Click to generate the verification document",
             )
 
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("📝 Generate Different Format", use_container_width=True):
-                    st.session_state.last_generated = None
-                    st.rerun()
-            with col2:
-                if st.button("📄 Upload New Document", use_container_width=True):
-                    st.session_state.document_id = None
-                    st.session_state.document_info = None
-                    st.session_state.last_generated = None
-                    st.rerun()
+        if generate_button:
+            with st.spinner("Generating verification document... This may take a moment."):
+                payload = {
+                    "document_id": st.session_state.document_id,
+                    "output_format": output_format,
+                    "chunking_mode": chunking_mode,
+                }
+
+                export_result = export_document(payload)
+
+                if export_result and validate_export_response(export_result):
+                    file_content = download_document(st.session_state.document_id)
+
+                    if file_content:
+                        st.session_state.last_generated = {
+                            "filename": export_result["filename"],
+                            "content": file_content,
+                            "mime_type": MIME_TYPES[output_format],
+                            "format": output_format,
+                        }
+                        st.rerun()
+                elif export_result:
+                    st.error("⚠️ Invalid export response. Please try again.")
+
+
+def render_download_section() -> None:
+    """Render download section (when document is ready)"""
+    if not st.session_state.last_generated:
+        return
+
+    st.header("Step 4: Download Your Document")
+    st.success("🎉 Document ready for download!")
+
+    # Show verification status if available
+    if st.session_state.verification_complete:
+        st.info(
+            "📊 This document includes AI verification results with confidence scores and citations"
+        )
+
+    st.download_button(
+        label="⬇️ Download Verification Document",
+        data=st.session_state.last_generated["content"],
+        file_name=st.session_state.last_generated["filename"],
+        mime=st.session_state.last_generated["mime_type"],
+        type="primary",
+        use_container_width=True,
+    )
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("📝 Generate Different Format", use_container_width=True):
+            st.session_state.last_generated = None
+            st.rerun()
+    with col2:
+        if st.button("📄 Upload New Document", use_container_width=True):
+            st.session_state.document_id = None
+            st.session_state.document_info = None
+            st.session_state.last_generated = None
+            st.rerun()
+
+
+def main() -> None:
+    """Main Streamlit application"""
+
+    # Validate configuration
+    validate_backend_url()
+
+    # Initialize session state
+    init_session_state()
+
+    # Render header and check backend
+    render_header()
+    render_backend_status()
+
+    # Render sidebar
+    render_sidebar()
+
+    # CORPUS MANAGEMENT PANEL (NEW - Always at top)
+    render_corpus_management()
+
+    st.divider()
+
+    # Step 1: Document Upload
+    render_document_upload()
+
+    # Show remaining steps only if document is uploaded
+    if st.session_state.document_info:
+        # Step 2: Chunking Mode Selection
+        chunking_mode = render_chunking_selection()
+
+        # Step 2.5: Run AI Verification (if corpus active and not complete)
+        render_ai_verification(chunking_mode)
+
+        # Show verification results summary if complete
+        render_verification_results_summary()
+
+        # Step 3: Output Format Selection
+        output_format = render_output_format_selection()
+
+        # Step 4: Generate Document
+        render_generate_document(chunking_mode, output_format)
+
+        # Download section (if generated)
+        render_download_section()
 
     # Footer
-    st.divider()
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.caption("Content Verification Tool v1.0.0 | Built with Streamlit & FastAPI")
+    render_footer()
 
 
 if __name__ == "__main__":
