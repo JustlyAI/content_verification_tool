@@ -9,6 +9,8 @@ services:
     volumes:
       - document_cache:/tmp/document_cache
       - output_files:/tmp/output
+    env_file:
+      - .env
     environment:
       - PYTHONUNBUFFERED=1
       - DOCLING_LIBREOFFICE_CMD=/usr/bin/libreoffice
