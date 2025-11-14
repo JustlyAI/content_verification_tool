@@ -252,10 +252,15 @@ content_verification_tool/
 │   ├── app/
 │   │   ├── main.py                # FastAPI application
 │   │   ├── models.py              # Pydantic models
-│   │   ├── gemini_service.py      # AI verification service
-│   │   ├── document_processor.py  # Document processing
-│   │   ├── chunker.py             # Chunking logic
-│   │   └── output_generator.py    # Export generation
+│   │   ├── corpus/                # Corpus management
+│   │   │   └── corpus_manager.py
+│   │   ├── verification/          # AI verification
+│   │   │   └── gemini_verifier.py
+│   │   └── processing/            # Document processing
+│   │       ├── cache.py
+│   │       ├── document_processor.py
+│   │       ├── chunker.py
+│   │       └── output_generator.py
 │   └── requirements.txt
 ├── frontend/
 │   ├── app/

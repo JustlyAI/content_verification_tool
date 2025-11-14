@@ -195,6 +195,11 @@ A Streamlit web application that converts legal documents (PDF/DOCX) into struct
 │  - /export endpoint (format selection)          │
 │  - Docling conversion & caching                 │
 │  - Metadata extraction & tracking               │
+│                                                  │
+│  Modular Structure:                             │
+│  • corpus/ - Reference document management      │
+│  • verification/ - AI chunk verification        │
+│  • processing/ - Document conversion & chunking │
 └─────────────────────────────────────────────────┘
 ```
 
@@ -203,6 +208,7 @@ A Streamlit web application that converts legal documents (PDF/DOCX) into struct
 - **Caching**: FastAPI can maintain document cache across sessions
 - **Testability**: API can be tested independently of UI
 - **Flexibility**: Can add other frontends (CLI, web app) later
+- **Modularity**: Clear separation of corpus, verification, and processing concerns
 
 ### Caching Strategy
 - **Cache key**: Hash of uploaded file content

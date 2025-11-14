@@ -10,7 +10,7 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 
-from app.cache import document_cache
+from app.processing.cache import document_cache
 
 
 # Maximum file size: 10 MB

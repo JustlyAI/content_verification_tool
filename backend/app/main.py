@@ -24,11 +24,9 @@ from app.models import (
     VerificationRequest,
     VerificationResponse
 )
-from app.document_processor import document_processor
-from app.chunker import document_chunker
-from app.output_generator import output_generator
-from app.cache import document_cache
-from app.gemini_service import gemini_service
+from app.processing import document_processor, document_chunker, output_generator, document_cache
+from app.corpus import corpus_manager
+from app.verification import gemini_verifier
 
 
 # Configure logging
@@ -176,7 +174,7 @@ async def upload_references(
         case_id = hashlib.md5(f"{case_context}{time.time()}".encode()).hexdigest()[:8]
 
         # Create File Search store
-        store_name, display_name = gemini_service.create_store(case_id)
+        store_name, display_name = corpus_manager.create_store(case_id)
         cprint(f"[API] Created store: {store_name}", "green")
 
         # Process each file
@@ -195,7 +193,7 @@ async def upload_references(
 
             try:
                 # Use optimized upload method (single upload for both metadata and store)
-                metadata, _ = gemini_service.upload_reference_with_metadata(
+                metadata, _ = corpus_manager.upload_reference_with_metadata(
                     file_path=temp_file.name,
                     filename=file.filename,
                     store_name=store_name,
@@ -272,7 +270,7 @@ async def execute_verification(request: VerificationRequest):
 
         # Verify chunks using Gemini
         cprint(f"[API] Starting AI verification for {len(chunks)} chunks...", "cyan")
-        verified_chunks = await gemini_service.verify_batch(
+        verified_chunks = await gemini_verifier.verify_batch(
             chunks=chunks,
             store_name=request.store_id,
             case_context=request.case_context
