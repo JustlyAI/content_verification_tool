@@ -194,21 +194,15 @@ async def upload_references(
             temp_files.append(temp_file.name)
 
             try:
-                # Generate metadata
-                metadata = gemini_service.generate_metadata(
+                # Use optimized upload method (single upload for both metadata and store)
+                metadata, _ = gemini_service.upload_reference_with_metadata(
                     file_path=temp_file.name,
                     filename=file.filename,
+                    store_name=store_name,
                     case_context=case_context
                 )
                 metadata_list.append(metadata)
-
-                # Upload to store
-                gemini_service.upload_to_store(
-                    file_path=temp_file.name,
-                    store_name=store_name,
-                    metadata=metadata
-                )
-                cprint(f"[API] ✓ Uploaded {file.filename} to store", "green")
+                cprint(f"[API] ✓ Uploaded {file.filename} to store (optimized)", "green")
 
             except Exception as e:
                 cprint(f"[API] ✗ Error processing {file.filename}: {e}", "red")

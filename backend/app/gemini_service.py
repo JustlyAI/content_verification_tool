@@ -66,37 +66,22 @@ class GeminiVerificationService:
             cprint(f"[Gemini] ✗ Error creating store: {e}", "red")
             raise
 
-    def generate_metadata(
-        self, file_path: str, filename: str, case_context: str
+    def _generate_metadata_from_file(
+        self, uploaded_file, filename: str, case_context: str
     ) -> DocumentMetadata:
         """
-        Generate metadata for a reference document using Gemini
+        Generate metadata for a reference document from an already-uploaded file
 
         Args:
-            file_path: Path to the document file
+            uploaded_file: Already uploaded Gemini file object
             filename: Original filename
             case_context: Context about the verification case
 
         Returns:
             DocumentMetadata object with AI-generated metadata
         """
-        if not self.client:
-            raise ValueError("Gemini client not initialized - check GEMINI_API_KEY")
-
         try:
             cprint(f"[Gemini] Generating metadata for {filename}", "cyan")
-
-            # Upload file to Gemini for analysis
-            uploaded_file = self.client.files.upload(file=file_path)
-
-            # Wait for file to be processed
-            cprint(f"[Gemini] Waiting for file processing...", "cyan")
-            while uploaded_file.state == "PROCESSING":
-                time.sleep(1)
-                uploaded_file = self.client.files.get(name=uploaded_file.name)
-
-            if uploaded_file.state == "FAILED":
-                raise ValueError(f"File processing failed: {uploaded_file.error}")
 
             # Generate metadata using Gemini Flash
             prompt = f"""Analyze this document in the context of: {case_context}
@@ -124,9 +109,6 @@ Return only valid JSON, no markdown formatting."""
 
             metadata_dict = json.loads(response_text)
 
-            # Clean up the uploaded file
-            self.client.files.delete(name=uploaded_file.name)
-
             document_id = hashlib.md5(filename.encode()).hexdigest()
 
             metadata = DocumentMetadata(
@@ -144,6 +126,116 @@ Return only valid JSON, no markdown formatting."""
 
         except Exception as e:
             cprint(f"[Gemini] ✗ Error generating metadata: {e}", "red")
+            raise
+
+    def upload_reference_with_metadata(
+        self, file_path: str, filename: str, store_name: str, case_context: str
+    ) -> Tuple[DocumentMetadata, str]:
+        """
+        Upload a reference document with metadata generation (optimized - single upload)
+
+        This method combines metadata generation and store upload into a single operation,
+        uploading the file only once and reusing it for both purposes.
+
+        Args:
+            file_path: Path to the file to upload
+            filename: Original filename
+            store_name: Name of the File Search store
+            case_context: Context about the verification case
+
+        Returns:
+            Tuple of (DocumentMetadata, uploaded_file_name)
+        """
+        if not self.client:
+            raise ValueError("Gemini client not initialized - check GEMINI_API_KEY")
+
+        try:
+            cprint(
+                f"[Gemini] Uploading and processing {filename} (optimized flow)", "cyan"
+            )
+
+            # STEP 1: Upload file ONCE
+            uploaded_file = self.client.files.upload(file=file_path)
+            cprint(f"[Gemini] File uploaded: {uploaded_file.name}", "cyan")
+
+            # STEP 2: Wait for file processing ONCE
+            cprint(f"[Gemini] Waiting for file to be processed...", "cyan")
+            while uploaded_file.state == "PROCESSING":
+                time.sleep(1)
+                uploaded_file = self.client.files.get(name=uploaded_file.name)
+
+            if uploaded_file.state == "FAILED":
+                raise ValueError(
+                    f"File processing failed: {getattr(uploaded_file, 'error', 'Unknown error')}"
+                )
+
+            cprint(f"[Gemini] File processed successfully", "green")
+
+            # STEP 3: Generate metadata using the uploaded file
+            metadata = self._generate_metadata_from_file(
+                uploaded_file, filename, case_context
+            )
+
+            # STEP 4: Create custom metadata for file search store
+            custom_metadata = [
+                types.CustomMetadata(
+                    key="summary",
+                    string_value=metadata.summary[:500],  # Limit to 500 chars
+                ),
+                types.CustomMetadata(
+                    key="document_type", string_value=metadata.document_type
+                ),
+                types.CustomMetadata(
+                    key="keywords",
+                    string_list_value=types.StringList(values=metadata.keywords[:10]),
+                ),
+            ]
+
+            # STEP 5: Add the SAME uploaded file to File Search store (no re-upload!)
+            cprint(
+                f"[Gemini] Adding file to File Search store (reusing uploaded file)...",
+                "cyan",
+            )
+            operation = self.client.file_search_stores.upload_to_file_search_store(
+                file_search_store_name=store_name,
+                file=uploaded_file,  # Reuse the already-uploaded file!
+                config={
+                    "custom_metadata": custom_metadata,
+                    "display_name": metadata.filename,
+                },
+            )
+
+            # STEP 6: Wait for indexing to complete
+            cprint(f"[Gemini] Waiting for indexing to complete...", "cyan")
+            max_wait = 60  # Maximum 60 seconds
+            elapsed = 0
+            while not operation.done and elapsed < max_wait:
+                time.sleep(2)
+                elapsed += 2
+                operation = self.client.operations.get(name=operation.name)
+
+            if not operation.done:
+                cprint(
+                    f"[Gemini] ⚠️  Indexing timeout, but file may still be processing",
+                    "yellow",
+                )
+            elif operation.error:
+                raise ValueError(f"Upload operation failed: {operation.error}")
+            else:
+                cprint(f"[Gemini] ✓ Indexing complete", "green")
+
+            # STEP 7: Clean up - delete the file only after both operations complete
+            self.client.files.delete(name=uploaded_file.name)
+            cprint(f"[Gemini] ✓ File cleaned up: {uploaded_file.name}", "cyan")
+
+            cprint(
+                f"[Gemini] ✓ Successfully processed {filename} with optimized flow",
+                "green",
+            )
+            return metadata, uploaded_file.name
+
+        except Exception as e:
+            cprint(f"[Gemini] ✗ Error in optimized upload: {e}", "red")
             raise
 
     def upload_to_store(
