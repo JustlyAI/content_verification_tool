@@ -164,7 +164,7 @@ The frontend will be available at http://localhost:8501
 
 - Click **"Choose a file"** or drag and drop
 - Supported formats: **PDF**, **DOCX**
-- Maximum file size: **10 MB**
+- Maximum file size: **100 MB**
 - Click **"🚀 Upload and Process"**
 
 The system will:
@@ -340,7 +340,7 @@ netstat -ano | findstr :8000    # Windows
 #### Docling Conversion Fails
 
 - Ensure the PDF is not corrupted
-- Check file size (max 10 MB)
+- Check file size (max 0 MB)
 - Try with a different PDF
 - Check backend logs for detailed error
 
@@ -365,7 +365,7 @@ netstat -ano | findstr :8000    # Windows
 #### Upload Fails
 
 - Check file format (PDF or DOCX only)
-- Verify file size (< 10 MB)
+- Verify file size (< 100 MB)
 - Check backend logs for errors
 - Try a smaller test document
 

@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 # Configuration Constants
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
-MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", "10"))
+MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", "100"))
 UPLOAD_TIMEOUT_BASE = int(os.getenv("UPLOAD_TIMEOUT_BASE", "180"))
 EXPORT_TIMEOUT = int(os.getenv("EXPORT_TIMEOUT", "300"))
 DOWNLOAD_TIMEOUT = int(os.getenv("DOWNLOAD_TIMEOUT", "60"))
@@ -391,7 +391,7 @@ def main() -> None:
                 )
 
     # Step 1: Document Upload
-    st.header("Step 1: Upload Document")
+    st.header("Step 1: Upload Document To Verify")
     st.markdown(f"Upload a PDF or DOCX file (maximum {MAX_FILE_SIZE_MB} MB)")
 
     uploaded_file = st.file_uploader(
@@ -458,7 +458,9 @@ def main() -> None:
         if not st.session_state.reference_docs_uploaded:
             st.divider()
             st.header("🤖 Step 1.5: AI Verification (Optional)")
-            st.markdown("Upload reference documents to automatically verify content using AI.")
+            st.markdown(
+                "Upload reference documents to automatically verify content using AI."
+            )
 
             with st.expander("📚 Upload Reference Documents", expanded=False):
                 case_context = st.text_area(
@@ -466,7 +468,7 @@ def main() -> None:
                     placeholder="Describe what you're verifying (e.g., 'Contract verification for Project X')",
                     max_chars=500,
                     help="Provide context to help AI understand the verification case",
-                    key="case_context_input"
+                    key="case_context_input",
                 )
 
                 reference_files = st.file_uploader(
@@ -474,10 +476,14 @@ def main() -> None:
                     type=["pdf", "docx"],
                     accept_multiple_files=True,
                     help="Upload documents to verify against (PDF or DOCX)",
-                    key="reference_uploader"
+                    key="reference_uploader",
                 )
 
-                if st.button("Create Reference Library", disabled=not reference_files or not case_context, type="primary"):
+                if st.button(
+                    "Create Reference Library",
+                    disabled=not reference_files or not case_context,
+                    type="primary",
+                ):
                     with st.spinner("Creating reference library..."):
                         try:
                             # Prepare files for upload
@@ -491,7 +497,7 @@ def main() -> None:
                                 f"{BACKEND_URL}/api/verify/upload-references",
                                 data={"case_context": case_context},
                                 files=files,
-                                timeout=300
+                                timeout=300,
                             )
 
                             if response.status_code == 200:
@@ -500,7 +506,9 @@ def main() -> None:
                                 st.session_state.reference_docs_uploaded = True
                                 st.session_state.case_context = case_context
 
-                                st.success(f"✅ Uploaded {result['documents_uploaded']} reference documents")
+                                st.success(
+                                    f"✅ Uploaded {result['documents_uploaded']} reference documents"
+                                )
                                 st.info(f"📦 Store ID: `{result['store_id']}`")
 
                                 # Show metadata
@@ -512,7 +520,9 @@ def main() -> None:
 
                                 st.rerun()
                             else:
-                                st.error(f"❌ Failed to upload references: {response.text}")
+                                st.error(
+                                    f"❌ Failed to upload references: {response.text}"
+                                )
 
                         except Exception as e:
                             st.error(f"❌ Error: {str(e)}")
@@ -542,7 +552,10 @@ def main() -> None:
         )
 
         # Step 2.5: Run AI Verification (if references uploaded)
-        if st.session_state.reference_docs_uploaded and not st.session_state.verification_complete:
+        if (
+            st.session_state.reference_docs_uploaded
+            and not st.session_state.verification_complete
+        ):
             st.divider()
             st.header("✨ Step 2.5: Run AI Verification")
 
@@ -564,9 +577,9 @@ def main() -> None:
                                 "document_id": st.session_state.document_id,
                                 "store_id": st.session_state.store_id,
                                 "case_context": st.session_state.case_context,
-                                "chunking_mode": chunking_mode
+                                "chunking_mode": chunking_mode,
                             },
-                            timeout=600
+                            timeout=600,
                         )
 
                         progress_bar.progress(50)
@@ -589,13 +602,28 @@ def main() -> None:
                                 st.metric("Total Chunks", result["total_chunks"])
                             with col2:
                                 verified_count = result["total_verified"]
-                                verified_pct = (verified_count / result["total_chunks"] * 100) if result["total_chunks"] > 0 else 0
-                                st.metric("Verified", f"{verified_count}", f"{verified_pct:.1f}%")
+                                verified_pct = (
+                                    (verified_count / result["total_chunks"] * 100)
+                                    if result["total_chunks"] > 0
+                                    else 0
+                                )
+                                st.metric(
+                                    "Verified",
+                                    f"{verified_count}",
+                                    f"{verified_pct:.1f}%",
+                                )
                             with col3:
-                                st.metric("Processing Time", f"{result['processing_time_seconds']:.1f}s")
+                                st.metric(
+                                    "Processing Time",
+                                    f"{result['processing_time_seconds']:.1f}s",
+                                )
                             with col4:
                                 # Calculate average confidence
-                                scores = [c.get("verification_score", 0) for c in result["verified_chunks"] if c.get("verified") and c.get("verification_score")]
+                                scores = [
+                                    c.get("verification_score", 0)
+                                    for c in result["verified_chunks"]
+                                    if c.get("verified") and c.get("verification_score")
+                                ]
                                 avg_score = sum(scores) / len(scores) if scores else 0
                                 st.metric("Avg Confidence", f"{avg_score:.1f}/10")
 
@@ -628,7 +656,11 @@ def main() -> None:
 
             # Show confidence breakdown
             if results.get("verified_chunks"):
-                scores = [c.get("verification_score", 0) for c in results["verified_chunks"] if c.get("verified") and c.get("verification_score")]
+                scores = [
+                    c.get("verification_score", 0)
+                    for c in results["verified_chunks"]
+                    if c.get("verified") and c.get("verification_score")
+                ]
 
                 if scores:
                     low_confidence = sum(1 for s in scores if s < 5)
@@ -723,7 +755,9 @@ def main() -> None:
 
             # Show verification status if available
             if st.session_state.verification_complete:
-                st.info("📊 This document includes AI verification results with confidence scores and citations")
+                st.info(
+                    "📊 This document includes AI verification results with confidence scores and citations"
+                )
 
             st.download_button(
                 label="⬇️ Download Verification Document",

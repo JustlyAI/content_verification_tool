@@ -10,9 +10,13 @@ from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
 from termcolor import cprint
 from pathlib import Path
+from dotenv import load_dotenv
 
 from google import genai
 from google.genai import types
+
+# Load environment variables from .env file
+load_dotenv()
 
 from .models import (
     DocumentChunk,

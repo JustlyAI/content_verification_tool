@@ -12,7 +12,7 @@ Convert legal documents (PDF/DOCX) into structured verification checklists for s
 
 ## Features
 
-- **Multi-Format Support**: PDF or DOCX documents (up to 10 MB)
+- **Multi-Format Support**: PDF or DOCX documents (up to 100 MB)
 - **Chunking Modes**: Sentence-level or paragraph-level verification
 - **Structure Preservation**: Maintains document hierarchy, footnotes, and tables
 - **Output Formats**: Word (landscape/portrait), Excel, CSV, or JSON
@@ -73,7 +73,7 @@ See [SETUP.md](SETUP.md) for detailed instructions.
 ## Usage
 
 1. **Open** `http://localhost:8501`
-2. **Upload** PDF or DOCX file (max 10 MB)
+2. **Upload** PDF or DOCX file (max 100 MB)
 3. **Select chunking mode**:
    - Paragraph-level: Groups related sentences
    - Sentence-level: Individual sentence verification
@@ -125,10 +125,12 @@ Automatically verify document chunks against reference documents using Google Ge
 ### Setup
 
 1. **Get Gemini API Key**:
+
    - Visit https://aistudio.google.com/apikey
    - Create a new API key
 
 2. **Configure Environment**:
+
    ```bash
    # Create .env file in the root directory
    cp .env.example .env
@@ -146,6 +148,7 @@ Automatically verify document chunks against reference documents using Google Ge
 ### AI Verification Workflow
 
 1. **Upload Reference Documents**
+
    ```bash
    curl -X POST "http://localhost:8000/api/verify/upload-references" \
      -F "case_context=This is a contract verification case" \
@@ -154,6 +157,7 @@ Automatically verify document chunks against reference documents using Google Ge
    ```
 
    Response:
+
    ```json
    {
      "store_id": "corpora/verification_case_abc123",
@@ -164,12 +168,14 @@ Automatically verify document chunks against reference documents using Google Ge
    ```
 
 2. **Upload Document to Verify**
+
    ```bash
    curl -X POST "http://localhost:8000/upload" \
      -F "file=@document_to_verify.pdf"
    ```
 
 3. **Execute AI Verification**
+
    ```bash
    curl -X POST "http://localhost:8000/api/verify/execute" \
      -H "Content-Type: application/json" \
@@ -182,6 +188,7 @@ Automatically verify document chunks against reference documents using Google Ge
    ```
 
    Response:
+
    ```json
    {
      "document_id": "abc123...",
@@ -207,6 +214,7 @@ Automatically verify document chunks against reference documents using Google Ge
 ### Verification Output
 
 AI-verified chunks include:
+
 - **verified**: Boolean indicating if content was found in references
 - **verification_score**: Confidence level (1-10)
 - **verification_source**: Citation with document name and location
@@ -214,6 +222,7 @@ AI-verified chunks include:
 - **citations**: Detailed citation objects with excerpts
 
 Example verified chunk in JSON export:
+
 ```json
 {
   "page_number": 1,
@@ -235,6 +244,7 @@ Example verified chunk in JSON export:
 ### Cost Estimation
 
 Typical costs using Gemini 2.0 Flash:
+
 - **Metadata generation**: ~$0.00003 per document
 - **Verification**: ~$0.0042 per 100 chunks
 - **Total for 50-page document**: ~$0.01
@@ -335,7 +345,7 @@ content_verification_tool/
 
 **Backend not available**: Ensure Docker containers are running with `docker-compose ps`
 
-**File too large**: Maximum file size is 10 MB
+**File too large**: Maximum file size is 100 MB
 
 **Slow processing**: Ensure Docker has 4GB+ RAM allocated
 
