@@ -2,7 +2,8 @@
 Pydantic models for the Content Verification Tool
 """
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
+from datetime import datetime
 from pydantic import BaseModel, Field
 
 
@@ -18,6 +19,7 @@ class OutputFormat(str, Enum):
     WORD_PORTRAIT = "word_portrait"
     EXCEL = "excel"
     CSV = "csv"
+    JSON = "json"
 
 
 class DocumentChunk(BaseModel):
@@ -27,13 +29,25 @@ class DocumentChunk(BaseModel):
     text: str = Field(..., description="The chunk text content")
     is_overlap: bool = Field(False, description="True if item continues from previous page")
 
+    # AI verification fields
+    verified: Optional[bool] = Field(None, description="Whether the chunk was verified by AI")
+    verification_score: Optional[int] = Field(None, description="Confidence score 1-10")
+    verification_source: Optional[str] = Field(None, description="Source citations for verification")
+    verification_note: Optional[str] = Field(None, description="AI reasoning and notes")
+    citations: Optional[List[Dict[str, Any]]] = Field(None, description="Detailed citation objects")
+
     class Config:
         json_schema_extra = {
             "example": {
                 "page_number": 1,
                 "item_number": "1.1",
                 "text": "This is a sample paragraph or sentence.",
-                "is_overlap": False
+                "is_overlap": False,
+                "verified": True,
+                "verification_score": 8,
+                "verification_source": "Reference Doc A, page 5",
+                "verification_note": "Verified against contract section 2.1",
+                "citations": [{"title": "Reference Doc A", "excerpt": "matching text"}]
             }
         }
 
@@ -81,3 +95,57 @@ class ErrorResponse(BaseModel):
     """Error response model"""
     error: str = Field(..., description="Error message")
     detail: Optional[str] = Field(None, description="Detailed error information")
+
+
+# AI Verification Models
+
+class DocumentMetadata(BaseModel):
+    """Metadata for a reference document"""
+    document_id: str = Field(..., description="Unique document identifier")
+    filename: str = Field(..., description="Original filename")
+    summary: str = Field(..., description="AI-generated summary of the document")
+    contextualization: str = Field(..., description="How document relates to case context")
+    document_type: str = Field(..., description="Type of document (e.g., contract, invoice)")
+    keywords: List[str] = Field(..., description="Key terms extracted from document")
+    generated_at: datetime = Field(..., description="When metadata was generated")
+
+
+class VerificationResult(BaseModel):
+    """Result from AI verification of a chunk"""
+    verified: bool = Field(..., description="Whether the chunk was verified")
+    confidence_score: int = Field(..., ge=1, le=10, description="Confidence score 1-10")
+    verification_source: str = Field(..., description="Source citations")
+    verification_note: str = Field(..., description="AI reasoning and notes")
+    citations: List[Dict[str, Any]] = Field(default_factory=list, description="Detailed citation objects")
+    verified_at: datetime = Field(..., description="Timestamp of verification")
+
+
+class UploadReferencesRequest(BaseModel):
+    """Request to upload reference documents"""
+    case_context: str = Field(..., description="Context about the verification case")
+
+
+class UploadReferencesResponse(BaseModel):
+    """Response from uploading reference documents"""
+    store_id: str = Field(..., description="File Search store ID")
+    store_name: str = Field(..., description="File Search store name")
+    documents_uploaded: int = Field(..., description="Number of documents uploaded")
+    metadata: List[DocumentMetadata] = Field(..., description="Metadata for uploaded documents")
+
+
+class VerificationRequest(BaseModel):
+    """Request to verify chunks against reference documents"""
+    document_id: str = Field(..., description="Document ID to verify")
+    store_id: str = Field(..., description="File Search store ID")
+    case_context: str = Field(..., description="Context about the verification case")
+    chunking_mode: ChunkingMode = Field(..., description="Chunking mode used")
+
+
+class VerificationResponse(BaseModel):
+    """Response from chunk verification"""
+    document_id: str = Field(..., description="Document identifier")
+    verified_chunks: List[DocumentChunk] = Field(..., description="Chunks with verification results")
+    total_verified: int = Field(..., description="Number of chunks verified")
+    total_chunks: int = Field(..., description="Total number of chunks")
+    processing_time_seconds: float = Field(..., description="Time taken for verification")
+    store_id: str = Field(..., description="File Search store ID used")

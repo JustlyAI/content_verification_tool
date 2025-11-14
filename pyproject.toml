@@ -1,0 +1,97 @@
+[project]
+name = "content-verification-tool"
+version = "0.1.0"
+description = "Convert legal documents (PDF/DOCX) into structured verification checklists for systematic content verification"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+
+# Shared/common dependencies
+dependencies = [
+    # Data validation (shared)
+    "pydantic>=2.12.0",
+    # Utilities (shared)
+    "termcolor>=2.3.0",
+]
+
+[project.optional-dependencies]
+# Backend dependencies
+backend = [
+    # FastAPI and server
+    "fastapi==0.121.1",
+    "uvicorn[standard]==0.38.0",
+    "python-multipart==0.0.20",
+    # Document processing
+    "docling==2.61.2",
+    # LangChain for chunking
+    "langchain==1.0.5",
+    "langchain-text-splitters==1.0.0",
+    # SpaCy for sentence splitting
+    "spacy==3.8.8",
+    # Document generation
+    "python-docx==1.2.0",
+    "pandas==2.3.3",
+    "openpyxl==3.1.5",
+    # Data validation
+    "pydantic-settings==2.12.0",
+    # Caching
+    "redis==7.0.1",
+    # Utilities
+    "python-dateutil==2.9.0.post0",
+    "python-dotenv==1.2.1",
+    # AI verification
+    "google-genai>=1.43.0",
+]
+
+# Frontend dependencies
+frontend = [
+    # Streamlit
+    "streamlit>=1.28.0",
+    # HTTP client
+    "requests>=2.31.0",
+    "urllib3>=2.0.0",
+]
+
+# Test dependencies
+test = [
+    # Core testing framework
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    # FastAPI testing
+    "httpx>=0.25.0",
+    # Coverage reporting (optional)
+    "pytest-cov>=4.1.0",
+    # Parallel test execution (optional)
+    "pytest-xdist>=3.5.0",
+    # Document generation testing
+    "pandas>=2.1.0",
+    "openpyxl>=3.1.0",
+    "python-docx>=1.1.0",
+    # Google Gemini SDK (for AI tests)
+    "google-genai>=1.0.0",
+    # Environment variables
+    "python-dotenv>=1.0.0",
+]
+
+# All dependencies (for development) - installs backend, frontend, and test
+# Note: Install with: uv pip install -e ".[backend,frontend,test]"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "pytest-xdist>=3.5.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+
