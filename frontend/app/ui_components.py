@@ -4,8 +4,8 @@ Reusable UI Components for Content Verification Tool
 
 import streamlit as st
 from .config import BACKEND_URL, MAX_FILE_SIZE_MB, FEATURES
-from .api_client import check_backend_health
-from .state import reset_all_state
+from .api_client import check_backend_health, reset_verification
+from .state import reset_all_state, reset_verification_state
 
 
 def render_header() -> None:
@@ -17,6 +17,13 @@ def render_header() -> None:
     Upload your document and generate a table for systematic verification of each sentence or paragraph.
     """
     )
+
+    # Powered by Gemini
+    col1, col2, col3 = st.columns([2, 1, 2])
+    with col2:
+        st.markdown("**Powered by**")
+        st.image("gemini-logo.png", width=200)
+
     st.divider()
 
 
@@ -70,6 +77,7 @@ def render_sidebar() -> None:
         - Item #
         - Text
         - Verified ☑
+        - Verification Score
         - Verification Source
         - Verification Note
         """
@@ -148,3 +156,23 @@ def render_verification_results_summary() -> None:
                 st.metric("🟡 Medium (5-7)", medium_confidence)
             with col3:
                 st.metric("🟢 High (8-10)", high_confidence)
+
+    # Reset verification button
+    st.divider()
+    col1, col2, col3 = st.columns([2, 1, 2])
+    with col2:
+        if st.button(
+            "🔄 Reset Verification",
+            type="secondary",
+            use_container_width=True,
+            help="Clear verification results and re-verify",
+        ):
+            # Show confirmation dialog
+            if st.session_state.document_id:
+                with st.spinner("Clearing verification results..."):
+                    success = reset_verification(st.session_state.document_id)
+                    if success:
+                        # Reset frontend state
+                        reset_verification_state()
+                        st.success("✅ Verification cleared! You can now re-verify.")
+                        st.rerun()

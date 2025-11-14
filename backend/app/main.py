@@ -475,6 +475,52 @@ async def download_file(document_id: str):
         raise HTTPException(status_code=500, detail=f"Error downloading file: {str(e)}")
 
 
+@app.delete("/api/verify/reset/{document_id}")
+async def reset_verification(document_id: str):
+    """
+    Clear AI verification results for a document
+
+    Args:
+        document_id: Document identifier
+
+    Returns:
+        Success message
+    """
+    cprint(f"\n[API] Received reset verification request: {document_id}", "cyan", attrs=["bold"])
+
+    try:
+        # Get document from store
+        if document_id not in DOCUMENT_STORE:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        doc_data = DOCUMENT_STORE[document_id]
+
+        # Clear verification results from all cached chunks
+        chunks_reset = 0
+        for mode in doc_data["chunks_cache"]:
+            for chunk in doc_data["chunks_cache"][mode]:
+                # Reset all verification fields to None
+                chunk.verified = None
+                chunk.verification_score = None
+                chunk.verification_source = None
+                chunk.verification_note = None
+                chunk.citations = None
+                chunks_reset += 1
+
+        cprint(f"[API] ✓ Cleared verification from {chunks_reset} chunks", "green")
+
+        return {
+            "message": "Verification results cleared successfully",
+            "chunks_reset": chunks_reset
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        cprint(f"[API] Error resetting verification: {e}", "red")
+        raise HTTPException(status_code=500, detail=f"Error resetting verification: {str(e)}")
+
+
 @app.delete("/cache/clear")
 async def clear_cache():
     """Clear document cache"""

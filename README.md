@@ -27,9 +27,9 @@ Convert legal documents (PDF/DOCX) into structured verification checklists for s
 
 All outputs include 6 columns for verification workflows:
 
-| Page # | Item # | Text | Verified ☑ | Verification Source | Verification Note |
-| ------ | ------ | ---- | ---------- | ------------------- | ----------------- |
-| 1      | 1      | ...  |            |                     |                   |
+| Page # | Item # | Text | Verified ☑ | Verification Score | Verification Source | Verification Note |
+| ------ | ------ | ---- | ---------- | ------------------ | ------------------- | ----------------- |
+| 1      | 1      | ...  |            |                    |                     |
 
 ---
 

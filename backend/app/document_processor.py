@@ -31,7 +31,7 @@ class DocumentProcessor:
         # Enable table parsing and footnote extraction
         pipeline_options_ocr = PdfPipelineOptions()
         pipeline_options_ocr.do_table_structure = True
-        pipeline_options_ocr.do_ocr = True
+        pipeline_options_ocr.do_ocr = False
 
         # Configure pipeline options for PDF processing WITHOUT OCR
         # (for DOCX-converted PDFs which are already digital)
@@ -217,12 +217,12 @@ class DocumentProcessor:
             else:
                 conversion_path = tmp_path
                 cprint(
-                    f"[PROCESSOR] Native PDF detected, will use OCR for accurate text extraction",
+                    f"[PROCESSOR] Native PDF detected, processing with OCR disabled",
                     "cyan",
                 )
 
             # Convert document using Docling
-            # Use OCR for native PDFs (may be scanned), skip OCR for DOCX (already digital)
+            # OCR is disabled for both native PDFs and DOCX-converted PDFs for performance
             converter = self.converter_no_ocr if is_docx else self.converter_with_ocr
             cprint(
                 f"[PROCESSOR] Running Docling conversion on {conversion_path.name}...",

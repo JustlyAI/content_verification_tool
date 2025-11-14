@@ -18,6 +18,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY main.py .
 COPY app/ ./app/
+COPY gemini-logo.png .
 
 # Expose Streamlit port
 EXPOSE 8501

@@ -128,18 +128,18 @@ class OutputGenerator:
 
         doc.add_paragraph()  # Spacing
 
-        # Create table with 6 columns
+        # Create table with 7 columns
         # Add 1 for header row
-        table = doc.add_table(rows=1, cols=6)
+        table = doc.add_table(rows=1, cols=7)
         table.style = 'Light Grid Accent 1'
 
         # Set column widths based on orientation
         if landscape:
             # Landscape: more space for text and notes
-            col_widths = [Inches(0.7), Inches(0.7), Inches(4.0), Inches(0.8), Inches(1.8), Inches(1.8)]
+            col_widths = [Inches(0.6), Inches(0.6), Inches(3.5), Inches(0.7), Inches(0.7), Inches(1.7), Inches(1.7)]
         else:
             # Portrait: compressed layout
-            col_widths = [Inches(0.6), Inches(0.6), Inches(2.5), Inches(0.7), Inches(1.5), Inches(1.5)]
+            col_widths = [Inches(0.5), Inches(0.5), Inches(2.2), Inches(0.6), Inches(0.6), Inches(1.3), Inches(1.3)]
 
         for idx, width in enumerate(col_widths):
             for cell in table.columns[idx].cells:
@@ -147,7 +147,7 @@ class OutputGenerator:
 
         # Set header row
         header_cells = table.rows[0].cells
-        headers = ["Page #", "Item #", "Text", "Verified ☑", "Verification Source", "Verification Note"]
+        headers = ["Page #", "Item #", "Text", "Verified ☑", "Verification Score", "Verification Source", "Verification Note"]
 
         for idx, header_text in enumerate(headers):
             cell = header_cells[idx]
@@ -182,20 +182,24 @@ class OutputGenerator:
                 row_cells[3].text = "☐"
             row_cells[3].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-            # Verification Source - populate from AI if available
-            if chunk.verification_source:
-                row_cells[4].text = chunk.verification_source
+            # Verification Score - show score if available
+            if chunk.verification_score is not None:
+                row_cells[4].text = f"{chunk.verification_score}/10"
             else:
                 row_cells[4].text = ""
+            row_cells[4].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-            # Verification Note - include AI reasoning and confidence score
-            if chunk.verification_note:
-                note_text = chunk.verification_note
-                if chunk.verification_score:
-                    note_text += f" (Confidence: {chunk.verification_score}/10)"
-                row_cells[5].text = note_text
+            # Verification Source - populate from AI if available
+            if chunk.verification_source:
+                row_cells[5].text = chunk.verification_source
             else:
                 row_cells[5].text = ""
+
+            # Verification Note - AI reasoning without confidence score
+            if chunk.verification_note:
+                row_cells[6].text = chunk.verification_note
+            else:
+                row_cells[6].text = ""
 
             # Set font size for all cells
             for cell in row_cells:
@@ -235,6 +239,7 @@ class OutputGenerator:
 
         # Create DataFrame with AI verification results
         verified_values = []
+        score_values = []
         source_values = []
         note_values = []
 
@@ -245,23 +250,24 @@ class OutputGenerator:
             else:
                 verified_values.append("☐")
 
+            # Verification Score column
+            if chunk.verification_score is not None:
+                score_values.append(f"{chunk.verification_score}/10")
+            else:
+                score_values.append("")
+
             # Source column - populate from AI if available
             source_values.append(chunk.verification_source if chunk.verification_source else "")
 
-            # Note column - include AI reasoning and confidence score
-            if chunk.verification_note:
-                note_text = chunk.verification_note
-                if chunk.verification_score:
-                    note_text += f" (Confidence: {chunk.verification_score}/10)"
-                note_values.append(note_text)
-            else:
-                note_values.append("")
+            # Note column - AI reasoning without confidence score
+            note_values.append(chunk.verification_note if chunk.verification_note else "")
 
         data = {
             "Page #": [chunk.page_number for chunk in chunks],
             "Item #": [chunk.item_number for chunk in chunks],
             "Text": [chunk.text for chunk in chunks],
             "Verified ☑": verified_values,
+            "Verification Score": score_values,
             "Verification Source": source_values,
             "Verification Note": note_values
         }
@@ -287,8 +293,9 @@ class OutputGenerator:
                     'B': 10,  # Item #
                     'C': 60,  # Text
                     'D': 12,  # Verified
-                    'E': 25,  # Verification Source
-                    'F': 25   # Verification Note
+                    'E': 15,  # Verification Score
+                    'F': 25,  # Verification Source
+                    'G': 25   # Verification Note
                 }
 
                 for col, width in column_widths.items():

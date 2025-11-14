@@ -309,3 +309,46 @@ def execute_verification(
         st.error(f"❌ Error during verification: {str(e)}")
         logger.error(f"Unexpected error during verification: {e}")
         return None
+
+
+def reset_verification(document_id: str, timeout: int = 10) -> bool:
+    """Reset AI verification results for a document"""
+    try:
+        cprint(f"[FRONTEND] Resetting verification for document: {document_id}", "cyan")
+
+        response = API_SESSION.delete(
+            f"{BACKEND_URL}/api/verify/reset/{document_id}",
+            timeout=timeout,
+        )
+
+        response.raise_for_status()
+        result = response.json()
+
+        cprint(
+            f"[FRONTEND] Reset successful: {result.get('chunks_reset', 0)} chunks cleared",
+            "green",
+        )
+        return True
+
+    except requests.exceptions.Timeout:
+        st.error("⚠️ Reset timed out. Please try again.")
+        logger.error("Reset verification timeout")
+        return False
+
+    except requests.exceptions.ConnectionError:
+        st.error("⚠️ Cannot connect to backend server. Please contact support.")
+        logger.error("Connection error during reset")
+        return False
+
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 404:
+            st.error("⚠️ Document not found. Please upload the document again.")
+        else:
+            st.error(f"❌ Reset failed: {e.response.text}")
+        logger.error(f"HTTP error during reset: {e}")
+        return False
+
+    except Exception as e:
+        st.error(f"❌ Error during reset: {str(e)}")
+        logger.error(f"Unexpected error during reset: {e}")
+        return False

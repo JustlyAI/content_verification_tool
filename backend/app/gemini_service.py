@@ -1,6 +1,7 @@
 """
 Gemini AI verification service for content verification
 """
+
 import os
 import time
 import asyncio
@@ -18,11 +19,7 @@ from google.genai import types
 # Load environment variables from .env file
 load_dotenv()
 
-from .models import (
-    DocumentChunk,
-    DocumentMetadata,
-    VerificationResult
-)
+from .models import DocumentChunk, DocumentMetadata, VerificationResult
 
 
 class GeminiVerificationService:
@@ -40,7 +37,7 @@ class GeminiVerificationService:
 
     def create_store(self, case_id: str) -> Tuple[str, str]:
         """
-        Create a File Search store for reference documents
+        Create a File Search store for reference documents using the new API
 
         Args:
             case_id: Unique identifier for the verification case
@@ -51,19 +48,19 @@ class GeminiVerificationService:
         if not self.client:
             raise ValueError("Gemini client not initialized - check GEMINI_API_KEY")
 
-        store_name = f"verification_case_{case_id}_{int(time.time())}"
+        display_name = f"Verification Case {case_id} - {int(time.time())}"
 
         try:
-            cprint(f"[Gemini] Creating File Search store: {store_name}", "cyan")
+            cprint(f"[Gemini] Creating File Search store: {display_name}", "cyan")
 
-            # Create the corpus (store)
-            corpus = self.client.corpora.create(
-                name=store_name,
-                display_name=f"Verification Case {case_id}"
+            # Create file search store using NEW API
+            store = self.client.file_search_stores.create(
+                config={"display_name": display_name}
             )
 
-            cprint(f"[Gemini] ✓ Store created: {corpus.name}", "green")
-            return corpus.name, store_name
+            cprint(f"[Gemini] ✓ Store created: {store.name}", "green")
+            cprint(f"[Gemini]   Display Name: {store.display_name}", "cyan")
+            return store.name, store.display_name
 
         except Exception as e:
             cprint(f"[Gemini] ✗ Error creating store: {e}", "red")
@@ -90,7 +87,7 @@ class GeminiVerificationService:
             cprint(f"[Gemini] Generating metadata for {filename}", "cyan")
 
             # Upload file to Gemini for analysis
-            uploaded_file = self.client.files.upload(file_path=file_path)
+            uploaded_file = self.client.files.upload(file=file_path)
 
             # Wait for file to be processed
             cprint(f"[Gemini] Waiting for file processing...", "cyan")
@@ -113,8 +110,7 @@ Provide a JSON response with the following fields:
 Return only valid JSON, no markdown formatting."""
 
             response = self.client.models.generate_content(
-                model="gemini-2.0-flash-exp",
-                contents=[uploaded_file, prompt]
+                model="gemini-2.5-flash-lite", contents=[uploaded_file, prompt]
             )
 
             # Parse response
@@ -140,7 +136,7 @@ Return only valid JSON, no markdown formatting."""
                 contextualization=metadata_dict.get("contextualization", ""),
                 document_type=metadata_dict.get("document_type", "document"),
                 keywords=metadata_dict.get("keywords", []),
-                generated_at=datetime.now()
+                generated_at=datetime.now(),
             )
 
             cprint(f"[Gemini] ✓ Metadata generated for {filename}", "green")
@@ -154,56 +150,87 @@ Return only valid JSON, no markdown formatting."""
         self, file_path: str, store_name: str, metadata: DocumentMetadata
     ) -> str:
         """
-        Upload a file to a File Search store with metadata
+        Upload a file to a File Search store with metadata using NEW API
 
         Args:
             file_path: Path to the file to upload
-            store_name: Name of the File Search store
+            store_name: Name of the File Search store (e.g., 'file_search_stores/abc123')
             metadata: DocumentMetadata to attach to the file
 
         Returns:
-            Document name from the upload
+            File name from the upload
         """
         if not self.client:
             raise ValueError("Gemini client not initialized - check GEMINI_API_KEY")
 
         try:
-            cprint(f"[Gemini] Uploading {metadata.filename} to store {store_name}", "cyan")
+            cprint(
+                f"[Gemini] Uploading {metadata.filename} to store {store_name}", "cyan"
+            )
 
-            # Create metadata dict for the document
+            # Step 1: Upload file to Gemini Files API
+            uploaded_file = self.client.files.upload(file=file_path)
+            cprint(f"[Gemini] File uploaded: {uploaded_file.name}", "cyan")
+
+            # Wait for file processing
+            cprint(f"[Gemini] Waiting for file to be processed...", "cyan")
+            while uploaded_file.state == "PROCESSING":
+                time.sleep(1)
+                uploaded_file = self.client.files.get(name=uploaded_file.name)
+
+            if uploaded_file.state == "FAILED":
+                raise ValueError(
+                    f"File processing failed: {getattr(uploaded_file, 'error', 'Unknown error')}"
+                )
+
+            # Step 2: Create metadata for the file search store
             custom_metadata = [
                 types.CustomMetadata(
                     key="summary",
-                    string_value=metadata.summary[:500]  # Limit to 500 chars
+                    string_value=metadata.summary[:500],  # Limit to 500 chars
                 ),
                 types.CustomMetadata(
-                    key="document_type",
-                    string_value=metadata.document_type
+                    key="document_type", string_value=metadata.document_type
                 ),
                 types.CustomMetadata(
                     key="keywords",
-                    string_list_value=types.StringList(values=metadata.keywords[:10])
-                )
+                    string_list_value=types.StringList(values=metadata.keywords[:10]),
+                ),
             ]
 
-            # Upload document to corpus
-            document = self.client.corpora.documents.create(
-                corpus=store_name,
-                display_name=metadata.filename,
-                custom_metadata=custom_metadata
+            # Step 3: Add file to File Search store using NEW API
+            cprint(f"[Gemini] Adding file to File Search store...", "cyan")
+            operation = self.client.file_search_stores.upload_to_file_search_store(
+                file_search_store_name=store_name,
+                file=uploaded_file,
+                config={
+                    "custom_metadata": custom_metadata,
+                    "display_name": metadata.filename,
+                },
             )
 
-            # Upload the actual file as a chunk
-            chunk = self.client.corpora.documents.chunks.create(
-                document=document.name,
-                data=types.ChunkData(
-                    string_value=open(file_path, 'rb').read().decode('utf-8', errors='ignore')
-                ),
-                custom_metadata=custom_metadata
-            )
+            # Step 4: Wait for indexing to complete
+            cprint(f"[Gemini] Waiting for indexing to complete...", "cyan")
+            max_wait = 60  # Maximum 60 seconds
+            elapsed = 0
+            while not operation.done and elapsed < max_wait:
+                time.sleep(2)
+                elapsed += 2
+                operation = self.client.operations.get(name=operation.name)
+                cprint(f"[Gemini] Indexing... ({elapsed}s)", "cyan")
+
+            if not operation.done:
+                cprint(
+                    f"[Gemini] ⚠️  Indexing timeout, but file may still be processing",
+                    "yellow",
+                )
+            elif operation.error:
+                raise ValueError(f"Upload operation failed: {operation.error}")
+            else:
+                cprint(f"[Gemini] ✓ Indexing complete", "green")
 
             cprint(f"[Gemini] ✓ Uploaded {metadata.filename} to store", "green")
-            return document.name
+            return uploaded_file.name
 
         except Exception as e:
             cprint(f"[Gemini] ✗ Error uploading to store: {e}", "red")
@@ -231,18 +258,47 @@ Return only valid JSON, no markdown formatting."""
 
                 # Check if error is retryable
                 error_str = str(e).lower()
-                is_retryable = any(x in error_str for x in [
-                    'rate limit', '429', 'timeout', '500', '503',
-                    'temporarily', 'unavailable', 'deadline'
-                ])
+                is_retryable = any(
+                    x in error_str
+                    for x in [
+                        "rate limit",
+                        "429",
+                        "timeout",
+                        "500",
+                        "503",
+                        "temporarily",
+                        "unavailable",
+                        "deadline",
+                        "resource_exhausted",
+                    ]
+                )
 
                 if not is_retryable:
-                    # Don't retry client errors
+                    # Don't retry client errors (400, etc.)
                     raise
 
-                # Exponential backoff: 1s, 2s, 4s
-                wait_time = 2 ** attempt
-                cprint(f"[Gemini] Retry {attempt + 1}/{max_retries} in {wait_time}s: {e}", "yellow")
+                # Try to extract retry delay from error if it's a rate limit
+                wait_time = 2**attempt  # Default exponential backoff
+                if "429" in error_str or "rate limit" in error_str:
+                    # For rate limits, use longer delays
+                    wait_time = min(30, 10 * (2**attempt))  # 10s, 20s, 30s
+                    cprint(
+                        f"[Gemini] Rate limit hit. Retry {attempt + 1}/{max_retries} in {wait_time}s",
+                        "yellow",
+                    )
+                elif "503" in error_str or "overloaded" in error_str:
+                    # For overloaded model, use longer delays
+                    wait_time = min(60, 15 * (2**attempt))  # 15s, 30s, 60s
+                    cprint(
+                        f"[Gemini] Model overloaded. Retry {attempt + 1}/{max_retries} in {wait_time}s",
+                        "yellow",
+                    )
+                else:
+                    cprint(
+                        f"[Gemini] Retry {attempt + 1}/{max_retries} in {wait_time}s: {e}",
+                        "yellow",
+                    )
+
                 time.sleep(wait_time)
 
     def verify_chunk(
@@ -281,70 +337,131 @@ Please verify if this content appears in or is supported by the reference docume
 
 Return only valid JSON, no markdown formatting."""
 
-            # Configure File Search tool with corpus
+            # Configure File Search tool with NEW API
             tool = types.Tool(
-                file_search=types.FileSearch(
-                    corpora=[store_name]
-                )
+                file_search=types.FileSearch(file_search_store_names=[store_name])
             )
 
             # Generate verification using Gemini Flash with File Search
+            # Note: Can't use response_mime_type with tools, so we parse JSON manually
             response = self.client.models.generate_content(
-                model="gemini-2.0-flash-exp",
+                model="gemini-2.5-flash",
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     temperature=0.1,  # Low temperature for consistent results
-                    response_mime_type="application/json",
-                    tools=[tool]  # Pass the File Search tool here
-                )
+                    tools=[tool],  # File Search tool
+                ),
             )
 
-            # Parse response
-            result = json.loads(response.text)
+            # Parse response - handle markdown code blocks if present
+            if not response.text:
+                # Empty response - return unverified
+                cprint(f"[Gemini] ⚠️  Empty response from API", "yellow")
+                chunk.verified = False
+                chunk.verification_score = 1
+                chunk.verification_source = "Empty API response"
+                chunk.verification_note = "API returned empty response"
+                chunk.citations = []
+                return chunk
+
+            response_text = response.text.strip()
+            if response_text.startswith("```"):
+                # Remove markdown code blocks
+                response_text = response_text.split("```")[1]
+                if response_text.startswith("json"):
+                    response_text = response_text[4:]
+                response_text = response_text.strip()
+
+            try:
+                result = json.loads(response_text)
+            except json.JSONDecodeError as e:
+                cprint(f"[Gemini] ⚠️  Failed to parse JSON response: {e}", "yellow")
+                cprint(f"[Gemini] Raw response: {response_text[:200]}...", "yellow")
+                chunk.verified = False
+                chunk.verification_score = 1
+                chunk.verification_source = "JSON parse error"
+                chunk.verification_note = f"Failed to parse API response: {str(e)}"
+                chunk.citations = []
+                return chunk
 
             # Extract grounding metadata if available
             actual_citations = []
-            if hasattr(response, 'candidates') and response.candidates:
+            if hasattr(response, "candidates") and response.candidates:
                 candidate = response.candidates[0]
-                if hasattr(candidate, 'grounding_metadata') and candidate.grounding_metadata:
-                    if hasattr(candidate.grounding_metadata, 'grounding_chunks'):
-                        cprint(f"[Gemini] Found {len(candidate.grounding_metadata.grounding_chunks)} grounding chunks", "cyan")
+                if (
+                    hasattr(candidate, "grounding_metadata")
+                    and candidate.grounding_metadata
+                ):
+                    if hasattr(candidate.grounding_metadata, "grounding_chunks"):
+                        cprint(
+                            f"[Gemini] Found {len(candidate.grounding_metadata.grounding_chunks)} grounding chunks",
+                            "cyan",
+                        )
 
-                        for grounding_chunk in candidate.grounding_metadata.grounding_chunks:
+                        for (
+                            grounding_chunk
+                        ) in candidate.grounding_metadata.grounding_chunks:
                             citation = {}
 
                             # Extract title from document or web source
-                            if hasattr(grounding_chunk, 'document') and grounding_chunk.document:
-                                citation["title"] = grounding_chunk.document.title if hasattr(grounding_chunk.document, 'title') else "Document"
-                            elif hasattr(grounding_chunk, 'web') and grounding_chunk.web:
-                                citation["title"] = grounding_chunk.web.title if hasattr(grounding_chunk.web, 'title') else "Web Source"
+                            if (
+                                hasattr(grounding_chunk, "document")
+                                and grounding_chunk.document
+                            ):
+                                citation["title"] = (
+                                    grounding_chunk.document.title
+                                    if hasattr(grounding_chunk.document, "title")
+                                    else "Document"
+                                )
+                            elif (
+                                hasattr(grounding_chunk, "web") and grounding_chunk.web
+                            ):
+                                citation["title"] = (
+                                    grounding_chunk.web.title
+                                    if hasattr(grounding_chunk.web, "title")
+                                    else "Web Source"
+                                )
                             else:
                                 citation["title"] = "Unknown Source"
 
                             # Extract excerpt
-                            if hasattr(grounding_chunk, 'content') and hasattr(grounding_chunk.content, 'text'):
+                            if hasattr(grounding_chunk, "content") and hasattr(
+                                grounding_chunk.content, "text"
+                            ):
                                 citation["excerpt"] = grounding_chunk.content.text
                             else:
                                 citation["excerpt"] = ""
 
                             # Add URI if available
-                            if hasattr(grounding_chunk, 'web') and hasattr(grounding_chunk.web, 'uri'):
+                            if hasattr(grounding_chunk, "web") and hasattr(
+                                grounding_chunk.web, "uri"
+                            ):
                                 citation["uri"] = grounding_chunk.web.uri
 
                             actual_citations.append(citation)
 
             # Prefer grounding metadata citations over AI-generated ones
             if actual_citations:
-                cprint(f"[Gemini] Using {len(actual_citations)} actual grounding citations", "green")
+                cprint(
+                    f"[Gemini] Using {len(actual_citations)} actual grounding citations",
+                    "green",
+                )
                 chunk.citations = actual_citations
             else:
-                cprint(f"[Gemini] No grounding metadata, using AI-generated citations", "yellow")
+                cprint(
+                    f"[Gemini] No grounding metadata, using AI-generated citations",
+                    "yellow",
+                )
                 chunk.citations = result.get("citations", [])
 
             # Update chunk with verification results
             chunk.verified = result.get("verified", False)
-            chunk.verification_score = min(10, max(1, result.get("confidence_score", 5)))
-            chunk.verification_source = result.get("verification_source", "No source found")
+            chunk.verification_score = min(
+                10, max(1, result.get("confidence_score", 5))
+            )
+            chunk.verification_source = result.get(
+                "verification_source", "No source found"
+            )
             chunk.verification_note = result.get("verification_note", "")
 
             return chunk
@@ -364,7 +481,7 @@ Return only valid JSON, no markdown formatting."""
         chunks: List[DocumentChunk],
         store_name: str,
         case_context: str,
-        batch_size: int = 5,
+        batch_size: int = 3,  # Reduced from 5 to avoid rate limits
     ) -> List[DocumentChunk]:
         """
         Verify multiple chunks in batches with rate limiting
@@ -391,7 +508,10 @@ Return only valid JSON, no markdown formatting."""
             batch_end = min(batch_start + batch_size, total_chunks)
             batch = chunks[batch_start:batch_end]
 
-            cprint(f"[Gemini] Processing batch {batch_start // batch_size + 1}: chunks {batch_start + 1}-{batch_end} of {total_chunks}", "cyan")
+            cprint(
+                f"[Gemini] Processing batch {batch_start // batch_size + 1}: chunks {batch_start + 1}-{batch_end} of {total_chunks}",
+                "cyan",
+            )
 
             # Process each chunk in the batch
             batch_results = []
@@ -402,11 +522,15 @@ Return only valid JSON, no markdown formatting."""
                     )
                     batch_results.append(verified_chunk)
 
-                    # Small delay between individual verifications to avoid rate limits
-                    await asyncio.sleep(0.2)
+                    # Delay between individual verifications to avoid rate limits
+                    # With 2.5-flash quota, we can be more conservative
+                    await asyncio.sleep(1.5)
 
                 except Exception as e:
-                    cprint(f"[Gemini] Error verifying chunk {chunk.item_number}: {e}", "yellow")
+                    cprint(
+                        f"[Gemini] Error verifying chunk {chunk.item_number}: {e}",
+                        "yellow",
+                    )
                     # Add unverified chunk
                     chunk.verified = False
                     chunk.verification_score = 1
@@ -418,11 +542,17 @@ Return only valid JSON, no markdown formatting."""
 
             # Delay between batches to respect rate limits
             if batch_end < total_chunks:
-                cprint(f"[Gemini] Batch complete. Waiting 1 second before next batch...", "cyan")
-                await asyncio.sleep(1)
+                cprint(
+                    f"[Gemini] Batch complete. Waiting 3 seconds before next batch...",
+                    "cyan",
+                )
+                await asyncio.sleep(3)
 
         verified_count = sum(1 for c in verified_chunks if c.verified)
-        cprint(f"[Gemini] ✓ Batch verification complete: {verified_count}/{total_chunks} chunks verified", "green")
+        cprint(
+            f"[Gemini] ✓ Batch verification complete: {verified_count}/{total_chunks} chunks verified",
+            "green",
+        )
 
         return verified_chunks
 

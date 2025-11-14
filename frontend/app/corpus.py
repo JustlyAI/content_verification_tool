@@ -11,8 +11,11 @@ def render_corpus_creation() -> None:
     """Render corpus creation form (when no active corpus)"""
     st.markdown("Upload reference documents to enable AI verification")
 
+    # Show clearer instructions
+    st.info("📝 **Instructions:** Fill in both fields below to enable the button")
+
     case_context = st.text_area(
-        "Case Context",
+        "Case Context *",
         placeholder="Describe what you're verifying (e.g., 'Contract verification for Project X')",
         max_chars=500,
         help="Provide context to help AI understand the verification case",
@@ -20,12 +23,21 @@ def render_corpus_creation() -> None:
     )
 
     reference_files = st.file_uploader(
-        "Select Reference Documents",
+        "Select Reference Documents *",
         type=["pdf", "docx"],
         accept_multiple_files=True,
         help="Upload documents to verify against (PDF or DOCX)",
         key="reference_uploader",
     )
+
+    # Show status of required fields
+    if not case_context or not reference_files:
+        missing = []
+        if not case_context:
+            missing.append("Case Context")
+        if not reference_files:
+            missing.append("Reference Documents")
+        st.warning(f"⚠️ Please provide: {', '.join(missing)}")
 
     if st.button(
         "Create Reference Library",

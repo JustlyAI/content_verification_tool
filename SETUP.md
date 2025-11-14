@@ -234,6 +234,7 @@ All outputs contain a table with these columns:
 | **Item #**              | Item number on that page (resets per page)       |
 | **Text**                | The sentence or paragraph text                   |
 | **Verified ☑**          | Checkbox for marking verification status         |
+| **Verification Score**  | Confidence score for the verification            |
 | **Verification Source** | Field to record the source used for verification |
 | **Verification Note**   | Field for additional notes or comments           |
 
