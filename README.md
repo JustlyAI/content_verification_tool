@@ -73,12 +73,14 @@ See [SETUP.md](SETUP.md) for detailed instructions.
 ## Usage
 
 1. **Open** `http://localhost:8501`
-2. **Upload** PDF or DOCX file (max 100 MB)
-3. **Select chunking mode**:
+2. **(Optional) Create AI Reference Corpus**: Expand the "AI Reference Corpus" panel at the top to upload reference documents for automated verification
+3. **Upload** PDF or DOCX file (max 100 MB)
+4. **Select chunking mode**:
    - Paragraph-level: Groups related sentences
    - Sentence-level: Individual sentence verification
-4. **Choose output format**: Word (landscape/portrait), Excel, or CSV
-5. **Generate & Download** verification document
+5. **(Optional) Run AI Verification**: If corpus is active, verify chunks against reference documents
+6. **Choose output format**: Word (landscape/portrait), Excel, CSV, or JSON
+7. **Generate & Download** verification document
 
 ---
 
@@ -121,6 +123,17 @@ curl -X GET "http://localhost:8000/download/abc123..." \
 ## AI Verification (NEW)
 
 Automatically verify document chunks against reference documents using Google Gemini AI.
+
+### Streamlit UI Workflow
+
+The Streamlit UI features a dedicated **AI Reference Corpus** panel at the top of the page:
+
+1. **Expand the panel** to create or manage your reference corpus
+2. **Upload reference documents** (PDF/DOCX) with case context
+3. **View corpus status** - panel shows "✅ Active" or "⚠️ Not Configured"
+4. **Clear corpus** when done to start fresh
+
+The corpus panel is always accessible and independent of the main verification workflow.
 
 ### Setup
 
@@ -331,7 +344,14 @@ content_verification_tool/
 │   │   └── cache.py
 │   └── requirements.txt
 ├── frontend/
-│   ├── app.py                   # Streamlit UI
+│   ├── app/                     # Modular application components
+│   │   ├── __init__.py
+│   │   ├── config.py           # Configuration and constants
+│   │   ├── state.py            # Session state management
+│   │   ├── api_client.py       # Backend API client
+│   │   ├── corpus.py           # Corpus management UI
+│   │   └── ui_components.py    # Reusable UI components
+│   ├── app.py                   # Main Streamlit application
 │   └── requirements.txt
 ├── .env.example                 # Environment variables template
 ├── docker-compose.yml
