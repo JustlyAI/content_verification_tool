@@ -7,10 +7,10 @@ import streamlit as st
 
 # Configure Streamlit page FIRST (before any other st.* commands)
 st.set_page_config(
-    page_title="Content Verification Tool",
-    page_icon="📋",
+    page_title="Content Verification | Powered by Gemini",
+    page_icon="🔷",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",  # Freshfields single-screen design
 )
 
 # Then other imports
@@ -42,6 +42,8 @@ from app.ui_components import (
     render_sidebar,
     render_footer,
 )
+from app.freshfields_styles import load_freshfields_css
+from app.corpus import render_corpus_sidebar
 
 # Configure logging
 logging.basicConfig(
@@ -51,62 +53,23 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def render_corpus_tab() -> None:
-    """Render Corpus Management tab with enhanced layout"""
-    st.header("Reference Corpus")
-
-    # Status banner
-    if st.session_state.reference_docs_uploaded:
-        st.success("✅ Corpus Active | Ready for verification")
-    else:
-        st.warning("⚠️ Corpus Not Configured | Upload reference documents to enable AI verification")
-
-    st.divider()
-
-    # Two-column layout for better organization
-    if st.session_state.reference_docs_uploaded:
-        # Active corpus: show details in two columns
-        col1, col2 = st.columns([2, 1])
-
-        with col1:
-            st.subheader("📚 Corpus Details")
-            from app.corpus import render_active_corpus
-            render_active_corpus()
-
-        with col2:
-            st.subheader("📊 Statistics")
-            # Show corpus statistics
-            if st.session_state.corpus_metadata:
-                st.metric("Documents", len(st.session_state.corpus_metadata))
-
-            if st.session_state.store_id:
-                st.caption("**Store ID:**")
-                st.code(st.session_state.store_id, language="text")
-
-            if st.session_state.case_context:
-                st.caption("**Case Context:**")
-                st.info(st.session_state.case_context)
-    else:
-        # Corpus creation: full width for form
-        from app.corpus import render_corpus_creation
-        render_corpus_creation()
+# Removed render_corpus_tab() - using single-screen layout now
 
 
 def render_upload_card() -> None:
     """Render Card 1: Upload document section"""
-    st.markdown("Upload your document to verify")
-
-    # Tip about corpus if not configured
-    if not st.session_state.reference_docs_uploaded:
-        st.caption("💡 Configure corpus first for AI verification")
+    st.markdown("**Document to Verify**")
+    st.caption("📄 Upload the document you want to check against the corpus")
 
     uploaded_file = st.file_uploader(
-        "Choose a file",
+        "Document to verify",
         type=SUPPORTED_FILE_TYPES,
-        help="Supported formats: PDF, DOCX",
-        label_visibility="collapsed",
         key="uploaded_file",
+        label_visibility="collapsed",
+        help="This document will be verified against your reference corpus"
     )
+
+    st.markdown("")
 
     if uploaded_file is not None:
         # Validate file size
@@ -115,90 +78,117 @@ def render_upload_card() -> None:
         if file_size_mb > MAX_FILE_SIZE_MB:
             st.error(f"⚠️ File too large: {file_size_mb:.2f} MB")
             return
-        else:
-            st.caption(f"📄 {uploaded_file.name} ({file_size_mb:.2f} MB)")
 
         # Upload button
-        if st.button(
-            "🚀 Upload",
-            type="primary",
-            use_container_width=True,
-            disabled=st.session_state.upload_in_progress,
-        ):
-            st.session_state.upload_in_progress = True
+        if not st.session_state.document_info:
+            if st.button(
+                "🚀 Upload",
+                type="primary",
+                use_container_width=True,
+                disabled=st.session_state.upload_in_progress,
+                key="upload_btn",
+            ):
+                st.session_state.upload_in_progress = True
 
-            # Create progress indicators
-            progress_bar = st.progress(0)
-            status_text = st.empty()
+                # Create progress indicators
+                progress_bar = st.progress(0)
+                status_text = st.empty()
 
-            # Upload the document
-            file_content = uploaded_file.getvalue()
-            filename = uploaded_file.name
+                # Upload the document
+                file_content = uploaded_file.getvalue()
+                filename = uploaded_file.name
 
-            result = upload_document(file_content, filename, progress_bar, status_text)
+                result = upload_document(file_content, filename, progress_bar, status_text)
 
-            # Clear only the progress bar
-            progress_bar.empty()
+                # Clear only the progress bar
+                progress_bar.empty()
 
-            # Handle result
-            if result and validate_upload_response(result):
-                st.session_state.document_id = result["document_id"]
-                st.session_state.document_info = result
-                st.session_state.upload_in_progress = False
-                status_text.success(f"✅ {result['message']}")
-            elif result:
-                st.session_state.upload_in_progress = False
-                status_text.error("⚠️ Invalid response from server")
-            else:
-                st.session_state.upload_in_progress = False
+                # Handle result
+                if result and validate_upload_response(result):
+                    st.session_state.document_id = result["document_id"]
+                    st.session_state.document_info = result
+                    st.session_state.upload_in_progress = False
+                    status_text.success(f"✅ {result['message']}")
+                elif result:
+                    st.session_state.upload_in_progress = False
+                    status_text.error("⚠️ Invalid response from server")
+                else:
+                    st.session_state.upload_in_progress = False
+        else:
+            st.success("✓ Ready to Verify")
+            st.caption(f"📄 {st.session_state.document_info.get('filename', 'Document uploaded')}")
+            file_size = st.session_state.document_info.get('size', 0) / 1024 if st.session_state.document_info.get('size') else file_size_mb
+            st.caption(f"{file_size:.1f} KB")
     elif st.session_state.document_info:
-        st.success(f"✅ {st.session_state.document_info.get('filename', 'Document uploaded')}")
+        st.success("✓ Ready to Verify")
+        st.caption(f"📄 {st.session_state.document_info.get('filename', 'Document uploaded')}")
+    else:
+        st.info("Upload document to begin")
+        st.caption("Supported: PDF, DOCX")
 
 
 def render_chunking_card() -> str:
     """Render Card 2: Chunking mode selection"""
     if not st.session_state.document_info:
-        st.caption("Upload a document first")
+        st.info("Upload document first")
+        st.caption("Choose how to split your document for verification")
         return "paragraph"
 
-    st.markdown("Select chunking mode")
-
+    st.markdown("**Processing Mode**")
     chunking_mode = st.radio(
-        "Chunking Mode",
+        "Mode",
         options=["paragraph", "sentence"],
         index=0,
         format_func=lambda x: {
-            "paragraph": "📝 Paragraph",
-            "sentence": "📄 Sentence",
+            "paragraph": "Paragraph",
+            "sentence": "Sentence",
         }[x],
-        help="Paragraph groups content, Sentence provides finer detail",
+        key="chunk_mode_radio",
         label_visibility="collapsed",
+        horizontal=False,
     )
+
+    st.markdown("")
+    st.success(f"✓ {chunking_mode.capitalize()}-level")
+    st.caption(f"Split into {chunking_mode}s for detailed analysis")
 
     return chunking_mode
 
 
 def render_verify_card(chunking_mode: str) -> None:
-    """Render Card 3: AI Verification"""
+    """Render Card 3: AI Verification with Gemini branding"""
+    if st.session_state.verification_complete:
+        st.success("✅ Verification complete")
+        st.caption("Results displayed below")
+        return
+
     if not st.session_state.document_info:
-        st.caption("Upload a document first")
+        st.warning("⏳ Upload Needed")
+        st.caption("Upload a document to begin")
         return
 
     if not st.session_state.reference_docs_uploaded:
-        st.caption("⚠️ Corpus not active")
+        st.warning("⏳ Corpus Needed")
+        st.caption("Create a corpus first")
         return
 
-    if st.session_state.verification_complete:
-        st.success("✅ Verification complete")
-        return
+    # Show corpus ready status
+    doc_count = len(st.session_state.corpus_metadata) if st.session_state.corpus_metadata else 0
+    st.info(f"🔷 Corpus Ready ({doc_count} docs)")
 
-    st.markdown("Run AI verification")
+    st.markdown("")
 
-    if st.button("🚀 Verify", type="primary", use_container_width=True):
+    # Run verification button
+    if st.button(
+        "▶ Run Verification",
+        type="primary",
+        use_container_width=True,
+        key="verify_gemini",
+    ):
         progress_bar = st.progress(0)
         status_text = st.empty()
 
-        status_text.text("Verifying...")
+        status_text.text("Gemini is verifying...")
 
         result = execute_verification(
             document_id=st.session_state.document_id,
@@ -213,7 +203,7 @@ def render_verify_card(chunking_mode: str) -> None:
             st.session_state.chunking_mode = chunking_mode
 
             progress_bar.progress(100)
-            status_text.success("✅ Done!")
+            status_text.success("✅ Verification complete!")
             st.rerun()
         else:
             progress_bar.empty()
@@ -353,39 +343,11 @@ def render_results_section() -> None:
                         st.rerun()
 
 
-def render_verification_tab() -> None:
-    """Render Verification tab with horizontal cards"""
-    st.header("Document Verification")
-
-    # Create 4 horizontal cards
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        with st.container():
-            st.markdown("### 1️⃣ Upload")
-            render_upload_card()
-
-    with col2:
-        with st.container():
-            st.markdown("### 2️⃣ Chunking")
-            chunking_mode = render_chunking_card()
-
-    with col3:
-        with st.container():
-            st.markdown("### 3️⃣ Verify")
-            render_verify_card(chunking_mode)
-
-    with col4:
-        with st.container():
-            st.markdown("### 4️⃣ Export")
-            render_export_card(chunking_mode)
-
-    # Results section below cards
-    render_results_section()
+# Removed render_verification_tab() - using render_verification_workflow() now
 
 
 def main() -> None:
-    """Main Streamlit application"""
+    """Main Streamlit application - Freshfields single-screen design"""
 
     # Validate configuration
     validate_backend_url()
@@ -393,26 +355,124 @@ def main() -> None:
     # Initialize session state
     init_session_state()
 
-    # Render header and check backend
+    # Load Freshfields CSS
+    load_freshfields_css()
+
+    # Render header
     render_header()
-    render_backend_status()
 
-    # Render sidebar
+    # Check backend (compact version)
+    col1, col2 = st.columns([6, 1])
+    with col1:
+        from app.api_client import check_backend_health
+        if not check_backend_health():
+            st.error(
+                "⚠️ Backend API is not available. Please ensure the backend is running."
+            )
+            from app.config import BACKEND_URL
+            st.code(f"Expected backend at: {BACKEND_URL}", language="text")
+            st.stop()
+    with col2:
+        from app.api_client import check_backend_health
+        if st.button("🔄", help="Refresh connection status"):
+            check_backend_health.clear()
+            st.rerun()
+
+    # Main layout: sidebar + content (Freshfields single-screen)
+    sidebar_col, main_col = st.columns([1, 3], gap="small")
+
+    # SIDEBAR: Corpus
+    with sidebar_col:
+        render_corpus_sidebar()
+
+    # MAIN CONTENT: Workflow + Results
+    with main_col:
+        st.markdown('<div class="ff-main-content">', unsafe_allow_html=True)
+
+        st.markdown("## Gemini-Powered Document Verification")
+        st.caption(
+            "Upload a document below to verify it against your reference corpus using AI-powered analysis. "
+            "Each sentence or paragraph will be checked for accuracy and consistency."
+        )
+
+        # Workflow explanation
+        st.info(
+            "**🔄 Verification Workflow:** Upload your document (Step 1) → "
+            "Choose chunking mode (Step 2) → Run Gemini verification against corpus (Step 3) → "
+            "Export results (Step 4)"
+        )
+
+        # Render verification workflow (4 horizontal cards)
+        render_verification_workflow()
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # Render legacy sidebar for info (optional, can be removed)
     render_sidebar()
-
-    st.divider()
-
-    # Tab-based navigation
-    tab1, tab2 = st.tabs(["📚 Corpus", "✅ Verification"])
-
-    with tab1:
-        render_corpus_tab()
-
-    with tab2:
-        render_verification_tab()
 
     # Footer
     render_footer()
+
+
+def render_verification_workflow() -> None:
+    """Render the 4-card verification workflow"""
+    # Create 4 horizontal cards
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.markdown(
+            '<div class="ff-card">'
+            '<div class="ff-card-number">STEP 1</div>'
+            '<div class="ff-card-title">Upload</div>',
+            unsafe_allow_html=True,
+        )
+        render_upload_card()
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with col2:
+        st.markdown(
+            '<div class="ff-card">'
+            '<div class="ff-card-number">STEP 2</div>'
+            '<div class="ff-card-title">Chunking</div>',
+            unsafe_allow_html=True,
+        )
+        chunking_mode = render_chunking_card()
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with col3:
+        # Gemini card with special styling
+        st.markdown(
+            '<div class="ff-card ff-gemini-card">'
+            '<div class="ff-card-number">STEP 3</div>'
+            '<div class="ff-card-title">Verify with AI</div>',
+            unsafe_allow_html=True,
+        )
+
+        # Gemini branding
+        st.markdown(
+            '<div style="text-align: center; margin: 1rem 0 1.5rem 0;">'
+            '<div style="font-size: 2.5rem; line-height: 1;">🔷</div>'
+            '<div style="font-family: var(--font-display); font-size: 1.125rem; '
+            'font-weight: 600; color: var(--gemini-blue-dark); margin-top: 0.5rem;">'
+            'Gemini AI</div></div>',
+            unsafe_allow_html=True,
+        )
+
+        render_verify_card(chunking_mode)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with col4:
+        st.markdown(
+            '<div class="ff-card">'
+            '<div class="ff-card-number">STEP 4</div>'
+            '<div class="ff-card-title">Export</div>',
+            unsafe_allow_html=True,
+        )
+        render_export_card(chunking_mode)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # Results section below cards
+    render_results_section()
 
 
 if __name__ == "__main__":

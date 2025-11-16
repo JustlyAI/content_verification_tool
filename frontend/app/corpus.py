@@ -1,5 +1,6 @@
 """
 Corpus Management UI Components for AI Verification
+Freshfields-inspired compact sidebar design
 """
 
 import streamlit as st
@@ -102,6 +103,104 @@ def render_active_corpus() -> None:
         ):
             reset_corpus_state()
             st.rerun()
+
+
+def render_corpus_sidebar() -> None:
+    """
+    Render the corpus sidebar with Freshfields styling
+    Compact design for always-visible sidebar
+    """
+    st.markdown('<div class="ff-sidebar-content">', unsafe_allow_html=True)
+
+    st.markdown("### Reference Corpus")
+    st.info("📚 **Knowledge Base** - Upload reference documents that Gemini will use to verify your document")
+
+    st.markdown("")
+
+    # Status
+    if st.session_state.reference_docs_uploaded:
+        st.success("✓ Active & Gemini-Ready")
+    else:
+        st.warning("⏳ No Corpus Loaded")
+
+    st.markdown("")
+
+    # Stats (if corpus is active)
+    if st.session_state.reference_docs_uploaded:
+        col1, col2 = st.columns(2)
+        with col1:
+            doc_count = len(st.session_state.corpus_metadata) if st.session_state.corpus_metadata else 0
+            st.metric("Documents", doc_count)
+            st.metric("Storage", "0 MB")  # TODO: Calculate from metadata
+        with col2:
+            st.metric("Pages", "0")  # TODO: Calculate from metadata
+            st.metric("Chunks", "0")  # TODO: Get from backend
+
+        st.markdown("---")
+
+    # Quick Upload / Corpus Creation
+    if not st.session_state.reference_docs_uploaded:
+        st.markdown("**Upload Reference Corpus**")
+        st.caption("📚 Add documents to use as verification sources")
+
+        case_context = st.text_area(
+            "Case Context",
+            placeholder="Brief description of case or project...",
+            height=80,
+            key="case_context_sidebar",
+            label_visibility="collapsed",
+        )
+
+        uploaded_refs = st.file_uploader(
+            "Upload reference documents",
+            type=["pdf", "docx"],
+            accept_multiple_files=True,
+            key="corpus_upload_sidebar",
+            label_visibility="collapsed",
+            help="These documents form the knowledge base that Gemini uses to verify your document"
+        )
+
+        if uploaded_refs and case_context:
+            if st.button("Create Corpus", type="primary", use_container_width=True, key="create_corpus"):
+                with st.spinner("Creating reference library..."):
+                    result = upload_reference_documents(uploaded_refs, case_context)
+
+                    if result:
+                        # Store corpus information in session state
+                        st.session_state.store_id = result["store_id"]
+                        st.session_state.reference_docs_uploaded = True
+                        st.session_state.case_context = case_context
+                        st.session_state.corpus_metadata = result.get("metadata", [])
+                        st.success(f"✅ {len(uploaded_refs)} file(s) uploaded")
+                        st.rerun()
+        elif uploaded_refs:
+            st.caption("⚠️ Add case context to continue")
+
+        st.markdown("---")
+
+    # Actions (if corpus is active)
+    if st.session_state.reference_docs_uploaded:
+        st.markdown("**Actions**")
+        st.markdown("")
+
+        if st.button("📄 View Library", key="view_docs_sidebar", use_container_width=True):
+            # Show modal or expander with corpus details
+            pass
+
+        if st.button("⚙️ Configure", key="config_sidebar", use_container_width=True):
+            # Show configuration options
+            pass
+
+        if st.button(
+            "🗑️ Clear Corpus",
+            key="clear_sidebar",
+            type="secondary",
+            use_container_width=True,
+        ):
+            reset_corpus_state()
+            st.rerun()
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def render_corpus_management() -> None:
