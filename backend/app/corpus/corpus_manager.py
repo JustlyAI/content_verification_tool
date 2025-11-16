@@ -7,10 +7,11 @@ import os
 import time
 import json
 import hashlib
-from typing import Tuple
+from typing import Tuple, List
 from datetime import datetime
 from termcolor import cprint
 from dotenv import load_dotenv
+from pydantic import BaseModel, Field
 
 from google import genai
 from google.genai import types
@@ -18,6 +19,14 @@ from google.genai import types
 load_dotenv()
 
 from app.models import DocumentMetadata
+
+
+class MetadataResponse(BaseModel):
+    """Response schema for AI-generated metadata (subset of DocumentMetadata)"""
+    summary: str = Field(description="2-3 sentence summary of the document")
+    contextualization: str = Field(description="Relationship to the provided case context")
+    document_type: str = Field(description="Document classification (e.g., contract, invoice)")
+    keywords: List[str] = Field(description="Key concepts extracted from the document")
 
 
 class CorpusManager:
@@ -91,27 +100,31 @@ Provide a JSON response with the following fields:
 Return only valid JSON, no markdown formatting."""
 
             response = self.client.models.generate_content(
-                model="gemini-2.5-flash-lite", contents=[uploaded_file, prompt]
+                model="gemini-2.5-flash-lite",
+                contents=[uploaded_file, prompt],
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    response_schema=MetadataResponse,
+                ),
             )
 
-            response_text = response.text.strip()
-            if response_text.startswith("```"):
-                response_text = response_text.split("```")[1]
-                if response_text.startswith("json"):
-                    response_text = response_text[4:]
-                response_text = response_text.strip()
-
-            metadata_dict = json.loads(response_text)
+            # Use parsed attribute if available, otherwise parse JSON
+            has_parsed = hasattr(response, "parsed") and response.parsed is not None
+            metadata_response = (
+                response.parsed
+                if has_parsed
+                else MetadataResponse(**json.loads(response.text))
+            )
 
             document_id = hashlib.md5(filename.encode()).hexdigest()
 
             metadata = DocumentMetadata(
                 document_id=document_id,
                 filename=filename,
-                summary=metadata_dict.get("summary", ""),
-                contextualization=metadata_dict.get("contextualization", ""),
-                document_type=metadata_dict.get("document_type", "document"),
-                keywords=metadata_dict.get("keywords", []),
+                summary=metadata_response.summary[:256],  # Truncate to API limit
+                contextualization=metadata_response.contextualization,
+                document_type=metadata_response.document_type[:256],  # Truncate to API limit
+                keywords=metadata_response.keywords,
                 generated_at=datetime.now(),
             )
 
@@ -218,10 +231,10 @@ Return only valid JSON, no markdown formatting."""
             custom_metadata = [
                 types.CustomMetadata(
                     key="summary",
-                    string_value=metadata.summary[:500],
+                    string_value=metadata.summary[:256],  # API limit is 256 chars
                 ),
                 types.CustomMetadata(
-                    key="document_type", string_value=metadata.document_type
+                    key="document_type", string_value=metadata.document_type[:256]
                 ),
                 types.CustomMetadata(
                     key="keywords",
@@ -229,14 +242,14 @@ Return only valid JSON, no markdown formatting."""
                 ),
             ]
 
-            # Add file to File Search store (reusing uploaded file)
+            # Add file to File Search store
             cprint(
-                f"[Corpus] Adding file to File Search store (reusing uploaded file)...",
+                f"[Corpus] Adding file to File Search store...",
                 "cyan",
             )
             operation = self.client.file_search_stores.upload_to_file_search_store(
                 file_search_store_name=store_name,
-                file=uploaded_file,
+                file=file_path,
                 config={
                     "custom_metadata": custom_metadata,
                     "display_name": metadata.filename,
@@ -250,7 +263,7 @@ Return only valid JSON, no markdown formatting."""
             while not operation.done and elapsed < max_wait:
                 time.sleep(2)
                 elapsed += 2
-                operation = self.client.operations.get(name=operation.name)
+                operation = self.client.operations.get(operation)
 
             if not operation.done:
                 cprint(
@@ -314,10 +327,10 @@ Return only valid JSON, no markdown formatting."""
             custom_metadata = [
                 types.CustomMetadata(
                     key="summary",
-                    string_value=metadata.summary[:500],
+                    string_value=metadata.summary[:256],  # API limit is 256 chars
                 ),
                 types.CustomMetadata(
-                    key="document_type", string_value=metadata.document_type
+                    key="document_type", string_value=metadata.document_type[:256]
                 ),
                 types.CustomMetadata(
                     key="keywords",
@@ -328,7 +341,7 @@ Return only valid JSON, no markdown formatting."""
             cprint(f"[Corpus] Adding file to File Search store...", "cyan")
             operation = self.client.file_search_stores.upload_to_file_search_store(
                 file_search_store_name=store_name,
-                file=uploaded_file,
+                file=file_path,
                 config={
                     "custom_metadata": custom_metadata,
                     "display_name": metadata.filename,
@@ -341,7 +354,7 @@ Return only valid JSON, no markdown formatting."""
             while not operation.done and elapsed < max_wait:
                 time.sleep(2)
                 elapsed += 2
-                operation = self.client.operations.get(name=operation.name)
+                operation = self.client.operations.get(operation)
                 cprint(f"[Corpus] Indexing... ({elapsed}s)", "cyan")
 
             if not operation.done:

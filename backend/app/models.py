@@ -103,9 +103,9 @@ class DocumentMetadata(BaseModel):
     """Metadata for a reference document"""
     document_id: str = Field(..., description="Unique document identifier")
     filename: str = Field(..., description="Original filename")
-    summary: str = Field(..., description="AI-generated summary of the document")
+    summary: str = Field(..., max_length=256, description="AI-generated summary (max 256 chars for File Search)")
     contextualization: str = Field(..., description="How document relates to case context")
-    document_type: str = Field(..., description="Type of document (e.g., contract, invoice)")
+    document_type: str = Field(..., max_length=256, description="Type of document (max 256 chars for File Search)")
     keywords: List[str] = Field(..., description="Key terms extracted from document")
     generated_at: datetime = Field(..., description="When metadata was generated")
 
