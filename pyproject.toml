@@ -45,6 +45,9 @@ backend = [
     # Utilities
     "python-dateutil==2.9.0.post0",
     "hatchling>=1.27.0",
+    "termcolor>=2.3.0",
+    "docling==2.61.2",
+    "langchain-text-splitters==1.0.0",
 ]
 
 # Frontend dependencies
