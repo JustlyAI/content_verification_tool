@@ -5,7 +5,7 @@ Tests the AI-powered metadata generation for reference documents
 import pytest
 import time
 from pathlib import Path
-from app.verification.gemini_service import GeminiVerificationService
+from app.gemini_service import GeminiVerificationService
 from app.models import DocumentMetadata
 from termcolor import cprint
 

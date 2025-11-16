@@ -19,6 +19,11 @@ load_dotenv()
 from app.models import DocumentChunk
 
 
+class EmptyResponseError(Exception):
+    """Raised when API returns empty response"""
+    pass
+
+
 class GeminiVerifier:
     """Service for AI-powered document chunk verification using Google Gemini"""
 
@@ -52,26 +57,35 @@ class GeminiVerifier:
                     raise
 
                 error_str = str(e).lower()
-                is_retryable = any(
-                    x in error_str
-                    for x in [
-                        "rate limit",
-                        "429",
-                        "timeout",
-                        "500",
-                        "503",
-                        "temporarily",
-                        "unavailable",
-                        "deadline",
-                        "resource_exhausted",
-                    ]
+                is_retryable = (
+                    isinstance(e, EmptyResponseError)
+                    or any(
+                        x in error_str
+                        for x in [
+                            "rate limit",
+                            "429",
+                            "timeout",
+                            "500",
+                            "503",
+                            "temporarily",
+                            "unavailable",
+                            "deadline",
+                            "resource_exhausted",
+                        ]
+                    )
                 )
 
                 if not is_retryable:
                     raise
 
                 wait_time = 2**attempt
-                if "429" in error_str or "rate limit" in error_str:
+                if isinstance(e, EmptyResponseError):
+                    wait_time = min(30, 5 * (2**attempt))
+                    cprint(
+                        f"[Verifier] Empty response. Retry {attempt + 1}/{max_retries} in {wait_time}s",
+                        "yellow",
+                    )
+                elif "429" in error_str or "rate limit" in error_str:
                     wait_time = min(30, 10 * (2**attempt))
                     cprint(
                         f"[Verifier] Rate limit hit. Retry {attempt + 1}/{max_retries} in {wait_time}s",
@@ -109,22 +123,34 @@ class GeminiVerifier:
             raise ValueError("Gemini client not initialized - check GEMINI_API_KEY")
 
         try:
-            prompt = f"""Context: {case_context}
+            prompt = f"""You are a document verification assistant with access to reference documents.
 
-Verify this content against the reference documents:
+## CONTEXT:
 
-Page {chunk.page_number}, Item {chunk.item_number}:
-"{chunk.text}"
+{case_context}
 
-Please verify if this content appears in or is supported by the reference documents. Provide your response in JSON format with these fields:
+## TASK:
 
-1. verified: (boolean) true if the content is found/supported, false otherwise
-2. confidence_score: (integer 1-10) how confident you are in this verification
-3. verification_source: (string) citation with document name and location (e.g., "Contract.pdf, Section 2.1")
-4. verification_note: (string) brief explanation of your reasoning
-5. citations: (array) list of specific passages that support this verification, each with "title" and "excerpt" fields
+Verify if the following statement is supported by the reference documents.
 
-Return only valid JSON, no markdown formatting."""
+## STATEMENT:
+"Page {chunk.page_number}, Item {chunk.item_number}: {chunk.text}"
+
+INSTRUCTIONS:
+1. Search the reference documents for information about this statement
+2. If you find supporting evidence, mark verified=true with high confidence (7-10)
+3. If you find contradicting evidence, mark verified=false and explain
+4. If you find no relevant information, mark verified=false with low confidence (1-3)
+
+REQUIRED JSON OUTPUT FORMAT:
+{{
+  "verified": boolean,
+  "confidence_score": integer (1-10),
+  "verification_source": "citation or 'No match found'",
+  "verification_note": "brief explanation"
+}}
+
+Provide ONLY the JSON object, no other text."""
 
             tool = types.Tool(
                 file_search=types.FileSearch(file_search_store_names=[store_name])
@@ -141,12 +167,7 @@ Return only valid JSON, no markdown formatting."""
 
             if not response.text:
                 cprint(f"[Verifier] ⚠️  Empty response from API", "yellow")
-                chunk.verified = False
-                chunk.verification_score = 1
-                chunk.verification_source = "Empty API response"
-                chunk.verification_note = "API returned empty response"
-                chunk.citations = []
-                return chunk
+                raise EmptyResponseError("API returned empty response")
 
             response_text = response.text.strip()
             if response_text.startswith("```"):
@@ -186,7 +207,13 @@ Return only valid JSON, no markdown formatting."""
                         ) in candidate.grounding_metadata.grounding_chunks:
                             citation = {}
 
-                            if (
+                            # File Search uses retrieved_context (check this first)
+                            if hasattr(grounding_chunk, "retrieved_context"):
+                                ctx = grounding_chunk.retrieved_context
+                                citation["title"] = getattr(ctx, "title", "Document")
+                                citation["excerpt"] = getattr(ctx, "text", "")[:300]
+                            # Fallback to document attribute (generic grounding)
+                            elif (
                                 hasattr(grounding_chunk, "document")
                                 and grounding_chunk.document
                             ):
@@ -195,6 +222,14 @@ Return only valid JSON, no markdown formatting."""
                                     if hasattr(grounding_chunk.document, "title")
                                     else "Document"
                                 )
+                                # Extract text from content attribute
+                                if hasattr(grounding_chunk, "content") and hasattr(
+                                    grounding_chunk.content, "text"
+                                ):
+                                    citation["excerpt"] = grounding_chunk.content.text[:300]
+                                else:
+                                    citation["excerpt"] = ""
+                            # Web grounding
                             elif (
                                 hasattr(grounding_chunk, "web") and grounding_chunk.web
                             ):
@@ -203,20 +238,17 @@ Return only valid JSON, no markdown formatting."""
                                     if hasattr(grounding_chunk.web, "title")
                                     else "Web Source"
                                 )
+                                if hasattr(grounding_chunk.web, "uri"):
+                                    citation["uri"] = grounding_chunk.web.uri
+                                if hasattr(grounding_chunk, "content") and hasattr(
+                                    grounding_chunk.content, "text"
+                                ):
+                                    citation["excerpt"] = grounding_chunk.content.text[:300]
+                                else:
+                                    citation["excerpt"] = ""
                             else:
                                 citation["title"] = "Unknown Source"
-
-                            if hasattr(grounding_chunk, "content") and hasattr(
-                                grounding_chunk.content, "text"
-                            ):
-                                citation["excerpt"] = grounding_chunk.content.text
-                            else:
                                 citation["excerpt"] = ""
-
-                            if hasattr(grounding_chunk, "web") and hasattr(
-                                grounding_chunk.web, "uri"
-                            ):
-                                citation["uri"] = grounding_chunk.web.uri
 
                             actual_citations.append(citation)
 
@@ -228,10 +260,10 @@ Return only valid JSON, no markdown formatting."""
                 chunk.citations = actual_citations
             else:
                 cprint(
-                    f"[Verifier] No grounding metadata, using AI-generated citations",
+                    f"[Verifier] No grounding metadata found",
                     "yellow",
                 )
-                chunk.citations = result.get("citations", [])
+                chunk.citations = []
 
             chunk.verified = result.get("verified", False)
             chunk.verification_score = min(
@@ -244,6 +276,14 @@ Return only valid JSON, no markdown formatting."""
 
             return chunk
 
+        except EmptyResponseError as e:
+            cprint(f"[Verifier] ✗ Empty response after retries", "yellow")
+            chunk.verified = False
+            chunk.verification_score = 1
+            chunk.verification_source = "Empty API response"
+            chunk.verification_note = "API returned empty response after retries"
+            chunk.citations = []
+            return chunk
         except Exception as e:
             cprint(f"[Verifier] ✗ Error verifying chunk: {e}", "yellow")
             chunk.verified = False
@@ -317,6 +357,30 @@ Return only valid JSON, no markdown formatting."""
                     "cyan",
                 )
                 await asyncio.sleep(3)
+
+        # Final retry pass for empty responses
+        failed_chunks = [
+            (i, c) for i, c in enumerate(verified_chunks)
+            if c.verification_source == "Empty API response"
+        ]
+
+        if failed_chunks:
+            cprint(
+                f"[Verifier] Retrying {len(failed_chunks)} chunks with empty responses...",
+                "cyan",
+            )
+
+            for idx, chunk in failed_chunks:
+                try:
+                    cprint(f"[Verifier] Final retry for chunk {chunk.item_number}", "cyan")
+                    verified_chunk = self._retry_with_backoff(
+                        self.verify_chunk, chunk, store_name, case_context, max_retries=2
+                    )
+                    verified_chunks[idx] = verified_chunk
+                    await asyncio.sleep(2)
+                except Exception as e:
+                    cprint(f"[Verifier] Final retry failed for chunk {chunk.item_number}", "yellow")
+                    chunk.verification_note = "API returned empty response after all retries - needs manual review"
 
         verified_count = sum(1 for c in verified_chunks if c.verified)
         cprint(

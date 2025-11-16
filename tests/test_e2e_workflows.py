@@ -7,7 +7,7 @@ import asyncio
 from fastapi.testclient import TestClient
 from app.main import app
 from app.models import ChunkingMode, OutputFormat
-from app.verification.gemini_service import GeminiVerificationService
+from app.gemini_service import GeminiVerificationService
 from termcolor import cprint
 import io
 from pathlib import Path

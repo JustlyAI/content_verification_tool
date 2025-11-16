@@ -6,7 +6,7 @@ import pytest
 import time
 import asyncio
 from pathlib import Path
-from app.verification.gemini_service import GeminiVerificationService
+from app.gemini_service import GeminiVerificationService
 from app.models import DocumentChunk, DocumentMetadata
 from termcolor import cprint
 
