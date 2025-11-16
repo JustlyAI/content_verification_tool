@@ -5,6 +5,8 @@ Document processing module using Docling for PDF/DOCX conversion
 from pathlib import Path
 from typing import Dict, Any, Optional
 import subprocess
+import sys
+import shutil
 from termcolor import cprint
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.datamodel.base_models import InputFormat
@@ -26,6 +28,13 @@ class DocumentProcessor:
     def __init__(self):
         """Initialize the document processor"""
         cprint("[PROCESSOR] Initializing Docling DocumentConverter...", "cyan")
+
+        # Detect LibreOffice command at initialization
+        self.libreoffice_cmd = self._find_libreoffice()
+        if self.libreoffice_cmd:
+            cprint(f"[PROCESSOR] LibreOffice found at: {self.libreoffice_cmd}", "green")
+        else:
+            cprint("[PROCESSOR] ⚠️  LibreOffice not found - DOCX conversion will fail", "yellow")
 
         # Configure pipeline options for PDF processing with OCR
         # Enable table parsing and footnote extraction
@@ -57,6 +66,50 @@ class DocumentProcessor:
 
         cprint("[PROCESSOR] DocumentConverter initialized successfully", "green")
 
+    def _find_libreoffice(self) -> Optional[str]:
+        """
+        Find LibreOffice executable across different platforms
+
+        Returns:
+            Path to LibreOffice executable, or None if not found
+        """
+        # Try common paths based on platform
+        possible_commands = []
+
+        if sys.platform == "darwin":  # macOS
+            possible_commands = [
+                "/Applications/LibreOffice.app/Contents/MacOS/soffice",
+                "/usr/local/bin/soffice",
+                "soffice",
+                "libreoffice",
+            ]
+        elif sys.platform == "win32":  # Windows
+            possible_commands = [
+                r"C:\Program Files\LibreOffice\program\soffice.exe",
+                r"C:\Program Files (x86)\LibreOffice\program\soffice.exe",
+                "soffice",
+                "libreoffice",
+            ]
+        else:  # Linux and others
+            possible_commands = [
+                "libreoffice",
+                "soffice",
+                "/usr/bin/libreoffice",
+                "/usr/bin/soffice",
+            ]
+
+        # Try each command
+        for cmd in possible_commands:
+            # Check if it's a full path
+            if Path(cmd).exists():
+                return cmd
+
+            # Check if it's in PATH
+            if shutil.which(cmd):
+                return cmd
+
+        return None
+
     def _convert_docx_to_pdf(self, docx_path: Path) -> Path:
         """
         Convert DOCX to PDF using LibreOffice
@@ -72,6 +125,15 @@ class DocumentProcessor:
         """
         cprint(f"[PROCESSOR] Converting DOCX to PDF using LibreOffice...", "cyan")
 
+        # Check if LibreOffice is available
+        if not self.libreoffice_cmd:
+            raise Exception(
+                "LibreOffice not found. Please install LibreOffice:\n"
+                "  macOS: brew install --cask libreoffice\n"
+                "  Ubuntu: sudo apt-get install libreoffice\n"
+                "  Windows: Download from https://www.libreoffice.org/download/"
+            )
+
         # Get output directory (same as input file directory)
         output_dir = docx_path.parent
 
@@ -82,7 +144,7 @@ class DocumentProcessor:
         try:
             result = subprocess.run(
                 [
-                    "libreoffice",
+                    self.libreoffice_cmd,
                     "--headless",
                     "--convert-to",
                     "pdf",

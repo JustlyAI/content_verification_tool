@@ -24,8 +24,8 @@ class DocumentChunker:
         # Initialize paragraph-level splitter (LangChain)
         # Enhanced with legal document-specific separators and keep_separator
         self.paragraph_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=100,
-            chunk_overlap=10,
+            chunk_size=800,
+            chunk_overlap=50,
             length_function=len,
             separators=["\n\n", "\n", ". ", ".\n", "! ", "? ", "; ", ": ", " ", ""],
             keep_separator="end",  # Preserve punctuation at chunk boundaries
