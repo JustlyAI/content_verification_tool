@@ -41,9 +41,7 @@ from app.ui_components import (
     render_backend_status,
     render_sidebar,
     render_footer,
-    render_verification_results_summary,
 )
-from app.corpus import render_corpus_management
 
 # Configure logging
 logging.basicConfig(
@@ -53,16 +51,54 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def render_document_upload() -> None:
-    """Render Step 1: Document Upload section"""
-    st.header("Step 1: Upload Document To Verify")
-    st.markdown(f"Upload a PDF or DOCX file (maximum {MAX_FILE_SIZE_MB} MB)")
+def render_corpus_tab() -> None:
+    """Render Corpus Management tab with enhanced layout"""
+    st.header("Reference Corpus")
+
+    # Status banner
+    if st.session_state.reference_docs_uploaded:
+        st.success("✅ Corpus Active | Ready for verification")
+    else:
+        st.warning("⚠️ Corpus Not Configured | Upload reference documents to enable AI verification")
+
+    st.divider()
+
+    # Two-column layout for better organization
+    if st.session_state.reference_docs_uploaded:
+        # Active corpus: show details in two columns
+        col1, col2 = st.columns([2, 1])
+
+        with col1:
+            st.subheader("📚 Corpus Details")
+            from app.corpus import render_active_corpus
+            render_active_corpus()
+
+        with col2:
+            st.subheader("📊 Statistics")
+            # Show corpus statistics
+            if st.session_state.corpus_metadata:
+                st.metric("Documents", len(st.session_state.corpus_metadata))
+
+            if st.session_state.store_id:
+                st.caption("**Store ID:**")
+                st.code(st.session_state.store_id, language="text")
+
+            if st.session_state.case_context:
+                st.caption("**Case Context:**")
+                st.info(st.session_state.case_context)
+    else:
+        # Corpus creation: full width for form
+        from app.corpus import render_corpus_creation
+        render_corpus_creation()
+
+
+def render_upload_card() -> None:
+    """Render Card 1: Upload document section"""
+    st.markdown("Upload your document to verify")
 
     # Tip about corpus if not configured
     if not st.session_state.reference_docs_uploaded:
-        st.info(
-            "💡 **Tip**: Expand 'AI Reference Corpus' above to enable automated verification"
-        )
+        st.caption("💡 Configure corpus first for AI verification")
 
     uploaded_file = st.file_uploader(
         "Choose a file",
@@ -77,23 +113,18 @@ def render_document_upload() -> None:
         file_size_mb = len(uploaded_file.getvalue()) / (1024 * 1024)
 
         if file_size_mb > MAX_FILE_SIZE_MB:
-            st.error(
-                f"⚠️ File too large: {file_size_mb:.2f} MB. Maximum allowed size is {MAX_FILE_SIZE_MB} MB."
-            )
-            st.stop()
+            st.error(f"⚠️ File too large: {file_size_mb:.2f} MB")
+            return
         else:
-            st.info(f"📄 **File**: {uploaded_file.name} ({file_size_mb:.2f} MB)")
+            st.caption(f"📄 {uploaded_file.name} ({file_size_mb:.2f} MB)")
 
         # Upload button
-        upload_button = st.button(
-            "🚀 Upload and Process",
+        if st.button(
+            "🚀 Upload",
             type="primary",
             use_container_width=True,
             disabled=st.session_state.upload_in_progress,
-        )
-
-        # Handle upload after button click
-        if upload_button:
+        ):
             st.session_state.upload_in_progress = True
 
             # Create progress indicators
@@ -114,175 +145,119 @@ def render_document_upload() -> None:
                 st.session_state.document_id = result["document_id"]
                 st.session_state.document_info = result
                 st.session_state.upload_in_progress = False
-                # Show success message in place of progress bar
                 status_text.success(f"✅ {result['message']}")
             elif result:
                 st.session_state.upload_in_progress = False
-                status_text.error("⚠️ Invalid response from server. Please try again.")
+                status_text.error("⚠️ Invalid response from server")
             else:
                 st.session_state.upload_in_progress = False
+    elif st.session_state.document_info:
+        st.success(f"✅ {st.session_state.document_info.get('filename', 'Document uploaded')}")
 
 
-def render_chunking_selection() -> str:
-    """Render Step 2: Chunking Mode Selection and return selected mode"""
-    st.divider()
-    st.header("Step 2: Select Chunking Mode")
-    st.markdown("Choose how to split the document for verification")
+def render_chunking_card() -> str:
+    """Render Card 2: Chunking mode selection"""
+    if not st.session_state.document_info:
+        st.caption("Upload a document first")
+        return "paragraph"
 
-    # Tip about AI verification if corpus is active
-    if st.session_state.reference_docs_uploaded:
-        st.success(
-            "🤖 AI Verification is enabled - you'll be able to run verification after selecting chunking mode"
-        )
+    st.markdown("Select chunking mode")
 
     chunking_mode = st.radio(
         "Chunking Mode",
         options=["paragraph", "sentence"],
-        index=0,  # Explicit default to paragraph
+        index=0,
         format_func=lambda x: {
-            "paragraph": "📝 Paragraph-level chunking",
-            "sentence": "📄 Sentence-level chunking",
+            "paragraph": "📝 Paragraph",
+            "sentence": "📄 Sentence",
         }[x],
-        help="Paragraph mode groups related content (recommended for most documents). Sentence mode provides finer granularity.",
+        help="Paragraph groups content, Sentence provides finer detail",
         label_visibility="collapsed",
-    )
-
-    st.caption(
-        "**Paragraph mode** (default): Groups related sentences together for coherent verification."
-    )
-    st.caption(
-        "**Sentence mode**: Individual sentences for detailed line-by-line verification."
     )
 
     return chunking_mode
 
 
-def render_ai_verification(chunking_mode: str) -> None:
-    """Render Step 2.5: AI Verification section (if corpus is active)"""
-    if (
-        not st.session_state.reference_docs_uploaded
-        or st.session_state.verification_complete
-    ):
+def render_verify_card(chunking_mode: str) -> None:
+    """Render Card 3: AI Verification"""
+    if not st.session_state.document_info:
+        st.caption("Upload a document first")
         return
 
-    st.divider()
-    st.header("✨ Step 2.5: Run AI Verification")
+    if not st.session_state.reference_docs_uploaded:
+        st.caption("⚠️ Corpus not active")
+        return
 
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        st.info("📊 Ready to verify chunks against reference documents")
-    with col2:
-        if st.button("🚀 Verify Now", type="primary", use_container_width=True):
-            progress_bar = st.progress(0)
-            status_text = st.empty()
+    if st.session_state.verification_complete:
+        st.success("✅ Verification complete")
+        return
 
-            status_text.text("Starting verification...")
+    st.markdown("Run AI verification")
 
-            result = execute_verification(
-                document_id=st.session_state.document_id,
-                store_id=st.session_state.store_id,
-                case_context=st.session_state.case_context,
-                chunking_mode=chunking_mode,
-            )
+    if st.button("🚀 Verify", type="primary", use_container_width=True):
+        progress_bar = st.progress(0)
+        status_text = st.empty()
 
-            if result:
-                progress_bar.progress(50)
-                status_text.text("Processing verification results...")
+        status_text.text("Verifying...")
 
-                st.session_state.verification_complete = True
-                st.session_state.verification_results = result
-                st.session_state.chunking_mode = chunking_mode
+        result = execute_verification(
+            document_id=st.session_state.document_id,
+            store_id=st.session_state.store_id,
+            case_context=st.session_state.case_context,
+            chunking_mode=chunking_mode,
+        )
 
-                progress_bar.progress(100)
-                status_text.text("Verification complete!")
+        if result:
+            st.session_state.verification_complete = True
+            st.session_state.verification_results = result
+            st.session_state.chunking_mode = chunking_mode
 
-                # Show statistics
-                st.success("✅ AI Verification Complete!")
-
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.metric("Total Chunks", result["total_chunks"])
-                with col2:
-                    verified_count = result["total_verified"]
-                    verified_pct = (
-                        (verified_count / result["total_chunks"] * 100)
-                        if result["total_chunks"] > 0
-                        else 0
-                    )
-                    st.metric(
-                        "Verified",
-                        f"{verified_count}",
-                        f"{verified_pct:.1f}%",
-                    )
-                with col3:
-                    st.metric(
-                        "Processing Time",
-                        f"{result['processing_time_seconds']:.1f}s",
-                    )
-                with col4:
-                    # Calculate average confidence
-                    scores = [
-                        c.get("verification_score", 0)
-                        for c in result["verified_chunks"]
-                        if c.get("verified") and c.get("verification_score")
-                    ]
-                    avg_score = sum(scores) / len(scores) if scores else 0
-                    st.metric("Avg Confidence", f"{avg_score:.1f}/10")
-
-                st.rerun()
-            else:
-                progress_bar.empty()
-                status_text.empty()
+            progress_bar.progress(100)
+            status_text.success("✅ Done!")
+            st.rerun()
+        else:
+            progress_bar.empty()
+            status_text.empty()
 
 
-def render_output_format_selection() -> str:
-    """Render Step 3: Output Format Selection and return selected format"""
-    st.divider()
-    st.header("Step 3: Select Output Format")
-    st.markdown("Choose your preferred output format")
+def render_export_card(chunking_mode: str) -> None:
+    """Render Card 4: Output format and export"""
+    if not st.session_state.document_info:
+        st.caption("Upload a document first")
+        return
+
+    st.markdown("Select format & export")
 
     output_format = st.selectbox(
         "Output Format",
         options=list(OUTPUT_FORMAT_LABELS.keys()),
-        format_func=lambda x: OUTPUT_FORMAT_LABELS[x],
-        help="Select the format that best suits your workflow",
+        format_func=lambda x: OUTPUT_FORMAT_LABELS[x].split(" - ")[0],  # Shorter labels
+        help="Select output format",
         label_visibility="collapsed",
     )
 
-    # Show format description
-    st.info(f"ℹ️ {FORMAT_DESCRIPTIONS[output_format]}")
+    # Show download if already generated
+    if st.session_state.last_generated:
+        st.download_button(
+            label="⬇️ Download",
+            data=st.session_state.last_generated["content"],
+            file_name=st.session_state.last_generated["filename"],
+            mime=st.session_state.last_generated["mime_type"],
+            type="primary",
+            use_container_width=True,
+        )
 
-    return output_format
-
-
-def render_generate_document(chunking_mode: str, output_format: str) -> None:
-    """Render Step 4: Generate Document section"""
-    st.divider()
-
-    if st.session_state.last_generated is None:
-        st.header("Step 4: Generate Verification Document")
-
-        col1, col2 = st.columns([2, 1])
-
-        with col1:
-            st.markdown(
-                f"""
-            **Ready to generate!**
-            - Chunking Mode: **{chunking_mode.title()}**
-            - Output Format: **{output_format.replace('_', ' ').title()}**
-            """
-            )
-
-        with col2:
-            generate_button = st.button(
-                "🎯 Generate Document",
-                type="primary",
-                use_container_width=True,
-                help="Click to generate the verification document",
-            )
-
-        if generate_button:
-            with st.spinner("Generating verification document... This may take a moment."):
+        if st.button("🔄 New Format", use_container_width=True):
+            st.session_state.last_generated = None
+            st.rerun()
+    else:
+        # Generate button
+        if st.button(
+            "🎯 Generate",
+            type="primary",
+            use_container_width=True,
+        ):
+            with st.spinner("Generating..."):
                 payload = {
                     "document_id": st.session_state.document_id,
                     "output_format": output_format,
@@ -303,43 +278,110 @@ def render_generate_document(chunking_mode: str, output_format: str) -> None:
                         }
                         st.rerun()
                 elif export_result:
-                    st.error("⚠️ Invalid export response. Please try again.")
+                    st.error("⚠️ Export failed")
 
 
-def render_download_section() -> None:
-    """Render download section (when document is ready)"""
-    if not st.session_state.last_generated:
+def render_results_section() -> None:
+    """Render results section below verification cards"""
+    if not st.session_state.verification_complete:
         return
 
-    st.header("Step 4: Download Your Document")
-    st.success("🎉 Document ready for download!")
+    st.divider()
+    st.subheader("📊 Verification Results")
 
-    # Show verification status if available
-    if st.session_state.verification_complete:
-        st.info(
-            "📊 This document includes AI verification results with confidence scores and citations"
-        )
+    results = st.session_state.verification_results
 
-    st.download_button(
-        label="⬇️ Download Verification Document",
-        data=st.session_state.last_generated["content"],
-        file_name=st.session_state.last_generated["filename"],
-        mime=st.session_state.last_generated["mime_type"],
-        type="primary",
-        use_container_width=True,
-    )
+    # Metrics row
+    col1, col2, col3, col4 = st.columns(4)
 
-    col1, col2 = st.columns(2)
     with col1:
-        if st.button("📝 Generate Different Format", use_container_width=True):
-            st.session_state.last_generated = None
-            st.rerun()
+        st.metric("Total Chunks", results.get("total_chunks", 0))
     with col2:
-        if st.button("📄 Upload New Document", use_container_width=True):
-            st.session_state.document_id = None
-            st.session_state.document_info = None
-            st.session_state.last_generated = None
-            st.rerun()
+        verified_count = results.get("total_verified", 0)
+        total_count = results.get("total_chunks", 0)
+        verified_pct = (verified_count / total_count * 100) if total_count > 0 else 0
+        st.metric("Verified", f"{verified_count}", f"{verified_pct:.1f}%")
+    with col3:
+        # Calculate average confidence
+        scores = [
+            c.get("verification_score", 0)
+            for c in results.get("verified_chunks", [])
+            if c.get("verified") and c.get("verification_score")
+        ]
+        avg_score = sum(scores) / len(scores) if scores else 0
+        st.metric("Avg Confidence", f"{avg_score:.1f}/10")
+    with col4:
+        st.metric("Time", f"{results.get('processing_time_seconds', 0):.1f}s")
+
+    st.divider()
+
+    # Confidence breakdown
+    scores_exist = bool(scores)
+    if scores_exist:
+        low_confidence = sum(1 for s in scores if s < 5)
+        medium_confidence = sum(1 for s in scores if 5 <= s < 8)
+        high_confidence = sum(1 for s in scores if s >= 8)
+
+        st.markdown("**Confidence Distribution:**")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("🔴 Low (<5)", low_confidence)
+        with col2:
+            st.metric("🟡 Medium (5-7)", medium_confidence)
+        with col3:
+            st.metric("🟢 High (8-10)", high_confidence)
+
+    # Reset verification button
+    st.divider()
+    col1, col2, col3 = st.columns([2, 1, 2])
+    with col2:
+        from app.api_client import reset_verification
+        from app.state import reset_verification_state
+
+        if st.button(
+            "🔄 Reset Verification",
+            type="secondary",
+            use_container_width=True,
+            help="Clear verification results and re-verify",
+        ):
+            if st.session_state.document_id:
+                with st.spinner("Clearing verification results..."):
+                    success = reset_verification(st.session_state.document_id)
+                    if success:
+                        reset_verification_state()
+                        st.success("✅ Verification cleared!")
+                        st.rerun()
+
+
+def render_verification_tab() -> None:
+    """Render Verification tab with horizontal cards"""
+    st.header("Document Verification")
+
+    # Create 4 horizontal cards
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        with st.container():
+            st.markdown("### 1️⃣ Upload")
+            render_upload_card()
+
+    with col2:
+        with st.container():
+            st.markdown("### 2️⃣ Chunking")
+            chunking_mode = render_chunking_card()
+
+    with col3:
+        with st.container():
+            st.markdown("### 3️⃣ Verify")
+            render_verify_card(chunking_mode)
+
+    with col4:
+        with st.container():
+            st.markdown("### 4️⃣ Export")
+            render_export_card(chunking_mode)
+
+    # Results section below cards
+    render_results_section()
 
 
 def main() -> None:
@@ -358,33 +400,16 @@ def main() -> None:
     # Render sidebar
     render_sidebar()
 
-    # CORPUS MANAGEMENT PANEL (NEW - Always at top)
-    render_corpus_management()
-
     st.divider()
 
-    # Step 1: Document Upload
-    render_document_upload()
+    # Tab-based navigation
+    tab1, tab2 = st.tabs(["📚 Corpus", "✅ Verification"])
 
-    # Show remaining steps only if document is uploaded
-    if st.session_state.document_info:
-        # Step 2: Chunking Mode Selection
-        chunking_mode = render_chunking_selection()
+    with tab1:
+        render_corpus_tab()
 
-        # Step 2.5: Run AI Verification (if corpus active and not complete)
-        render_ai_verification(chunking_mode)
-
-        # Show verification results summary if complete
-        render_verification_results_summary()
-
-        # Step 3: Output Format Selection
-        output_format = render_output_format_selection()
-
-        # Step 4: Generate Document
-        render_generate_document(chunking_mode, output_format)
-
-        # Download section (if generated)
-        render_download_section()
+    with tab2:
+        render_verification_tab()
 
     # Footer
     render_footer()

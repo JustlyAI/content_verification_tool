@@ -44,10 +44,12 @@ All outputs include columns for verification workflows:
 ### Prerequisites
 
 **Docker (Recommended):**
+
 - Docker 20.10+ and Docker Compose 2.0+
 - 4GB+ RAM recommended
 
 **Local Development:**
+
 - Python 3.11+
 - 4GB+ RAM recommended
 
@@ -154,11 +156,13 @@ docker-compose up --build
 
 ### AI Verification Features
 
-- **Reference Corpus Management**: Upload and manage reference documents
-- **Automated Verification**: AI checks chunks against references
-- **Confidence Scores**: 1-10 scale for reliability
-- **Source Citations**: Exact references with excerpts
-- **Cost Efficient**: ~$0.01 per 50-page document (Gemini 2.0 Flash)
+- **Reference Corpus Management**: Upload and manage reference documents via File Search stores
+- **Automated Verification**: AI verifies chunks using `gemini-2.5-flash` with semantic search
+- **Metadata Generation**: AI extracts document summaries and keywords using `gemini-2.5-flash-lite`
+- **Confidence Scores**: 1-10 scale for verification reliability
+- **Source Citations**: Grounding metadata with exact references and excerpts
+- **Batch Processing**: Rate-limited concurrent verification with retry logic
+- **Cost Efficient**: ~$0.01 per 50-page document, free File Search storage
 
 ---
 
@@ -167,12 +171,14 @@ docker-compose up --build
 ### Key Endpoints
 
 **Upload Document**
+
 ```bash
 curl -X POST "http://localhost:8000/upload" \
   -F "file=@document.pdf"
 ```
 
 **Export Document**
+
 ```bash
 curl -X POST "http://localhost:8000/export" \
   -H "Content-Type: application/json" \
@@ -184,12 +190,14 @@ curl -X POST "http://localhost:8000/export" \
 ```
 
 **Download File**
+
 ```bash
 curl -X GET "http://localhost:8000/download/abc123..." \
   --output verification.docx
 ```
 
 **AI Verification**
+
 ```bash
 # Upload references
 curl -X POST "http://localhost:8000/api/verify/upload-references" \
@@ -229,8 +237,15 @@ curl -X POST "http://localhost:8000/api/verify/execute" \
 │    FastAPI Backend (8000)       │
 │  • Docling conversion           │
 │  • Chunking pipeline            │
-│  • Gemini AI integration        │
 │  • Output generation            │
+│                                 │
+│  AI Verification:               │
+│  • CorpusManager                │
+│    - File Search stores         │
+│    - Metadata (flash-lite)      │
+│  • GeminiVerifier               │
+│    - Verification (flash)       │
+│    - Grounding citations        │
 └────────────┬────────────────────┘
              │
              ↓
@@ -284,6 +299,7 @@ content_verification_tool/
 ### Backend Issues
 
 **Port 8000 already in use**
+
 ```bash
 # Mac/Linux
 lsof -ti:8000 | xargs kill -9
@@ -293,12 +309,14 @@ netstat -ano | findstr :8000
 ```
 
 **Module not found**
+
 ```bash
 pip install -r backend/requirements.txt
 python -m spacy download en_core_web_sm
 ```
 
 **Docling conversion fails**
+
 - Check file is not corrupted
 - Verify file size (max 100 MB)
 - Check backend logs: `docker-compose logs -f backend`
@@ -306,6 +324,7 @@ python -m spacy download en_core_web_sm
 ### Frontend Issues
 
 **Backend API not available**
+
 ```bash
 # Check backend health
 curl http://localhost:8000/health
@@ -315,6 +334,7 @@ echo $BACKEND_URL  # Should be http://localhost:8000
 ```
 
 **Upload fails**
+
 - Verify file format (PDF or DOCX only)
 - Check file size (< 100 MB)
 - Review backend logs
@@ -322,6 +342,7 @@ echo $BACKEND_URL  # Should be http://localhost:8000
 ### Docker Issues
 
 **Container won't start**
+
 ```bash
 # Check logs
 docker-compose logs backend
@@ -333,17 +354,20 @@ docker-compose up --build
 ```
 
 **Out of memory**
+
 - Increase Docker memory in Docker Desktop settings
 - Minimum: 4GB, Recommended: 8GB
 
 ### Performance
 
 **Slow processing**
+
 - Large documents (50+ pages) may take 1-2 minutes
 - Sentence mode is slower than paragraph mode
 - First run downloads SpaCy model (one-time)
 
 **Clear cache**
+
 ```bash
 # Via API
 curl -X DELETE http://localhost:8000/cache/clear
@@ -391,24 +415,37 @@ docker-compose logs > application.log
 
 ## Tech Stack
 
-**Backend**: FastAPI • Docling • LangChain • python-docx • pandas • spaCy • Google Gemini AI
+**Backend**: FastAPI • Docling • LangChain • python-docx • pandas • spaCy • Google Gemini API
 
 **Frontend**: Streamlit
 
 **Infrastructure**: Docker • Docker Compose • UV/pip
 
-**AI**: Google Gemini 2.0 Flash with File Search
+**AI Models**:
+- `gemini-2.5-flash` - Chunk verification
+- `gemini-2.5-flash-lite` - Metadata generation
+- File Search (RAG) - Reference corpus with automatic embeddings
+
+---
+
+## Future Improvements
+
+- Better semantic chunking of multi-sentence 'clauses'.
 
 ---
 
 ## Cost Estimation (AI Verification)
 
-Typical costs using Gemini 2.0 Flash:
-- Metadata generation: ~$0.00003 per document
-- Verification: ~$0.0042 per 100 chunks
+Typical costs using Gemini models:
+
+- Metadata generation (`gemini-2.5-flash-lite`): ~$0.00003 per document
+- Verification (`gemini-2.5-flash`): ~$0.0042 per 100 chunks
 - **Total for 50-page document**: ~$0.01
 
-Storage and embeddings are **FREE** with Gemini File Search.
+**File Search (RAG):**
+- Storage: FREE
+- Query-time embeddings: FREE
+- Initial indexing: $0.15 per 1M tokens (one-time)
 
 ---
 
@@ -422,5 +459,5 @@ Storage and embeddings are **FREE** with Gemini File Search.
 
 ---
 
-**Version**: 1.1.0
-**Last Updated**: 2025-11-14
+**Version**: 1.2.0
+**Last Updated**: 2025-11-16

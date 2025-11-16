@@ -2,9 +2,9 @@
 Unit tests for document chunker functionality
 """
 import pytest
-from backend.app.chunker import DocumentChunker
-from backend.app.document_processor import DocumentProcessor
-from backend.app.models import ChunkingMode, DocumentChunk
+from app.processing.chunker import DocumentChunker
+from app.processing.document_processor import DocumentProcessor
+from app.models import ChunkingMode, DocumentChunk
 from termcolor import cprint
 
 

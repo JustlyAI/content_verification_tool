@@ -3,8 +3,8 @@ Unit tests for output generator - Word, Excel, CSV, JSON formats
 """
 import pytest
 from pathlib import Path
-from backend.app.output_generator import OutputGenerator
-from backend.app.models import OutputFormat, DocumentChunk
+from app.processing.output_generator import OutputGenerator
+from app.models import OutputFormat, DocumentChunk
 from termcolor import cprint
 import pandas as pd
 from docx import Document

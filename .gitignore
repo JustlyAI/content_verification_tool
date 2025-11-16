@@ -234,8 +234,11 @@ sample_documents/
 .claude/
 CLAUDE.md
 **/CLAUDE.md
+.mcp.json
 .plans/
 .docs/
+.uv-cache
+.pytest_cache/
 
 # OS specific
 .DS_Store

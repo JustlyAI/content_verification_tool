@@ -4,16 +4,17 @@
 - add informative print statements every step of the way to debug and see what the agent is doing and thinking
 - have termcolor printing with cprint very step of the way to inform the user
 - major variables should be all caps Variables on top of the script and not user input taking unless otherwise specified
-- if there are models in the script like gpt-4o or gpt-4o-mini or o1-mini or o1-preview or claude-4-5-sonnet-20241022 do not change them as they now exist
-- use pydantic
+- if there are models in the script do not change them as they now exist:
+  - `gemini-2.5-flash-lite` for metadata generation
+  - `gemini-2.5-flash` for chunk verification
+- use pydantic with structured output where possible
 - do not delete requirements.txt unless you are sure it is not needed
-- lets implement every project with seperation of concerns in mind
+- implement every project with separation of concerns in mind
 - always provide detailed instructions to the model considering everything carefully
-- do not overcomplicate things. you should tend to simplify wherever possible
-- do not mock codefiles if you suspect that they might already exist - rather, ask for the codefiles you need
+- do not overcomplicate things. simplify wherever possible
+- do not mock codefiles if you suspect that they might already exist - ask for the codefiles you need
 - do not rewrite prompts or data classes unless specifically requested
-- keep tests as simple executable and do not use mocks
-- Always import python libraries at the top of the codefile
+- File Search metadata fields have 256 char limit for string values
 
 # Document Verification Assistant - Project Plan
 
@@ -38,6 +39,12 @@ A Streamlit web application that converts legal documents (PDF/DOCX) into struct
 - **HierarchicalChunker** (Docling) - Base document structure chunking
 - **LangChain RecursiveCharacterTextSplitter** - Paragraph-level splitting
 - **LangChain SpacyTextSplitter (sentencizer)** - Sentence-level splitting
+
+### AI Verification
+- **Google Gemini API** - AI-powered verification
+  - `gemini-2.5-flash-lite` - Metadata generation
+  - `gemini-2.5-flash` - Chunk verification
+- **File Search (RAG)** - Reference document corpus with automatic chunking/embeddings
 
 ### Output Generation
 - **python-docx** - Word document generation
@@ -65,14 +72,20 @@ A Streamlit web application that converts legal documents (PDF/DOCX) into struct
    - Text content
    - Overlap flag (if item spans from previous page)
    ↓
-5. User Selection: Output Format
+5. (Optional) AI Verification
+   - Upload reference documents → File Search store
+   - Generate metadata with gemini-2.5-flash-lite
+   - Verify chunks with gemini-2.5-flash
+   - Extract citations from grounding metadata
+   ↓
+6. User Selection: Output Format
    - Word (Landscape)
    - Word (Portrait)
-   - CSV/Excel
+   - CSV/Excel/JSON
    ↓
-6. Generate Verification Table
+7. Generate Verification Table
    Columns:
-   [Page # | Item # | Text | Verified ☑ | Verification Source | Verification Note]
+   [Page # | Item # | Text | Verified ☑ | Verification Score | Verification Source | Verification Note]
 ```
 
 ---
@@ -212,11 +225,33 @@ A Streamlit web application that converts legal documents (PDF/DOCX) into struct
 
 ### Caching Strategy
 - **Cache key**: Hash of uploaded file content
-- **Cache contents**: 
+- **Cache contents**:
   - DoclingDocument object
   - Basic metadata (page count, file info)
 - **Cache invalidation**: Time-based (e.g., 1 hour) or manual clear
 - **Storage**: In-memory (Redis) or file-based cache
+
+### AI Verification Implementation
+
+**CorpusManager** (`backend/app/corpus/corpus_manager.py`):
+- Creates File Search stores for reference documents
+- Generates metadata using `gemini-2.5-flash-lite` with structured output (Pydantic schema)
+- Uploads documents to stores with custom metadata (256 char limit per field)
+- Handles file processing and cleanup
+
+**GeminiVerifier** (`backend/app/verification/gemini_verifier.py`):
+- Verifies chunks using `gemini-2.5-flash` with File Search tool
+- Returns verification results with confidence scores (1-10)
+- Extracts grounding citations from API response metadata
+- Implements retry logic with exponential backoff for rate limits and empty responses
+- Batch processing with configurable concurrency (default 3 chunks, 1.5s delay)
+
+**Key Features**:
+- Free storage and query-time embeddings (File Search)
+- Automatic chunking and semantic retrieval
+- Citation tracking via grounding metadata
+- Error handling for JSON parsing, empty responses, and API failures
+- Cost-efficient: ~$0.01 per 50-page document verification
 
 ---
 

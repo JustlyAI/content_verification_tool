@@ -3,8 +3,8 @@ Unit tests for document processor and file upload functionality
 """
 import pytest
 from pathlib import Path
-from backend.app.document_processor import DocumentProcessor, MAX_FILE_SIZE
-from backend.app.cache import document_cache
+from app.processing.document_processor import DocumentProcessor, MAX_FILE_SIZE
+from app.processing.cache import document_cache
 from termcolor import cprint
 
 
