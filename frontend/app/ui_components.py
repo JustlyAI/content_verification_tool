@@ -9,22 +9,16 @@ from .state import reset_all_state, reset_verification_state
 
 
 def render_header() -> None:
-    """Render the main header"""
-    st.title("📋 Content Verification Tool")
+    """Render the Freshfields-inspired header with Gemini badge"""
     st.markdown(
         """
-    Convert legal documents (PDF/DOCX) into structured verification checklists.
-    Upload your document and generate a table for systematic verification of each sentence or paragraph.
-    """
+<div class="ff-header">
+    <div class="ff-header-title">Content Verification Assistant</div>
+    <div class="ff-gemini-badge">🔷 Powered by Gemini</div>
+</div>
+""",
+        unsafe_allow_html=True,
     )
-
-    # Powered by Gemini
-    col1, col2, col3 = st.columns([2, 1, 2])
-    with col2:
-        st.markdown("**Powered by**")
-        st.image("gemini-logo.png", width=200)
-
-    st.divider()
 
 
 def render_backend_status() -> None:
@@ -109,11 +103,17 @@ def render_sidebar() -> None:
 
 
 def render_footer() -> None:
-    """Render the footer"""
-    st.divider()
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.caption("Content Verification Tool v1.0.0 | Built with Streamlit & FastAPI")
+    """Render the Freshfields-inspired footer"""
+    st.markdown(
+        """
+<div class="ff-footer">
+    Powered by <span class="ff-footer-highlight">Gemini 2.5 Flash</span> •
+    Content Verification Tool v2.1 •
+    Built for Legal Professionals
+</div>
+""",
+        unsafe_allow_html=True,
+    )
 
 
 def render_verification_results_summary() -> None:
