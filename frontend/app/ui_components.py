@@ -103,13 +103,27 @@ def render_sidebar() -> None:
 
 
 def render_footer() -> None:
-    """Render the Freshfields-inspired footer"""
+    """Render the Freshfields-inspired footer with connection status"""
+    from .api_client import check_backend_health
+
+    # Check backend health status
+    backend_healthy = check_backend_health()
+    status_indicator = "🟢 Connected" if backend_healthy else "🔴 Disconnected"
+    status_class = (
+        "ff-status-connected" if backend_healthy else "ff-status-disconnected"
+    )
+
     st.markdown(
-        """
+        f"""
 <div class="ff-footer">
-    Powered by <span class="ff-footer-highlight">Gemini 2.5 Flash</span> •
-    Content Verification Tool v2.1 •
-    Built for Legal Professionals
+    <div class="ff-footer-left">
+        Powered by <span class="ff-footer-highlight">Gemini 2.5 Flash</span> and <span class="ff-footer-highlight">Gemini File Search API</span>•
+        Content Verification Tool v2.1 •
+        Built for Demo
+    </div>
+    <div class="ff-footer-right">
+        <span class="{status_class}">{status_indicator}</span>
+    </div>
 </div>
 """,
         unsafe_allow_html=True,

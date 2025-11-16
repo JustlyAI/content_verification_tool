@@ -19,7 +19,7 @@ Convert legal documents (PDF/DOCX) into structured verification checklists with 
 ## Features
 
 - **Multi-Format Support**: PDF or DOCX documents (up to 100 MB)
-- **Chunking Modes**: Sentence-level or paragraph-level verification
+- **Splitting Modes**: Sentence-level or paragraph-level verification
 - **Structure Preservation**: Maintains document hierarchy, footnotes, and tables
 - **Output Formats**: Word (landscape/portrait), Excel, CSV, or JSON
 - **AI Verification**: Automated content verification using Google Gemini AI
@@ -122,7 +122,7 @@ streamlit run app.py
 1. **Open** http://localhost:8501
 2. **(Optional) AI Reference Corpus**: Expand the panel at top to upload reference documents
 3. **Upload** PDF or DOCX file (max 100 MB)
-4. **Select chunking mode**:
+4. **Select splitting mode**:
    - **Paragraph-level**: Groups related sentences, fewer chunks
    - **Sentence-level**: Individual sentence verification, more chunks
 5. **(Optional) Run AI Verification**: Verify chunks against reference documents

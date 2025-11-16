@@ -27,7 +27,7 @@ def render_corpus_creation() -> None:
         "Select Reference Documents *",
         type=["pdf", "docx"],
         accept_multiple_files=True,
-        help="Upload documents to verify against (PDF or DOCX)",
+        help="Upload documents as grounding for verification (PDF or DOCX)",
         key="reference_uploader",
     )
 
@@ -98,9 +98,7 @@ def render_active_corpus() -> None:
     # Clear corpus button
     col1, col2, col3 = st.columns([1, 1, 1])
     with col3:
-        if st.button(
-            "🗑️ Clear Corpus", type="secondary", use_container_width=True
-        ):
+        if st.button("🗑️ Clear Corpus", type="secondary", use_container_width=True):
             reset_corpus_state()
             st.rerun()
 
@@ -112,8 +110,10 @@ def render_corpus_sidebar() -> None:
     """
     st.markdown('<div class="ff-sidebar-content">', unsafe_allow_html=True)
 
-    st.markdown("### Reference Corpus")
-    st.info("📚 **Knowledge Base** - Upload reference documents that Gemini will use to verify your document")
+    st.markdown("## Reference Corpus")
+    st.info(
+        "📚 **Knowledge Base** - Upload reference documents as grounding for verification"
+    )
 
     # Status
     if st.session_state.reference_docs_uploaded:
@@ -125,7 +125,11 @@ def render_corpus_sidebar() -> None:
     if st.session_state.reference_docs_uploaded:
         col1, col2 = st.columns(2)
         with col1:
-            doc_count = len(st.session_state.corpus_metadata) if st.session_state.corpus_metadata else 0
+            doc_count = (
+                len(st.session_state.corpus_metadata)
+                if st.session_state.corpus_metadata
+                else 0
+            )
             st.metric("Documents", doc_count)
             st.metric("Storage", "0 MB")  # TODO: Calculate from metadata
         with col2:
@@ -136,9 +140,6 @@ def render_corpus_sidebar() -> None:
 
     # Quick Upload / Corpus Creation
     if not st.session_state.reference_docs_uploaded:
-        st.markdown("**Upload Reference Corpus**")
-        st.caption("📚 Add documents to use as verification sources")
-
         case_context = st.text_area(
             "Case Context",
             placeholder="Brief description of case or project...",
@@ -153,11 +154,16 @@ def render_corpus_sidebar() -> None:
             accept_multiple_files=True,
             key="corpus_upload_sidebar",
             label_visibility="collapsed",
-            help="These documents form the knowledge base that Gemini uses to verify your document"
+            help="These documents form the knowledge base that Gemini uses to verify your document",
         )
 
         if uploaded_refs and case_context:
-            if st.button("Create Corpus", type="primary", use_container_width=True, key="create_corpus"):
+            if st.button(
+                "Create Corpus",
+                type="primary",
+                use_container_width=True,
+                key="create_corpus",
+            ):
                 with st.spinner("Creating reference library..."):
                     result = upload_reference_documents(uploaded_refs, case_context)
 
@@ -178,7 +184,9 @@ def render_corpus_sidebar() -> None:
     if st.session_state.reference_docs_uploaded:
         st.markdown("**Actions**")
 
-        if st.button("📄 View Library", key="view_docs_sidebar", use_container_width=True):
+        if st.button(
+            "📄 View Library", key="view_docs_sidebar", use_container_width=True
+        ):
             # Show modal or expander with corpus details
             pass
 

@@ -643,7 +643,9 @@ with sidebar_col:
     st.markdown('<div class="ff-sidebar-content">', unsafe_allow_html=True)
 
     st.markdown("### Reference Corpus")
-    st.info("📚 **Knowledge Base** - Upload reference documents that Gemini will use to verify your document")
+    st.info(
+        "📚 **Knowledge Base** - Upload reference documents that Gemini will use to verify your document"
+    )
 
     st.markdown("")
 
@@ -672,7 +674,7 @@ with sidebar_col:
         accept_multiple_files=True,
         key="corpus_upload",
         label_visibility="collapsed",
-        help="These documents form the knowledge base that Gemini uses to verify your document"
+        help="These documents form the knowledge base that Gemini uses to verify your document",
     )
 
     if uploaded_refs:
@@ -747,7 +749,7 @@ with main_col:
             type=["pdf", "docx"],
             key="verify_doc",
             label_visibility="collapsed",
-            help="This document will be verified against your reference corpus"
+            help="This document will be verified against your reference corpus",
         )
 
         st.markdown("")
@@ -904,9 +906,7 @@ with main_col:
     # Items Requiring Review
     st.markdown("**Items Requiring Manual Review**")
 
-    with st.expander(
-        "⚠️ Page 2, Item 4 — Low Confidence (4.2/10)", expanded=True
-    ):
+    with st.expander("⚠️ Page 2, Item 4 — Low Confidence (4.2/10)", expanded=True):
         st.markdown(
             "*Furthermore, the analysis indicates that market conditions have deteriorated significantly compared to the reference period...*"
         )
@@ -948,7 +948,7 @@ st.markdown(
 <div class="ff-footer">
     Powered by <span class="ff-footer-highlight">Gemini 2.5 Flash</span> •
     Content Verification Tool v2.1 •
-    Built for Legal Professionals
+    Built for Demo
 </div>
 """,
     unsafe_allow_html=True,

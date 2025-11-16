@@ -58,9 +58,6 @@ logger = logging.getLogger(__name__)
 
 def render_upload_card() -> None:
     """Render Card 1: Upload document section"""
-    st.markdown("**Document to Verify**")
-    st.caption("📄 Upload the document you want to check against the corpus")
-
     uploaded_file = st.file_uploader(
         "Document to verify",
         type=SUPPORTED_FILE_TYPES,
@@ -136,10 +133,9 @@ def render_upload_card() -> None:
 
 
 def render_chunking_card() -> str:
-    """Render Card 2: Chunking mode selection"""
+    """Render Card 2: Splitting mode selection"""
     if not st.session_state.document_info:
-        st.info("Upload document first")
-        st.caption("Choose how to split your document for verification")
+        st.caption("Choose how to split your document")
         return "paragraph"
 
     st.markdown("**Processing Mode**")
@@ -170,7 +166,6 @@ def render_verify_card(chunking_mode: str) -> None:
         return
 
     if not st.session_state.document_info:
-        st.warning("⏳ Upload Needed")
         st.caption("Upload a document to begin")
         return
 
@@ -391,23 +386,13 @@ def main() -> None:
     with main_col:
         st.markdown('<div class="ff-main-content">', unsafe_allow_html=True)
 
-        # Header with refresh button
-        header_col1, header_col2 = st.columns([10, 1])
-        with header_col1:
-            st.markdown("## Gemini-Powered Document Verification")
-        with header_col2:
-            if st.button("🔄", help="Refresh connection status", key="refresh_header"):
-                check_backend_health.clear()
-                st.rerun()
-        st.caption(
-            "Upload a document below to verify it against your reference corpus using AI-powered analysis. "
-            "Each sentence or paragraph will be checked for accuracy and consistency."
-        )
+        # Header
+        st.markdown("## AI-Powered Content Verification")
 
         # Workflow explanation
         st.info(
             "**🔄 Verification Workflow:** Upload your document (Step 1) → "
-            "Choose chunking mode (Step 2) → Run Gemini verification against corpus (Step 3) → "
+            "Choose splitting mode (Step 2) → Run Gemini verification against corpus (Step 3) → "
             "Export results (Step 4)"
         )
 
@@ -442,7 +427,7 @@ def render_verification_workflow() -> None:
         st.markdown(
             '<div class="ff-card">'
             '<div class="ff-card-number">STEP 2</div>'
-            '<div class="ff-card-title">Chunking</div>',
+            '<div class="ff-card-title">Splitting</div>',
             unsafe_allow_html=True,
         )
         chunking_mode = render_chunking_card()

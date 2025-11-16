@@ -18,11 +18,12 @@ st.set_page_config(
     page_title="Content Verification | Powered by Gemini",
     page_icon="🔷",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed",
 )
 
 # ==================== FRESHFIELDS-INSPIRED CSS ====================
-st.markdown("""
+st.markdown(
+    """
 <style>
     /* Import Fonts - Freshfields Style */
     @import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
@@ -644,10 +645,13 @@ st.markdown("""
         border-radius: var(--radius-md) !important;
     }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # ==================== HEADER ====================
-st.markdown("""
+st.markdown(
+    """
 <div class="freshfields-header">
     <div class="header-title">Content Verification</div>
     <div class="gemini-badge">
@@ -655,7 +659,9 @@ st.markdown("""
         <span>Powered by Gemini</span>
     </div>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # ==================== MAIN GRID LAYOUT ====================
 # Use Streamlit columns to create the grid layout
@@ -665,18 +671,24 @@ sidebar_col, main_col = st.columns([1, 3], gap="small")
 with sidebar_col:
     st.markdown('<div class="corpus-sidebar">', unsafe_allow_html=True)
 
-    st.markdown('<div class="sidebar-title">Reference Corpus</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="sidebar-title">Reference Corpus</div>', unsafe_allow_html=True
+    )
 
     # Corpus Status Badge
-    st.markdown("""
+    st.markdown(
+        """
     <div class="corpus-status-badge">
         <span>✓</span>
         <span>Active & Ready</span>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     # Corpus Stats Card
-    st.markdown("""
+    st.markdown(
+        """
     <div class="corpus-stats-card">
         <div class="stat-item">
             <span class="stat-label">Documents</span>
@@ -691,17 +703,21 @@ with sidebar_col:
             <span class="stat-value">23.4 MB</span>
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     # Quick Upload Section
-    st.markdown('<span class="section-label">Quick Upload</span>', unsafe_allow_html=True)
+    st.markdown(
+        '<span class="section-label">Quick Upload</span>', unsafe_allow_html=True
+    )
 
     uploaded_refs = st.file_uploader(
         "Upload reference documents",
         type=["pdf", "docx"],
         accept_multiple_files=True,
         key="corpus_upload",
-        label_visibility="collapsed"
+        label_visibility="collapsed",
     )
 
     if uploaded_refs:
@@ -712,7 +728,7 @@ with sidebar_col:
         placeholder="Brief description of the case or verification context...",
         height=80,
         key="case_context",
-        label_visibility="collapsed"
+        label_visibility="collapsed",
     )
 
     # Action Buttons
@@ -724,39 +740,54 @@ with sidebar_col:
     if st.button("⚙️ Configure Corpus", key="config", use_container_width=True):
         st.info("Configuration modal")
 
-    if st.button("🗑️ Clear Corpus", key="clear", type="secondary", use_container_width=True):
+    if st.button(
+        "🗑️ Clear Corpus", key="clear", type="secondary", use_container_width=True
+    ):
         st.warning("Confirm clear?")
 
-    st.markdown('</div>', unsafe_allow_html=True)  # End sidebar styling
+    st.markdown("</div>", unsafe_allow_html=True)  # End sidebar styling
 
 # ==================== RIGHT: MAIN CONTENT ====================
 with main_col:
     st.markdown('<div class="main-content">', unsafe_allow_html=True)
 
-    st.markdown('<div class="content-title">Gemini-Powered Document Verification</div>', unsafe_allow_html=True)
-    st.markdown('<div class="content-subtitle">Complete each step to verify your document against the reference corpus using Google Gemini AI</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="content-title">Gemini-Powered Document Verification</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="content-subtitle">Complete each step to verify your document against the reference corpus using Google Gemini AI</div>',
+        unsafe_allow_html=True,
+    )
 
     # Workflow Cards Grid
     st.markdown('<div class="workflow-grid">', unsafe_allow_html=True)
 
     # Card 1: Upload
-    st.markdown("""
+    st.markdown(
+        """
     <div class="workflow-card">
         <div class="card-number">1</div>
         <div class="card-title">Upload</div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     # Card 2: Chunking
-    st.markdown("""
+    st.markdown(
+        """
     <div class="workflow-card">
         <div class="card-number">2</div>
         <div class="card-title">Chunking</div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     # Card 3: Gemini Verification (SPECIAL)
-    st.markdown("""
+    st.markdown(
+        """
     <div class="workflow-card workflow-card-gemini">
         <div class="card-number">3</div>
         <div class="card-title">Verify</div>
@@ -768,17 +799,22 @@ with main_col:
             Analyzes your content against reference documents using advanced AI verification
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     # Card 4: Export
-    st.markdown("""
+    st.markdown(
+        """
     <div class="workflow-card">
         <div class="card-number">4</div>
         <div class="card-title">Export</div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
-    st.markdown('</div>', unsafe_allow_html=True)  # End workflow grid
+    st.markdown("</div>", unsafe_allow_html=True)  # End workflow grid
 
     # Now add actual interactive elements in columns
     col1, col2, col3, col4 = st.columns(4)
@@ -788,26 +824,40 @@ with main_col:
             "Document to verify",
             type=["pdf", "docx"],
             key="verify_doc",
-            label_visibility="collapsed"
+            label_visibility="collapsed",
         )
         if uploaded_doc:
-            st.markdown('<div class="card-status status-ready">✓ Ready</div>', unsafe_allow_html=True)
+            st.markdown(
+                '<div class="card-status status-ready">✓ Ready</div>',
+                unsafe_allow_html=True,
+            )
             st.caption(f"📄 {uploaded_doc.name}")
         else:
-            st.markdown('<div class="card-status status-waiting">⏳ Waiting</div>', unsafe_allow_html=True)
+            st.markdown(
+                '<div class="card-status status-waiting">⏳ Waiting</div>',
+                unsafe_allow_html=True,
+            )
 
     with col2:
         chunking = st.radio(
             "Chunking Mode",
             ["Paragraph", "Sentence"],
             key="chunk_mode",
-            label_visibility="collapsed"
+            label_visibility="collapsed",
         )
-        st.markdown(f'<div class="card-status status-ready">✓ {chunking}</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="card-status status-ready">✓ {chunking}</div>',
+            unsafe_allow_html=True,
+        )
 
     with col3:
-        st.markdown('<div class="card-status status-active">🔷 Corpus Ready</div>', unsafe_allow_html=True)
-        if st.button("▶ Run Verification", type="primary", use_container_width=True, key="verify"):
+        st.markdown(
+            '<div class="card-status status-active">🔷 Corpus Ready</div>',
+            unsafe_allow_html=True,
+        )
+        if st.button(
+            "▶ Run Verification", type="primary", use_container_width=True, key="verify"
+        ):
             st.success("Verification started!")
 
     with col4:
@@ -815,16 +865,23 @@ with main_col:
             "Format",
             ["Word (Landscape)", "Word (Portrait)", "Excel", "CSV", "JSON"],
             key="export_format",
-            label_visibility="collapsed"
+            label_visibility="collapsed",
         )
 
         if st.button("Generate", use_container_width=True, key="generate"):
             st.info("Generating document...")
 
-        st.button("⬇ Download", type="primary", use_container_width=True, disabled=True, key="download")
+        st.button(
+            "⬇ Download",
+            type="primary",
+            use_container_width=True,
+            disabled=True,
+            key="download",
+        )
 
     # ==================== RESULTS SECTION ====================
-    st.markdown("""
+    st.markdown(
+        """
     <div class="results-container">
         <div class="results-header">
             <div class="results-title">Gemini Verification Results</div>
@@ -902,11 +959,16 @@ with main_col:
             </div>
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     # Review Items as Expanders
     st.markdown('<div style="margin-top: 2rem;">', unsafe_allow_html=True)
-    st.markdown('<h3 style="font-family: Lora, serif; font-size: 1.125rem; margin-bottom: 1rem; font-weight: 600;">Items Requiring Review</h3>', unsafe_allow_html=True)
+    st.markdown(
+        '<h3 style="font-family: Lora, serif; font-size: 1.125rem; margin-bottom: 1rem; font-weight: 600;">Items Requiring Review</h3>',
+        unsafe_allow_html=True,
+    )
 
     with st.expander("⚠️ Page 2, Item 4 - Low Confidence (4.2/10)", expanded=True):
         st.markdown("*Furthermore, the analysis indicates that market conditions...*")
@@ -923,13 +985,16 @@ with main_col:
         st.caption("**Issue:** Multiple conflicting references found")
         st.button("View Full Details", key="detail3", use_container_width=True)
 
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-        st.markdown('</div>', unsafe_allow_html=True)  # End main content
+        st.markdown("</div>", unsafe_allow_html=True)  # End main content
 
 # ==================== FOOTER ====================
-st.markdown("""
+st.markdown(
+    """
 <div class="freshfields-footer">
-    <span>Powered by Gemini 2.5 Flash • Content Verification Tool v2.1 • Built for Legal Professionals</span>
+    <span>Powered by Gemini 2.5 Flash • Content Verification Tool v2.1 • Built for Demo</span>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)

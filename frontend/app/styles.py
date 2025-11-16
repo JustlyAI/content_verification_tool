@@ -98,9 +98,10 @@ def load_css():
     }
 
     .block-container {
-        padding: 0 !important;
+        padding: 0 var(--space-6) !important;
         margin: 0 !important;
         max-width: 100% !important;
+        box-sizing: border-box !important;
     }
 
     /* Hide Streamlit UI */
@@ -130,10 +131,14 @@ def load_css():
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: var(--space-3) var(--space-6);
+        padding: var(--space-3) 0;
         background: var(--cream-white);
         border-bottom: 1.5px solid var(--warm-gray-200);
-        margin: 0;
+        margin: 0 calc(-1 * var(--space-6));
+        margin-top: 0;
+        margin-bottom: 0;
+        padding-left: var(--space-6);
+        padding-right: var(--space-6);
         min-height: 72px;
     }
 
@@ -167,83 +172,114 @@ def load_css():
     }
 
     /* ===== SIDEBAR COLUMN ===== */
-    /* Target the first column specifically */
-    [data-testid="column"]:first-child {
+    /* Target the column containing sidebar content - shaded box */
+    [data-testid="stColumn"]:has(.ff-sidebar-content) {
         background: var(--ff-blue-100) !important;
-        border-right: 2px solid var(--ff-blue-200);
         min-height: calc(100vh - 160px);
-    }
-
-    /* Sidebar internal padding - 0.5 inch all around, top aligned with header */
-    .ff-sidebar-content {
-        padding-top: 0 !important;
-        padding-bottom: var(--space-6) !important;
-        padding-left: var(--space-6) !important;
-        padding-right: var(--space-6) !important;
+        padding: var(--space-3) var(--space-4) var(--space-4) var(--space-4) !important;
+        border-radius: var(--radius-lg);
         box-sizing: border-box !important;
     }
 
-    /* Sidebar section spacing - TIGHTER */
+    /* Sidebar content - no extra padding needed, column handles it */
+    .ff-sidebar-content {
+        padding: 0 !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Sidebar section spacing - MUCH TIGHTER (50% reduction) */
     .ff-sidebar-content > div {
-        margin-bottom: var(--space-2);
+        margin-bottom: var(--space-1);
     }
 
     /* Compact spacing for metrics in sidebar */
     .ff-sidebar-content .stMetric {
-        margin-bottom: var(--space-2) !important;
+        margin-bottom: var(--space-1) !important;
     }
 
     /* Compact space around sidebar file uploader */
     .ff-sidebar-content .stFileUploader {
-        margin-top: var(--space-2) !important;
-        margin-bottom: var(--space-2) !important;
+        margin-top: var(--space-1) !important;
+        margin-bottom: var(--space-1) !important;
     }
 
     /* Compact spacing for sidebar text area */
     .ff-sidebar-content .stTextArea {
-        margin-bottom: var(--space-3) !important;
+        margin-bottom: calc(var(--space-3) / 2) !important;
     }
 
     /* Compact space between sidebar buttons */
     .ff-sidebar-content .stButton {
-        margin-bottom: var(--space-2) !important;
+        margin-bottom: var(--space-1) !important;
     }
 
-    /* Sidebar column gap for metrics */
-    .ff-sidebar-content [data-testid="column"] {
+    /* Reduce spacing for alerts in sidebar */
+    .ff-sidebar-content .stAlert {
+        margin-bottom: var(--space-1) !important;
+    }
+
+    /* Sidebar column gap for metrics - nested columns only */
+    .ff-sidebar-content [data-testid="stColumn"] {
         padding: 0 var(--space-1) !important;
+        background: transparent !important;
     }
 
-    .ff-sidebar-content [data-testid="column"]:first-child {
+    .ff-sidebar-content > div > [data-testid="stColumn"]:first-child {
         padding-left: 0 !important;
     }
 
-    .ff-sidebar-content [data-testid="column"]:last-child {
+    .ff-sidebar-content > div > [data-testid="stColumn"]:last-child {
         padding-right: 0 !important;
     }
 
-    /* Sidebar headings - first h3 aligned with header title baseline */
-    .ff-sidebar-content h3:first-of-type {
-        margin-top: var(--space-3) !important;
+    /* Ensure metric containers in sidebar have transparent backgrounds */
+    .ff-sidebar-content .stMetric > div {
+        background: transparent !important;
+    }
+
+    /* Sidebar headings - first h2 with no top spacing (column padding handles it) */
+    .ff-sidebar-content h2:first-of-type {
+        margin-top: 0 !important;
         padding-top: 0 !important;
-        margin-bottom: var(--space-2) !important;
+        margin-bottom: var(--space-1) !important;
+    }
+
+    .ff-sidebar-content h2 {
+        margin-bottom: var(--space-1) !important;
     }
 
     .ff-sidebar-content h3 {
-        margin-bottom: var(--space-2) !important;
+        margin-bottom: var(--space-1) !important;
     }
 
-    /* Sidebar horizontal rules */
+    /* Sidebar horizontal rules - reduced spacing */
     .ff-sidebar-content hr {
-        margin: var(--space-3) 0 !important;
+        margin: calc(var(--space-3) / 2) 0 !important;
+    }
+
+    /* Tighten spacing for markdown/paragraphs in sidebar */
+    .ff-sidebar-content .stMarkdown {
+        margin-bottom: var(--space-1) !important;
+    }
+
+    .ff-sidebar-content p {
+        margin-bottom: var(--space-1) !important;
     }
 
     /* ===== MAIN CONTENT COLUMN ===== */
+    /* Main content column padding - apply to the column itself */
+    [data-testid="stColumn"]:nth-child(2) {
+        background: var(--white);
+    }
+
+    /* Main content - container provides horizontal padding */
     .ff-main-content {
-        padding-top: var(--space-3) !important;
+        padding-top: var(--space-1) !important;
         padding-bottom: var(--space-6) !important;
-        padding-left: var(--space-6) !important;
-        padding-right: var(--space-8) !important;
+        padding-left: var(--space-3) !important;
+        padding-right: 0 !important;
+        margin: 0 !important;
         background: var(--white);
         box-sizing: border-box !important;
     }
@@ -260,18 +296,17 @@ def load_css():
     }
 
     /* ===== WORKFLOW CARDS ===== */
-    /* Compact spacing between columns */
-    .ff-main-content [data-testid="column"] {
-        padding: 0 0.75rem !important;
+    /* Compact spacing between columns - only nested columns inside main content */
+    .ff-main-content > div > [data-testid="stColumn"] {
+        padding: 0 0.625rem !important;
     }
 
-    .ff-main-content [data-testid="column"]:first-child {
+    .ff-main-content > div > [data-testid="stColumn"]:first-child {
         padding-left: 0 !important;
     }
 
-    /* Keep right padding on last column in main content for proper spacing */
-    .ff-main-content [data-testid="column"]:last-child {
-        padding-right: 0.75rem !important;
+    .ff-main-content > div > [data-testid="stColumn"]:last-child {
+        padding-right: 0 !important;
     }
 
     /* Card container styling - COMPACT & EFFICIENT */
@@ -603,19 +638,45 @@ def load_css():
 
     /* ===== FOOTER ===== */
     .ff-footer {
-        text-align: center;
-        padding: var(--space-4);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-4) var(--space-6);
         background: var(--cream-white);
         border-top: 1.5px solid var(--warm-gray-200);
         color: var(--warm-gray-500);
         font-size: 0.875rem;
         font-weight: 500;
         letter-spacing: 0.01em;
+        margin: 0 calc(-1 * var(--space-6));
+    }
+
+    .ff-footer-left {
+        flex: 1;
+    }
+
+    .ff-footer-right {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
     }
 
     .ff-footer-highlight {
         color: var(--gemini-blue-dark);
         font-weight: 600;
+    }
+
+    /* Connection status indicators */
+    .ff-status-connected {
+        color: var(--success);
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+
+    .ff-status-disconnected {
+        color: var(--error);
+        font-weight: 600;
+        font-size: 0.875rem;
     }
 </style>
 """,
