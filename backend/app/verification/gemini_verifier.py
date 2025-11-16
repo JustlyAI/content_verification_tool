@@ -21,6 +21,7 @@ from app.models import DocumentChunk
 
 class EmptyResponseError(Exception):
     """Raised when API returns empty response"""
+
     pass
 
 
@@ -57,22 +58,19 @@ class GeminiVerifier:
                     raise
 
                 error_str = str(e).lower()
-                is_retryable = (
-                    isinstance(e, EmptyResponseError)
-                    or any(
-                        x in error_str
-                        for x in [
-                            "rate limit",
-                            "429",
-                            "timeout",
-                            "500",
-                            "503",
-                            "temporarily",
-                            "unavailable",
-                            "deadline",
-                            "resource_exhausted",
-                        ]
-                    )
+                is_retryable = isinstance(e, EmptyResponseError) or any(
+                    x in error_str
+                    for x in [
+                        "rate limit",
+                        "429",
+                        "timeout",
+                        "500",
+                        "503",
+                        "temporarily",
+                        "unavailable",
+                        "deadline",
+                        "resource_exhausted",
+                    ]
                 )
 
                 if not is_retryable:
@@ -125,7 +123,7 @@ class GeminiVerifier:
         try:
             prompt = f"""You are a document verification assistant with access to reference documents.
 
-## CONTEXT:
+## CONTEXT of the verification case:
 
 {case_context}
 
@@ -133,8 +131,9 @@ class GeminiVerifier:
 
 Verify if the following statement is supported by the reference documents.
 
-## STATEMENT:
-"Page {chunk.page_number}, Item {chunk.item_number}: {chunk.text}"
+## STATEMENT TO VERIFY:
+
+"{chunk.text}"
 
 INSTRUCTIONS:
 1. Search the reference documents for information about this statement
@@ -145,9 +144,9 @@ INSTRUCTIONS:
 REQUIRED JSON OUTPUT FORMAT:
 {{
   "verified": boolean,
-  "confidence_score": integer (1-10),
-  "verification_source": "citation or 'No match found'",
-  "verification_note": "brief explanation"
+  "verification_score": confidence score integer (1-10),
+  "verification_source": "citation to the referece document and page number where the evidence was found or 'No match found'",
+  "verification_note": "2-3 sentence brief explanation of the reasoning behind the verification decision"
 }}
 
 Provide ONLY the JSON object, no other text."""
@@ -226,7 +225,9 @@ Provide ONLY the JSON object, no other text."""
                                 if hasattr(grounding_chunk, "content") and hasattr(
                                     grounding_chunk.content, "text"
                                 ):
-                                    citation["excerpt"] = grounding_chunk.content.text[:300]
+                                    citation["excerpt"] = grounding_chunk.content.text[
+                                        :300
+                                    ]
                                 else:
                                     citation["excerpt"] = ""
                             # Web grounding
@@ -243,7 +244,9 @@ Provide ONLY the JSON object, no other text."""
                                 if hasattr(grounding_chunk, "content") and hasattr(
                                     grounding_chunk.content, "text"
                                 ):
-                                    citation["excerpt"] = grounding_chunk.content.text[:300]
+                                    citation["excerpt"] = grounding_chunk.content.text[
+                                        :300
+                                    ]
                                 else:
                                     citation["excerpt"] = ""
                             else:
@@ -267,7 +270,7 @@ Provide ONLY the JSON object, no other text."""
 
             chunk.verified = result.get("verified", False)
             chunk.verification_score = min(
-                10, max(1, result.get("confidence_score", 5))
+                10, max(1, result.get("verification_score", 5))
             )
             chunk.verification_source = result.get(
                 "verification_source", "No source found"
@@ -360,7 +363,8 @@ Provide ONLY the JSON object, no other text."""
 
         # Final retry pass for empty responses
         failed_chunks = [
-            (i, c) for i, c in enumerate(verified_chunks)
+            (i, c)
+            for i, c in enumerate(verified_chunks)
             if c.verification_source == "Empty API response"
         ]
 
@@ -372,14 +376,23 @@ Provide ONLY the JSON object, no other text."""
 
             for idx, chunk in failed_chunks:
                 try:
-                    cprint(f"[Verifier] Final retry for chunk {chunk.item_number}", "cyan")
+                    cprint(
+                        f"[Verifier] Final retry for chunk {chunk.item_number}", "cyan"
+                    )
                     verified_chunk = self._retry_with_backoff(
-                        self.verify_chunk, chunk, store_name, case_context, max_retries=2
+                        self.verify_chunk,
+                        chunk,
+                        store_name,
+                        case_context,
+                        max_retries=2,
                     )
                     verified_chunks[idx] = verified_chunk
                     await asyncio.sleep(2)
                 except Exception as e:
-                    cprint(f"[Verifier] Final retry failed for chunk {chunk.item_number}", "yellow")
+                    cprint(
+                        f"[Verifier] Final retry failed for chunk {chunk.item_number}",
+                        "yellow",
+                    )
                     chunk.verification_note = "API returned empty response after all retries - needs manual review"
 
         verified_count = sum(1 for c in verified_chunks if c.verified)
