@@ -9,11 +9,20 @@ from typing import Dict, Any
 from dotenv import load_dotenv
 from termcolor import cprint
 
-from google import genai
-from google.genai import types
+GENAI_IMPORT_ERROR = None
+try:
+    from google import genai
+    from google.genai import types
+except Exception as exc:  # pragma: no cover - env-specific import guard
+    genai = None
+    types = None
+    GENAI_IMPORT_ERROR = exc
 
 # Load environment variables
-load_dotenv()
+try:
+    load_dotenv()
+except PermissionError as exc:  # pragma: no cover - env-specific import guard
+    cprint(f"⚠️  Could not load .env file: {exc}", "yellow")
 
 
 @pytest.fixture(scope="session")
@@ -55,7 +64,11 @@ def gemini_api_key() -> str:
     Skips tests if API key is not available
     """
     api_key = os.getenv("GEMINI_API_KEY")
+    if GENAI_IMPORT_ERROR is not None:
+        cprint(f"⚠️  Gemini SDK unavailable: {GENAI_IMPORT_ERROR}", "yellow")
+        pytest.skip("Gemini SDK not available in test environment")
     if not api_key:
+        cprint("⚠️  GEMINI_API_KEY not found - skipping Gemini tests", "yellow")
         pytest.skip("GEMINI_API_KEY not found in environment variables")
     return api_key
 
@@ -65,6 +78,8 @@ def gemini_client(gemini_api_key: str):
     """
     Returns initialized Gemini client for testing
     """
+    if GENAI_IMPORT_ERROR is not None or genai is None:
+        pytest.skip("Gemini SDK not available in test environment")
     client = genai.Client(api_key=gemini_api_key)
     cprint("✓ Gemini test client initialized", "green")
     return client
@@ -176,7 +191,7 @@ def sample_chunks_data() -> list:
     """
     Returns sample document chunks for testing
     """
-    from backend.app.models import DocumentChunk
+    from app.models import DocumentChunk
 
     return [
         DocumentChunk(
@@ -205,7 +220,7 @@ def sample_verified_chunks_data() -> list:
     """
     Returns sample verified chunks for testing output generation
     """
-    from backend.app.models import DocumentChunk
+    from app.models import DocumentChunk
 
     return [
         DocumentChunk(
@@ -295,7 +310,7 @@ def sample_metadata() -> Dict[str, Any]:
     """
     Returns sample metadata for testing
     """
-    from backend.app.models import DocumentMetadata
+    from app.models import DocumentMetadata
     from datetime import datetime
 
     return DocumentMetadata(

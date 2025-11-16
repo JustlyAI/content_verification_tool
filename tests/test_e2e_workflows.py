@@ -5,9 +5,9 @@ Tests complete workflows from document upload to final output
 import pytest
 import asyncio
 from fastapi.testclient import TestClient
-from backend.app.main import app
-from backend.app.models import ChunkingMode, OutputFormat
-from backend.app.gemini_service import GeminiVerificationService
+from app.main import app
+from app.models import ChunkingMode, OutputFormat
+from app.verification.gemini_service import GeminiVerificationService
 from termcolor import cprint
 import io
 from pathlib import Path

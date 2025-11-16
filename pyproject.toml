@@ -41,6 +41,7 @@ backend = [
     "python-dotenv==1.2.1",
     # AI verification
     "google-genai>=1.43.0",
+    "hatchling>=1.27.0",
 ]
 
 # Frontend dependencies

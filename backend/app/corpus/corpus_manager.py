@@ -122,6 +122,53 @@ Return only valid JSON, no markdown formatting."""
             cprint(f"[Corpus] ✗ Error generating metadata: {e}", "red")
             raise
 
+    def generate_metadata(
+        self, file_path: str, filename: str, case_context: str
+    ) -> DocumentMetadata:
+        """
+        Generate metadata for a reference document from a file path
+
+        Args:
+            file_path: Path to the file
+            filename: Original filename
+            case_context: Context about the verification case
+
+        Returns:
+            DocumentMetadata object with AI-generated metadata
+        """
+        if not self.client:
+            raise ValueError("Gemini client not initialized - check GEMINI_API_KEY")
+
+        try:
+            # Upload file
+            uploaded_file = self.client.files.upload(file=file_path)
+            cprint(f"[Corpus] File uploaded for metadata: {uploaded_file.name}", "cyan")
+
+            # Wait for file processing
+            while uploaded_file.state == "PROCESSING":
+                time.sleep(1)
+                uploaded_file = self.client.files.get(name=uploaded_file.name)
+
+            if uploaded_file.state == "FAILED":
+                raise ValueError(
+                    f"File processing failed: {getattr(uploaded_file, 'error', 'Unknown error')}"
+                )
+
+            # Generate metadata
+            metadata = self._generate_metadata_from_file(
+                uploaded_file, filename, case_context
+            )
+
+            # Clean up uploaded file
+            self.client.files.delete(name=uploaded_file.name)
+            cprint(f"[Corpus] ✓ File cleaned up: {uploaded_file.name}", "cyan")
+
+            return metadata
+
+        except Exception as e:
+            cprint(f"[Corpus] ✗ Error generating metadata: {e}", "red")
+            raise
+
     def upload_reference_with_metadata(
         self, file_path: str, filename: str, store_name: str, case_context: str
     ) -> Tuple[DocumentMetadata, str]:

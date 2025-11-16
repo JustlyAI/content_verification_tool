@@ -6,8 +6,8 @@ import pytest
 import time
 import asyncio
 from pathlib import Path
-from backend.app.gemini_service import GeminiVerificationService
-from backend.app.models import DocumentChunk, DocumentMetadata
+from app.verification.gemini_service import GeminiVerificationService
+from app.models import DocumentChunk, DocumentMetadata
 from termcolor import cprint
 
 
