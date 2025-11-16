@@ -115,15 +115,11 @@ def render_corpus_sidebar() -> None:
     st.markdown("### Reference Corpus")
     st.info("📚 **Knowledge Base** - Upload reference documents that Gemini will use to verify your document")
 
-    st.markdown("")
-
     # Status
     if st.session_state.reference_docs_uploaded:
         st.success("✓ Active & Gemini-Ready")
     else:
         st.warning("⏳ No Corpus Loaded")
-
-    st.markdown("")
 
     # Stats (if corpus is active)
     if st.session_state.reference_docs_uploaded:
@@ -181,7 +177,6 @@ def render_corpus_sidebar() -> None:
     # Actions (if corpus is active)
     if st.session_state.reference_docs_uploaded:
         st.markdown("**Actions**")
-        st.markdown("")
 
         if st.button("📄 View Library", key="view_docs_sidebar", use_container_width=True):
             # Show modal or expander with corpus details

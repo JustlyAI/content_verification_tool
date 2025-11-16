@@ -42,7 +42,7 @@ from app.ui_components import (
     render_sidebar,
     render_footer,
 )
-from app.freshfields_styles import load_freshfields_css
+from app.styles import load_css
 from app.corpus import render_corpus_sidebar
 
 # Configure logging
@@ -66,10 +66,8 @@ def render_upload_card() -> None:
         type=SUPPORTED_FILE_TYPES,
         key="uploaded_file",
         label_visibility="collapsed",
-        help="This document will be verified against your reference corpus"
+        help="This document will be verified against your reference corpus",
     )
-
-    st.markdown("")
 
     if uploaded_file is not None:
         # Validate file size
@@ -98,7 +96,9 @@ def render_upload_card() -> None:
                 file_content = uploaded_file.getvalue()
                 filename = uploaded_file.name
 
-                result = upload_document(file_content, filename, progress_bar, status_text)
+                result = upload_document(
+                    file_content, filename, progress_bar, status_text
+                )
 
                 # Clear only the progress bar
                 progress_bar.empty()
@@ -116,12 +116,20 @@ def render_upload_card() -> None:
                     st.session_state.upload_in_progress = False
         else:
             st.success("✓ Ready to Verify")
-            st.caption(f"📄 {st.session_state.document_info.get('filename', 'Document uploaded')}")
-            file_size = st.session_state.document_info.get('size', 0) / 1024 if st.session_state.document_info.get('size') else file_size_mb
+            st.caption(
+                f"📄 {st.session_state.document_info.get('filename', 'Document uploaded')}"
+            )
+            file_size = (
+                st.session_state.document_info.get("size", 0) / 1024
+                if st.session_state.document_info.get("size")
+                else file_size_mb
+            )
             st.caption(f"{file_size:.1f} KB")
     elif st.session_state.document_info:
         st.success("✓ Ready to Verify")
-        st.caption(f"📄 {st.session_state.document_info.get('filename', 'Document uploaded')}")
+        st.caption(
+            f"📄 {st.session_state.document_info.get('filename', 'Document uploaded')}"
+        )
     else:
         st.info("Upload document to begin")
         st.caption("Supported: PDF, DOCX")
@@ -148,7 +156,6 @@ def render_chunking_card() -> str:
         horizontal=False,
     )
 
-    st.markdown("")
     st.success(f"✓ {chunking_mode.capitalize()}-level")
     st.caption(f"Split into {chunking_mode}s for detailed analysis")
 
@@ -173,10 +180,10 @@ def render_verify_card(chunking_mode: str) -> None:
         return
 
     # Show corpus ready status
-    doc_count = len(st.session_state.corpus_metadata) if st.session_state.corpus_metadata else 0
+    doc_count = (
+        len(st.session_state.corpus_metadata) if st.session_state.corpus_metadata else 0
+    )
     st.info(f"🔷 Corpus Ready ({doc_count} docs)")
-
-    st.markdown("")
 
     # Run verification button
     if st.button(
@@ -356,27 +363,22 @@ def main() -> None:
     init_session_state()
 
     # Load Freshfields CSS
-    load_freshfields_css()
+    load_css()
 
     # Render header
     render_header()
 
-    # Check backend (compact version)
-    col1, col2 = st.columns([6, 1])
-    with col1:
-        from app.api_client import check_backend_health
-        if not check_backend_health():
-            st.error(
-                "⚠️ Backend API is not available. Please ensure the backend is running."
-            )
-            from app.config import BACKEND_URL
-            st.code(f"Expected backend at: {BACKEND_URL}", language="text")
-            st.stop()
-    with col2:
-        from app.api_client import check_backend_health
-        if st.button("🔄", help="Refresh connection status"):
-            check_backend_health.clear()
-            st.rerun()
+    # Check backend (only show if unhealthy)
+    from app.api_client import check_backend_health
+
+    if not check_backend_health():
+        st.error(
+            "⚠️ Backend API is not available. Please ensure the backend is running."
+        )
+        from app.config import BACKEND_URL
+
+        st.code(f"Expected backend at: {BACKEND_URL}", language="text")
+        st.stop()
 
     # Main layout: sidebar + content (Freshfields single-screen)
     sidebar_col, main_col = st.columns([1, 3], gap="small")
@@ -389,7 +391,14 @@ def main() -> None:
     with main_col:
         st.markdown('<div class="ff-main-content">', unsafe_allow_html=True)
 
-        st.markdown("## Gemini-Powered Document Verification")
+        # Header with refresh button
+        header_col1, header_col2 = st.columns([10, 1])
+        with header_col1:
+            st.markdown("## Gemini-Powered Document Verification")
+        with header_col2:
+            if st.button("🔄", help="Refresh connection status", key="refresh_header"):
+                check_backend_health.clear()
+                st.rerun()
         st.caption(
             "Upload a document below to verify it against your reference corpus using AI-powered analysis. "
             "Each sentence or paragraph will be checked for accuracy and consistency."
@@ -445,16 +454,6 @@ def render_verification_workflow() -> None:
             '<div class="ff-card ff-gemini-card">'
             '<div class="ff-card-number">STEP 3</div>'
             '<div class="ff-card-title">Verify with AI</div>',
-            unsafe_allow_html=True,
-        )
-
-        # Gemini branding
-        st.markdown(
-            '<div style="text-align: center; margin: 1rem 0 1.5rem 0;">'
-            '<div style="font-size: 2.5rem; line-height: 1;">🔷</div>'
-            '<div style="font-family: var(--font-display); font-size: 1.125rem; '
-            'font-weight: 600; color: var(--gemini-blue-dark); margin-top: 0.5rem;">'
-            'Gemini AI</div></div>',
             unsafe_allow_html=True,
         )
 

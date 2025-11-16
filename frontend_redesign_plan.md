@@ -9,6 +9,7 @@
 **Design Direction**: **Freshfields-Inspired Sophisticated Minimalism** - clean, confident, and contemporary legal technology with Gemini AI prominently featured throughout the verification workflow
 
 **Aesthetic Foundation**: Following Freshfields' design language:
+
 - Elegant serif headlines with generous line-height
 - Soft color blocks (powder blues and lime green accents)
 - Crisp cream-white backgrounds
@@ -23,12 +24,14 @@
 ### Key Visual Elements Observed
 
 1. **Typography**
+
    - Large, elegant serif for headlines (likely Freight Display, Tiempos, or custom)
    - Clean sans-serif for body text
    - Dramatic scale contrast (headlines 2-3x larger than body)
    - Generous line-height and letter-spacing in display text
 
 2. **Color Strategy**
+
    - Cream white backgrounds (#FAFAF9)
    - Deep black for text and sections
    - Powder blue (#A4C8E1) for soft accent blocks
@@ -36,6 +39,7 @@
    - Minimal palette - no more than 4-5 colors total
 
 3. **Layout Philosophy**
+
    - Generous breathing room
    - Bold full-width color blocks for section division
    - Clean grid system with clear alignment
@@ -43,6 +47,7 @@
    - Strategic use of empty space
 
 4. **Interactive Elements**
+
    - Rounded pill-shaped buttons
    - Black primary buttons
    - Lime green accent buttons
@@ -79,6 +84,7 @@
 ```
 
 **Issues with Current Design:**
+
 - Gemini's role is understated
 - Tab switching hides corpus context
 - Workflow feels disconnected
@@ -179,23 +185,23 @@ Left-to-right mental model:
 
 ```css
 /* Display/Headings - Elegant Serif */
---font-display: 'Freight Display Pro', 'Tiempos', 'Lora', 'Georgia', serif;
+--font-display: "Freight Display Pro", "Tiempos", "Lora", "Georgia", serif;
 /* Fallbacks for web fonts: Lora (Google), Georgia (system) */
 
 /* Body/UI - Clean Sans-Serif */
---font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+--font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
 /* Monospace */
---font-mono: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+--font-mono: "JetBrains Mono", "SF Mono", "Consolas", monospace;
 
 /* Scale - Generous, Freshfields-inspired */
---text-xs: 0.75rem;      /* 12px - labels */
---text-sm: 0.875rem;     /* 14px - captions */
---text-base: 1rem;       /* 16px - body */
---text-lg: 1.25rem;      /* 20px - large body */
---text-xl: 1.875rem;     /* 30px - section headings */
---text-2xl: 2.5rem;      /* 40px - page title */
---text-3xl: 3.5rem;      /* 56px - hero (if needed) */
+--text-xs: 0.75rem; /* 12px - labels */
+--text-sm: 0.875rem; /* 14px - captions */
+--text-base: 1rem; /* 16px - body */
+--text-lg: 1.25rem; /* 20px - large body */
+--text-xl: 1.875rem; /* 30px - section headings */
+--text-2xl: 2.5rem; /* 40px - page title */
+--text-3xl: 3.5rem; /* 56px - hero (if needed) */
 
 /* Line Heights */
 --leading-none: 1;
@@ -229,7 +235,7 @@ Left-to-right mental model:
 --ff-blue-50: #f0f6fa;
 --ff-blue-100: #e5f0f7;
 --ff-blue-200: #c9e1ee;
---ff-blue-300: #a4c8e1;    /* Primary Freshfields blue */
+--ff-blue-300: #a4c8e1; /* Primary Freshfields blue */
 --ff-blue-400: #7ba8c9;
 --ff-blue-500: #5a8fb5;
 --ff-blue-600: #4d7fa3;
@@ -238,7 +244,7 @@ Left-to-right mental model:
 --ff-green-50: #f5f9e8;
 --ff-green-100: #e8f3d6;
 --ff-green-200: #ddeeb8;
---ff-green-300: #c8e86b;    /* Primary Freshfields green */
+--ff-green-300: #c8e86b; /* Primary Freshfields green */
 --ff-green-400: #b0d94f;
 --ff-green-500: #9ac93d;
 --ff-green-600: #8fb830;
@@ -257,7 +263,7 @@ Left-to-right mental model:
 /* Usage */
 --bg-primary: var(--white);
 --bg-secondary: var(--cream-white);
---bg-sidebar: var(--ff-blue-100);      /* Soft blue for sidebar */
+--bg-sidebar: var(--ff-blue-100); /* Soft blue for sidebar */
 --bg-accent: var(--ff-blue-300);
 --bg-dark: var(--black);
 
@@ -271,23 +277,23 @@ Left-to-right mental model:
 --border-medium: var(--warm-gray-light);
 --border-dark: var(--warm-gray);
 
---cta-primary: var(--black);            /* Black buttons */
---cta-accent: var(--ff-green-300);      /* Lime green for highlights */
---cta-gemini: var(--gemini-blue);       /* Gemini-specific CTAs */
+--cta-primary: var(--black); /* Black buttons */
+--cta-accent: var(--ff-green-300); /* Lime green for highlights */
+--cta-gemini: var(--gemini-blue); /* Gemini-specific CTAs */
 ```
 
 ### Spacing & Layout
 
 ```css
 /* Spacing - 8px base grid */
---space-1: 0.5rem;    /* 8px */
---space-2: 1rem;      /* 16px */
---space-3: 1.5rem;    /* 24px */
---space-4: 2rem;      /* 32px */
---space-6: 3rem;      /* 48px */
---space-8: 4rem;      /* 64px */
---space-12: 6rem;     /* 96px */
---space-16: 8rem;     /* 128px */
+--space-1: 0.5rem; /* 8px */
+--space-2: 1rem; /* 16px */
+--space-3: 1.5rem; /* 24px */
+--space-4: 2rem; /* 32px */
+--space-6: 3rem; /* 48px */
+--space-8: 4rem; /* 64px */
+--space-12: 6rem; /* 96px */
+--space-16: 8rem; /* 128px */
 
 /* Layout Constraints */
 --sidebar-width: 300px;
@@ -297,12 +303,12 @@ Left-to-right mental model:
 --workflow-card-min-width: 200px;
 
 /* Border Radius - Freshfields style (rounded pills) */
---radius-sm: 0.25rem;     /* 4px */
---radius-md: 0.5rem;      /* 8px */
---radius-lg: 1rem;        /* 16px */
---radius-xl: 1.5rem;      /* 24px */
---radius-2xl: 2rem;       /* 32px */
---radius-full: 9999px;    /* Full pill */
+--radius-sm: 0.25rem; /* 4px */
+--radius-md: 0.5rem; /* 8px */
+--radius-lg: 1rem; /* 16px */
+--radius-xl: 1.5rem; /* 24px */
+--radius-2xl: 2rem; /* 32px */
+--radius-full: 9999px; /* Full pill */
 
 /* Shadows - Subtle, refined */
 --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
@@ -327,9 +333,9 @@ Left-to-right mental model:
 
 /* Transitions */
 --transition-all: all var(--duration-base) var(--ease-smooth);
---transition-colors: background-color var(--duration-base) var(--ease-smooth),
-                     color var(--duration-base) var(--ease-smooth),
-                     border-color var(--duration-base) var(--ease-smooth);
+--transition-colors: background-color var(--duration-base) var(--ease-smooth), color
+    var(--duration-base) var(--ease-smooth),
+  border-color var(--duration-base) var(--ease-smooth);
 --transition-transform: transform var(--duration-base) var(--ease-out);
 ```
 
@@ -357,6 +363,7 @@ Left-to-right mental model:
 ### 1. Header Component
 
 **Design:**
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  Content Verification            🔷 Powered by Gemini  [•]     │
@@ -364,12 +371,14 @@ Left-to-right mental model:
 ```
 
 **Elements:**
+
 - Left: Title in elegant serif (Freight Display, ~24px)
 - Right: "Powered by Gemini" badge with Gemini diamond icon
 - Background: Cream white
 - Subtle bottom border
 
 **Styling:**
+
 - Height: 72px
 - Padding: 0 3rem
 - Display: flex, justify-content: space-between
@@ -380,6 +389,7 @@ Left-to-right mental model:
 ### 2. Corpus Sidebar Component
 
 **Design:**
+
 ```
 ┌─────────────────────┐
 │ Reference Corpus    │  ← Serif headline
@@ -406,6 +416,7 @@ Left-to-right mental model:
 ```
 
 **Styling:**
+
 - Width: 300px fixed
 - Background: Soft blue (--ff-blue-100)
 - Padding: 2rem
@@ -414,6 +425,7 @@ Left-to-right mental model:
 - Pill-shaped buttons at bottom
 
 **States:**
+
 - **Empty**: Large upload area, call-to-action
 - **Active**: Compact stats + quick actions
 - **Loading**: Skeleton state
@@ -423,6 +435,7 @@ Left-to-right mental model:
 ### 3. Workflow Cards (4 Horizontal)
 
 **Layout:**
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  Gemini-Powered Document Verification                          │
@@ -435,6 +448,7 @@ Left-to-right mental model:
 ```
 
 **Card Structure (Standard):**
+
 ```
 ┌──────────────┐
 │ 1            │  ← Number (subtle)
@@ -448,6 +462,7 @@ Left-to-right mental model:
 ```
 
 **Card 3 (Gemini Verification) - Special Treatment:**
+
 ```
 ┌───────────────────┐
 │ 3                 │  ← Number
@@ -469,6 +484,7 @@ Left-to-right mental model:
 ```
 
 **Card Styling:**
+
 - Background: White
 - Border: 1px solid --border-light
 - Border-radius: --radius-lg (16px)
@@ -478,6 +494,7 @@ Left-to-right mental model:
 - Transition: all 250ms
 
 **Gemini Card Specific:**
+
 - Subtle blue background tint (--gemini-blue-light)
 - Lime green button (--ff-green-300)
 - Gemini diamond icon 🔷
@@ -488,6 +505,7 @@ Left-to-right mental model:
 ### 4. Results Section Component
 
 **Design:**
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │ Gemini Verification Results                                     │
@@ -515,6 +533,7 @@ Left-to-right mental model:
 ```
 
 **Styling:**
+
 - Background: White
 - Border-top: 2px solid --border-medium
 - Padding: 3rem
@@ -527,6 +546,7 @@ Left-to-right mental model:
 ### 5. Footer Component
 
 **Design:**
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  Powered by Gemini 2.5 Flash • Content Verification v2.1       │
@@ -534,6 +554,7 @@ Left-to-right mental model:
 ```
 
 **Styling:**
+
 - Height: 48px
 - Background: --cream-white
 - Text: Small (14px), centered
@@ -554,6 +575,7 @@ Streamlit's rendering model imposes specific constraints that must be understood
 Streamlit widgets (like `st.file_uploader()`, `st.button()`, etc.) **cannot** be rendered inside custom HTML `<div>` containers created with `st.markdown()`. This is a fundamental limitation of how Streamlit processes and renders components.
 
 **What Doesn't Work:**
+
 ```python
 # WRONG - This creates empty containers
 st.markdown('<div class="main-grid">', unsafe_allow_html=True)
@@ -579,6 +601,7 @@ st.markdown('</div>', unsafe_allow_html=True)
 Always use Streamlit's native layout primitives (`st.columns()`, `st.container()`) for structural layout. Use `st.markdown()` HTML **only** for styling wrappers around Streamlit-generated elements.
 
 **What Works:**
+
 ```python
 # CORRECT - Use Streamlit columns for layout
 sidebar, main = st.columns([1, 3], gap="small")
@@ -607,6 +630,7 @@ with main:
 ```
 
 **Key Rules:**
+
 - Use `st.columns([1, 3])` for sidebar/main split (ratio-based widths)
 - Use `st.columns(4)` for equal-width workflow cards
 - All widgets **must** be inside `with` blocks to render in correct columns
@@ -621,47 +645,49 @@ Since we can't control HTML structure directly, we must target Streamlit's auto-
 
 **Streamlit's Generated Classes & Attributes:**
 
-| Element | Selector | Usage |
-|---------|----------|-------|
-| Columns | `[data-testid="column"]` | Style individual columns |
-| Containers | `[data-testid="stVerticalBlock"]` | Style container blocks |
-| Metrics | `[data-testid="stMetricValue"]` | Large metric numbers |
-| Metrics | `[data-testid="stMetricLabel"]` | Metric labels |
-| Buttons | `.stButton > button` | Button styling |
-| File Uploader | `.stFileUploader` | Upload component |
-| Text Input | `.stTextInput input` | Input fields |
-| Text Area | `.stTextArea textarea` | Text areas |
-| Radio | `.stRadio > label` | Radio buttons |
-| Progress | `.stProgress > div > div` | Progress bars |
+| Element       | Selector                          | Usage                    |
+| ------------- | --------------------------------- | ------------------------ |
+| Columns       | `[data-testid="column"]`          | Style individual columns |
+| Containers    | `[data-testid="stVerticalBlock"]` | Style container blocks   |
+| Metrics       | `[data-testid="stMetricValue"]`   | Large metric numbers     |
+| Metrics       | `[data-testid="stMetricLabel"]`   | Metric labels            |
+| Buttons       | `.stButton > button`              | Button styling           |
+| File Uploader | `.stFileUploader`                 | Upload component         |
+| Text Input    | `.stTextInput input`              | Input fields             |
+| Text Area     | `.stTextArea textarea`            | Text areas               |
+| Radio         | `.stRadio > label`                | Radio buttons            |
+| Progress      | `.stProgress > div > div`         | Progress bars            |
 
 **CSS Strategy:**
+
 ```css
 /* Style Streamlit columns */
 [data-testid="column"] {
-    padding: 0 0.75rem;
+  padding: 0 0.75rem;
 }
 
 [data-testid="column"]:first-child {
-    padding-left: 0;
+  padding-left: 0;
 }
 
 /* Style containers as cards */
 [data-testid="stVerticalBlock"] > [data-testid="stVerticalBlock"] {
-    background: white;
-    border: 1.5px solid #e8e6e3;
-    border-radius: 1rem;
-    padding: 1.5rem;
+  background: white;
+  border: 1.5px solid #e8e6e3;
+  border-radius: 1rem;
+  padding: 1.5rem;
 }
 
 /* Style buttons */
 .stButton > button {
-    border-radius: 9999px !important;  /* Pill shape */
-    font-weight: 600 !important;
-    padding: 0.75rem 1.5rem !important;
+  border-radius: 9999px !important; /* Pill shape */
+  font-weight: 600 !important;
+  padding: 0.75rem 1.5rem !important;
 }
 ```
 
 **Important Notes:**
+
 - Use `!important` sparingly, only when overriding Streamlit's default styles
 - Test selectors with browser DevTools to ensure they target correctly
 - Streamlit's DOM structure may change between versions - prefer data attributes over class names
@@ -680,25 +706,27 @@ During testing of `design_6_fixed.py` at `localhost:8504`, the following issues 
 **Root Cause:** CSS selector `[data-testid="stVerticalBlock"] > [data-testid="stVerticalBlock"]` is too specific and may not be matching the actual DOM structure generated by nested `st.columns()` and `st.container()`.
 
 **Investigation Needed:**
+
 - Use browser DevTools to inspect actual DOM structure
 - Identify correct selector for Streamlit containers inside columns
 - Test whether `st.container()` needs to be explicitly used to create card boundaries
 
 **Potential Fix:**
+
 ```css
 /* More lenient selector for cards */
 [data-testid="column"] > div {
-    background: white;
-    border: 1.5px solid #e8e6e3;
-    border-radius: 1rem;
-    padding: 1.5rem;
+  background: white;
+  border: 1.5px solid #e8e6e3;
+  border-radius: 1rem;
+  padding: 1.5rem;
 }
 
 /* Or target containers directly */
 .element-container {
-    background: white;
-    border: 1.5px solid #e8e6e3;
-    border-radius: 1rem;
+  background: white;
+  border: 1.5px solid #e8e6e3;
+  border-radius: 1rem;
 }
 ```
 
@@ -711,21 +739,22 @@ During testing of `design_6_fixed.py` at `localhost:8504`, the following issues 
 **Root Cause:** The `.sidebar-panel` class is applied to a `<div>` wrapper inside the column, but Streamlit's column rendering may override background colors, or the wrapper div doesn't extend full height.
 
 **Potential Fix:**
+
 ```css
 /* Target the column itself for sidebar */
 [data-testid="column"]:first-child {
-    background: #e5f0f7 !important;
-    padding: 2rem !important;
-    border-right: 1px solid #a4c8e1;
-    min-height: calc(100vh - 120px);
+  background: #e5f0f7 !important;
+  padding: 2rem !important;
+  border-right: 1px solid #a4c8e1;
+  min-height: calc(100vh - 120px);
 }
 
 /* Or use more specific wrapper styling */
 .sidebar-panel {
-    background: #e5f0f7 !important;
-    min-height: calc(100vh - 120px);
-    margin: -1rem; /* Extend to column edges */
-    padding: 2rem;
+  background: #e5f0f7 !important;
+  min-height: calc(100vh - 120px);
+  margin: -1rem; /* Extend to column edges */
+  padding: 2rem;
 }
 ```
 
@@ -736,6 +765,7 @@ During testing of `design_6_fixed.py` at `localhost:8504`, the following issues 
 **Problem:** Header title "Content Verification" and "Powered by Gemini" badge appear on separate rows instead of a single horizontal line.
 
 **Current Code:**
+
 ```python
 col1, col2 = st.columns([3, 1])
 with col1:
@@ -747,6 +777,7 @@ with col2:
 **Root Cause:** Each column renders as a block element, and nested divs with `.custom-header` may be forcing full-width behavior.
 
 **Potential Fix:**
+
 ```python
 # Option A: Use container with flexbox
 st.markdown("""
@@ -768,40 +799,42 @@ st.markdown("""
 **Problem:** Elements appear cramped together, lacking the "generous whitespace" that defines Freshfields aesthetic.
 
 **Observations:**
+
 - Insufficient padding between workflow cards
 - Vertical spacing between sections too small
 - Results section feels compressed
 
 **Recommended Fixes:**
+
 ```css
 /* Increase base spacing */
 .main {
-    padding: 3rem !important; /* Increase from default */
+  padding: 3rem !important; /* Increase from default */
 }
 
 /* Add vertical spacing between major sections */
 .element-container {
-    margin-bottom: 2rem !important; /* Increase from 0.5rem */
+  margin-bottom: 2rem !important; /* Increase from 0.5rem */
 }
 
 /* Increase column gaps */
 [data-testid="column"] {
-    padding: 0 1.5rem !important; /* Increase from 0.75rem */
+  padding: 0 1.5rem !important; /* Increase from 0.75rem */
 }
 
 /* Add breathing room to cards */
 [data-testid="stVerticalBlock"] > [data-testid="stVerticalBlock"] {
-    padding: 2.5rem !important; /* Increase from 1.5rem */
-    margin-bottom: 2rem !important;
+  padding: 2.5rem !important; /* Increase from 1.5rem */
+  margin-bottom: 2rem !important;
 }
 
 /* Increase spacing in results section */
 .stMetric {
-    margin-bottom: 1.5rem !important;
+  margin-bottom: 1.5rem !important;
 }
 
 hr {
-    margin: 3rem 0 !important; /* Increase from 2rem */
+  margin: 3rem 0 !important; /* Increase from 2rem */
 }
 ```
 
@@ -812,6 +845,7 @@ hr {
 **Problem:** Card 3 (Gemini Verification) should have special visual treatment with gradient background and enhanced styling, but appears similar to other cards.
 
 **Current Approach:**
+
 ```python
 with card3:
     st.markdown('<div class="gemini-card" style="...gradient background...">')
@@ -823,6 +857,7 @@ with card3:
 **Issue:** The wrapper div with `.gemini-card` class doesn't extend to encompass the Streamlit widgets rendered inside it.
 
 **Potential Fix:**
+
 ```python
 with card3:
     # Use inline styles on container
@@ -844,6 +879,7 @@ with card3:
 ```
 
 **Alternative:** Use `st.container()` with explicit styling:
+
 ```python
 with card3:
     with st.container():
@@ -934,15 +970,18 @@ Before finalizing any Streamlit UI implementation:
 **Common Issues:**
 
 1. **Widgets appearing in wrong column**
+
    - Check indentation - must be inside `with` block
    - Verify column variables aren't being reused
 
 2. **CSS not applying**
+
    - Use `!important` to override Streamlit defaults
    - Check selector specificity with DevTools
    - Ensure `unsafe_allow_html=True` is set
 
 3. **Layout breaking on rerun**
+
    - Avoid conditional column creation
    - Use session state for dynamic layouts
    - Test with `st.experimental_rerun()`
@@ -967,6 +1006,7 @@ Before finalizing any Streamlit UI implementation:
    - **Known Issues:** Cards, sidebar, header, spacing, Gemini card (see above)
 
 **Next Steps:**
+
 - Fix identified issues in `design_6_fixed.py`
 - Create `design_6_final.py` with all corrections
 - Use final mockup as implementation reference
@@ -980,6 +1020,7 @@ Before finalizing any Streamlit UI implementation:
 **Objective**: Remove tabs, implement single-screen grid layout
 
 **Tasks:**
+
 1. Remove `st.tabs()` from `main.py`
 2. Create fixed sidebar (300px) using Streamlit columns
 3. Move corpus components to sidebar
@@ -987,10 +1028,12 @@ Before finalizing any Streamlit UI implementation:
 5. Implement responsive grid for workflow cards
 
 **Files Modified:**
+
 - `frontend/main.py`
 - `frontend/app/corpus.py`
 
 **Success Criteria:**
+
 - [ ] No tabs visible
 - [ ] Sidebar fixed at 300px
 - [ ] Workflow cards in main area
@@ -1003,6 +1046,7 @@ Before finalizing any Streamlit UI implementation:
 **Objective**: Apply Freshfields aesthetic throughout
 
 **Tasks:**
+
 1. Create CSS file with design system variables
 2. Load Google Fonts (Lora for serif, Inter for sans)
 3. Apply typography styles (serif headlines, sans body)
@@ -1013,11 +1057,13 @@ Before finalizing any Streamlit UI implementation:
 8. Apply shadows and subtle borders
 
 **Files Modified:**
+
 - New: `frontend/app/freshfields_styles.py`
 - `frontend/main.py` - Import styles
 - `frontend/app/ui_components.py`
 
 **Success Criteria:**
+
 - [ ] Fonts loaded and applied correctly
 - [ ] Color palette matches Freshfields
 - [ ] Buttons are pill-shaped
@@ -1031,6 +1077,7 @@ Before finalizing any Streamlit UI implementation:
 **Objective**: Make Gemini central and visible
 
 **Tasks:**
+
 1. Add "Powered by Gemini" badge to header
 2. Create enhanced Card 3 with Gemini branding
 3. Add Gemini diamond icon (🔷 or custom SVG)
@@ -1039,10 +1086,12 @@ Before finalizing any Streamlit UI implementation:
 6. Add model info to footer
 
 **Files Modified:**
+
 - `frontend/app/ui_components.py` - Header, footer
 - `frontend/main.py` - Card 3 enhancement
 
 **Success Criteria:**
+
 - [ ] Gemini badge in header
 - [ ] Card 3 visually distinct with Gemini branding
 - [ ] Results clearly attributed to Gemini
@@ -1055,6 +1104,7 @@ Before finalizing any Streamlit UI implementation:
 **Objective**: Create compact, always-visible corpus panel
 
 **Tasks:**
+
 1. Redesign for 300px width constraint
 2. Create compact stats display
 3. Implement quick upload in sidebar
@@ -1063,9 +1113,11 @@ Before finalizing any Streamlit UI implementation:
 6. Implement empty vs. active states
 
 **Files Modified:**
+
 - `frontend/app/corpus.py`
 
 **Success Criteria:**
+
 - [ ] Corpus status visible at glance
 - [ ] Quick upload works without modal
 - [ ] Stats displayed compactly
@@ -1079,6 +1131,7 @@ Before finalizing any Streamlit UI implementation:
 **Objective**: Perfect 4-card horizontal layout
 
 **Tasks:**
+
 1. Ensure cards scale properly in grid
 2. Add serif titles and subtle numbering
 3. Implement status indicators
@@ -1087,9 +1140,11 @@ Before finalizing any Streamlit UI implementation:
 6. Add tooltips/help text
 
 **Files Modified:**
+
 - `frontend/main.py` - Card rendering
 
 **Success Criteria:**
+
 - [ ] All 4 cards visible without scroll
 - [ ] Card 3 stands out visually
 - [ ] Status flows naturally
@@ -1102,6 +1157,7 @@ Before finalizing any Streamlit UI implementation:
 **Objective**: Polished results display
 
 **Tasks:**
+
 1. Create metrics grid with large serif numbers
 2. Style confidence distribution bars
 3. Add expandable review items
@@ -1109,10 +1165,12 @@ Before finalizing any Streamlit UI implementation:
 5. Ensure Gemini attribution visible
 
 **Files Modified:**
+
 - `frontend/main.py` - Results rendering
 - `frontend/app/ui_components.py`
 
 **Success Criteria:**
+
 - [ ] Metrics are prominent and clear
 - [ ] Confidence bars styled correctly
 - [ ] Results feel polished and complete
@@ -1125,6 +1183,7 @@ Before finalizing any Streamlit UI implementation:
 **Objective**: Final refinements and QA
 
 **Tasks:**
+
 1. Test full workflow end-to-end
 2. Check all edge cases (errors, empty states)
 3. Verify responsive behavior (min 1280px)
@@ -1134,6 +1193,7 @@ Before finalizing any Streamlit UI implementation:
 7. Final design tweaks
 
 **Success Criteria:**
+
 - [ ] Happy path works flawlessly
 - [ ] Edge cases handled
 - [ ] No console errors
@@ -1164,18 +1224,21 @@ Before finalizing any Streamlit UI implementation:
 ## Success Metrics
 
 ### User Experience
+
 - [ ] Entire workflow visible at glance
 - [ ] Gemini's role immediately clear
 - [ ] Interface feels sophisticated and professional
 - [ ] Workflow completion is intuitive
 
 ### Technical
+
 - [ ] Page load < 2s
 - [ ] No layout shift
 - [ ] 60fps animations
 - [ ] Works on screens ≥ 1280px
 
 ### Aesthetic
+
 - [ ] Freshfields design language captured
 - [ ] Typography hierarchy clear
 - [ ] Color palette applied consistently
@@ -1265,6 +1328,7 @@ This is the **reference implementation** for the frontend refactor. It demonstra
 The interface uses TWO distinct file uploaders with different purposes:
 
 1. **Sidebar Uploader** (Column A - Reference Corpus)
+
    - **Purpose**: Upload reference documents that form the knowledge base
    - **Label**: "Upload Reference Corpus"
    - **Caption**: "📚 Add documents to use as verification sources"
@@ -1281,6 +1345,7 @@ The interface uses TWO distinct file uploaders with different purposes:
    - **Use Case**: Draft brief, memo, contract, filing that needs fact-checking
 
 **Visual Distinction Strategy:**
+
 - Sidebar uses blue background → "This is the knowledge base"
 - Main content uses white background → "This is your active workflow"
 - Info boxes explain each uploader's purpose explicitly
@@ -1288,6 +1353,7 @@ The interface uses TWO distinct file uploaders with different purposes:
 - Different success messages ("X files selected" vs "Ready to Verify")
 
 **Run the mockup:**
+
 ```bash
 streamlit run frontend/mockups/design_6_freshfields_single_screen_mvp.py
 ```
@@ -1297,6 +1363,7 @@ streamlit run frontend/mockups/design_6_freshfields_single_screen_mvp.py
 The final mockup implements Freshfields-accurate **compact and efficient** spacing:
 
 1. **Sidebar Spacing** (Compact & Efficient)
+
    - Top/bottom padding: **32px** (var(--space-4))
    - Between-element spacing: **16px** (var(--space-2))
    - Metrics: **16px** bottom margin
@@ -1306,6 +1373,7 @@ The final mockup implements Freshfields-accurate **compact and efficient** spaci
    - Horizontal rules: **24px** top/bottom
 
 2. **Workflow Cards Spacing** (Tight & Professional)
+
    - Card padding: **24px** (var(--space-3))
    - Card min-height: **220px**
    - Inter-card gap: **16px** (var(--space-2))
@@ -1315,6 +1383,7 @@ The final mockup implements Freshfields-accurate **compact and efficient** spaci
    - Flexbox layout ensures efficient vertical distribution
 
 3. **Main Content Spacing** (Balanced & Clean)
+
    - Section padding: **40px vertical, 48px horizontal**
    - H2 headings: 0 top, **24px** bottom
    - H3 headings: **24px** top, **16px** bottom
@@ -1334,6 +1403,7 @@ The final mockup implements Freshfields-accurate **compact and efficient** spaci
 **Spacing Philosophy:**
 
 The spacing system follows Freshfields' **actual** principle of **"efficient elegance"**:
+
 - **Micro-spacing** (8px): Tight related elements (card labels, captions)
 - **Standard spacing** (16-24px): Between components (metrics, form elements)
 - **Section spacing** (24-32px): Major divisions (dividers, section headers)
@@ -1343,15 +1413,15 @@ The spacing system follows Freshfields' **actual** principle of **"efficient ele
 
 **Key Differences from Previous Attempts:**
 
-| Issue | Previous Approach | Final MVP Solution |
-|-------|------------------|-------------------|
-| Header layout | Two st.columns → broken across rows | Single HTML flexbox div → proper horizontal layout |
-| Sidebar background | CSS on wrapper div → didn't fill | `[data-testid="column"]:first-child` → fills entire column |
-| Card borders | Generic Streamlit selector → no match | Custom `.ff-card` class on HTML wrapper → visible borders |
-| Spacing | First: cramped defaults<br>Then: over-corrected to excessive gaps | **Freshfields-accurate compact spacing**: 16-24px standard, no waste |
-| Gemini card | Plain wrapper div → not distinct | Gradient + pseudo-element glow + special hover → visually striking |
-| Uploader clarity | Confusing dual uploaders | Clear labels + info boxes + icons distinguish corpus vs. document-to-verify |
-| Vertical rhythm | Multiple `st.markdown("")` tricks | Clean CSS-based spacing system using var(--space-X) scale |
+| Issue              | Previous Approach                                                 | Final MVP Solution                                                          |
+| ------------------ | ----------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Header layout      | Two st.columns → broken across rows                               | Single HTML flexbox div → proper horizontal layout                          |
+| Sidebar background | CSS on wrapper div → didn't fill                                  | `[data-testid="column"]:first-child` → fills entire column                  |
+| Card borders       | Generic Streamlit selector → no match                             | Custom `.ff-card` class on HTML wrapper → visible borders                   |
+| Spacing            | First: cramped defaults<br>Then: over-corrected to excessive gaps | **Freshfields-accurate compact spacing**: 16-24px standard, no waste        |
+| Gemini card        | Plain wrapper div → not distinct                                  | Gradient + pseudo-element glow + special hover → visually striking          |
+| Uploader clarity   | Confusing dual uploaders                                          | Clear labels + info boxes + icons distinguish corpus vs. document-to-verify |
+| Vertical rhythm    | Multiple `st.markdown("")` tricks                                 | Clean CSS-based spacing system using var(--space-X) scale                   |
 
 ---
 
@@ -1368,12 +1438,14 @@ Use **only** `design_6_freshfields_single_screen_mvp.py` as the reference for th
 ## Component Checklist
 
 ### Header
+
 - [ ] Elegant serif title
 - [ ] "Powered by Gemini" badge
 - [ ] Cream white background
 - [ ] Subtle bottom border
 
 ### Sidebar (Corpus)
+
 - [ ] Soft blue background
 - [ ] Serif "Reference Corpus" headline
 - [ ] Compact status display
@@ -1382,6 +1454,7 @@ Use **only** `design_6_freshfields_single_screen_mvp.py` as the reference for th
 - [ ] Empty/active states
 
 ### Workflow Cards
+
 - [ ] Card 1: Upload
 - [ ] Card 2: Chunking mode
 - [ ] Card 3: Gemini verification (enhanced)
@@ -1392,6 +1465,7 @@ Use **only** `design_6_freshfields_single_screen_mvp.py` as the reference for th
 - [ ] Status indicators
 
 ### Results Section
+
 - [ ] "Gemini Verification Results" header (serif)
 - [ ] Large metric numbers (serif)
 - [ ] Confidence distribution bars
@@ -1399,11 +1473,13 @@ Use **only** `design_6_freshfields_single_screen_mvp.py` as the reference for th
 - [ ] Lime green for high confidence
 
 ### Footer
+
 - [ ] Model information
 - [ ] Centered text
 - [ ] Cream background
 
 ### Overall Styling
+
 - [ ] Custom CSS loaded
 - [ ] Fonts applied (Lora, Inter)
 - [ ] Colors consistent with palette
@@ -1415,15 +1491,15 @@ Use **only** `design_6_freshfields_single_screen_mvp.py` as the reference for th
 
 ## Timeline Estimate
 
-| Phase | Duration | Cumulative |
-|-------|----------|------------|
-| Phase 1: Layout Restructure | 2-3 hrs | 2-3 hrs |
-| Phase 2: Freshfields Visual Design | 3-4 hrs | 5-7 hrs |
-| Phase 3: Gemini Branding | 1-2 hrs | 6-9 hrs |
-| Phase 4: Corpus Sidebar | 2 hrs | 8-11 hrs |
-| Phase 5: Workflow Cards | 2 hrs | 10-13 hrs |
-| Phase 6: Results Enhancement | 1-2 hrs | 11-15 hrs |
-| Phase 7: Polish & Testing | 2-3 hrs | 13-18 hrs |
+| Phase                              | Duration | Cumulative |
+| ---------------------------------- | -------- | ---------- |
+| Phase 1: Layout Restructure        | 2-3 hrs  | 2-3 hrs    |
+| Phase 2: Freshfields Visual Design | 3-4 hrs  | 5-7 hrs    |
+| Phase 3: Gemini Branding           | 1-2 hrs  | 6-9 hrs    |
+| Phase 4: Corpus Sidebar            | 2 hrs    | 8-11 hrs   |
+| Phase 5: Workflow Cards            | 2 hrs    | 10-13 hrs  |
+| Phase 6: Results Enhancement       | 1-2 hrs  | 11-15 hrs  |
+| Phase 7: Polish & Testing          | 2-3 hrs  | 13-18 hrs  |
 
 **Total Estimated Time**: 13-18 hours (2-3 full development days)
 
@@ -1451,7 +1527,7 @@ Freshfields Design System - CSS injection for Streamlit
 """
 import streamlit as st
 
-def load_freshfields_css():
+def load_css():
     """Load Freshfields-inspired design system CSS"""
     st.markdown("""<style>
         /* Copy CSS from design_6_freshfields_single_screen_mvp.py */
@@ -1460,11 +1536,12 @@ def load_freshfields_css():
 ```
 
 Usage in `frontend/main.py`:
+
 ```python
-from app.freshfields_styles import load_freshfields_css
+from app.freshfields_styles import load_css
 
 st.set_page_config(layout="wide", ...)
-load_freshfields_css()
+load_css()
 ```
 
 ### Step 2: Create Reusable UI Components
@@ -1545,7 +1622,7 @@ Update `frontend/main.py`:
 
 ```python
 import streamlit as st
-from app.freshfields_styles import load_freshfields_css
+from app.freshfields_styles import load_css
 from app.ui_components import render_header, render_footer, render_workflow_card, render_gemini_card
 from app.corpus import render_corpus_sidebar
 from app.verification import render_verification_workflow, render_results
@@ -1559,7 +1636,7 @@ st.set_page_config(
 )
 
 # Load styles
-load_freshfields_css()
+load_css()
 
 # Header
 render_header()
@@ -1657,6 +1734,7 @@ Before deploying the refactored frontend:
 ---
 
 **Next Steps**:
+
 1. ✅ Review the MVP mockup (`design_6_freshfields_single_screen_mvp.py`)
 2. Run the mockup locally to validate the design
 3. Begin implementation following the guide above

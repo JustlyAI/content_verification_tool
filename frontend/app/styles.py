@@ -10,10 +10,11 @@ Design Philosophy:
 - Gemini prominently featured throughout workflow
 - Fixed header/footer with scrollable content area
 """
+
 import streamlit as st
 
 
-def load_freshfields_css():
+def load_css():
     """Load Freshfields-inspired design system CSS"""
     st.markdown(
         """
@@ -98,6 +99,7 @@ def load_freshfields_css():
 
     .block-container {
         padding: 0 !important;
+        margin: 0 !important;
         max-width: 100% !important;
     }
 
@@ -128,11 +130,11 @@ def load_freshfields_css():
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: var(--space-4) var(--space-6);
+        padding: var(--space-3) var(--space-6);
         background: var(--cream-white);
         border-bottom: 1.5px solid var(--warm-gray-200);
         margin: 0;
-        min-height: 80px;
+        min-height: 72px;
     }
 
     .ff-header-title {
@@ -172,9 +174,13 @@ def load_freshfields_css():
         min-height: calc(100vh - 160px);
     }
 
-    /* Sidebar internal padding - COMPACT & EFFICIENT */
+    /* Sidebar internal padding - 0.5 inch all around, top aligned with header */
     .ff-sidebar-content {
-        padding: var(--space-4) var(--space-3);
+        padding-top: 0 !important;
+        padding-bottom: var(--space-6) !important;
+        padding-left: var(--space-6) !important;
+        padding-right: var(--space-6) !important;
+        box-sizing: border-box !important;
     }
 
     /* Sidebar section spacing - TIGHTER */
@@ -216,9 +222,14 @@ def load_freshfields_css():
         padding-right: 0 !important;
     }
 
-    /* Sidebar headings */
+    /* Sidebar headings - first h3 aligned with header title baseline */
+    .ff-sidebar-content h3:first-of-type {
+        margin-top: var(--space-3) !important;
+        padding-top: 0 !important;
+        margin-bottom: var(--space-2) !important;
+    }
+
     .ff-sidebar-content h3 {
-        margin-top: 0 !important;
         margin-bottom: var(--space-2) !important;
     }
 
@@ -229,22 +240,38 @@ def load_freshfields_css():
 
     /* ===== MAIN CONTENT COLUMN ===== */
     .ff-main-content {
-        padding: var(--space-5) var(--space-6);
+        padding-top: var(--space-3) !important;
+        padding-bottom: var(--space-6) !important;
+        padding-left: var(--space-6) !important;
+        padding-right: var(--space-8) !important;
         background: var(--white);
+        box-sizing: border-box !important;
+    }
+
+    /* Remove top margin/padding from first elements */
+    .ff-main-content > .element-container:first-child {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+
+    .ff-main-content h2:first-of-type {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
     }
 
     /* ===== WORKFLOW CARDS ===== */
     /* Compact spacing between columns */
-    [data-testid="column"] {
-        padding: 0 var(--space-2) !important;
+    .ff-main-content [data-testid="column"] {
+        padding: 0 0.75rem !important;
     }
 
-    [data-testid="column"]:first-child {
+    .ff-main-content [data-testid="column"]:first-child {
         padding-left: 0 !important;
     }
 
-    [data-testid="column"]:last-child {
-        padding-right: 0 !important;
+    /* Keep right padding on last column in main content for proper spacing */
+    .ff-main-content [data-testid="column"]:last-child {
+        padding-right: 0.75rem !important;
     }
 
     /* Card container styling - COMPACT & EFFICIENT */
@@ -253,7 +280,7 @@ def load_freshfields_css():
         border: 2px solid var(--warm-gray-200);
         border-radius: var(--radius-lg);
         padding: var(--space-3);
-        min-height: 220px;
+        min-height: 200px;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         box-shadow: var(--shadow-xs);
         display: flex;
@@ -504,8 +531,15 @@ def load_freshfields_css():
     /* Compact spacing for major sections */
     .stMarkdown h2 {
         margin-top: 0 !important;
-        margin-bottom: var(--space-3) !important;
+        margin-bottom: var(--space-2) !important;
         line-height: 1.2 !important;
+    }
+
+    /* First heading in main content - eliminate top gap */
+    .ff-main-content > .element-container:first-child h2,
+    .ff-main-content > .element-container:first-child h3 {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
     }
 
     .stMarkdown h3 {

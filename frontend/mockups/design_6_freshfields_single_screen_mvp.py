@@ -798,14 +798,6 @@ with main_col:
             unsafe_allow_html=True,
         )
 
-        st.markdown(
-            '<div style="text-align: center; margin: 1rem 0 1.5rem 0;">'
-            '<div style="font-size: 2.5rem; line-height: 1;">🔷</div>'
-            '<div style="font-family: var(--font-display); font-size: 1.125rem; font-weight: 600; color: var(--gemini-blue-dark); margin-top: 0.5rem;">Gemini AI</div>'
-            "</div>",
-            unsafe_allow_html=True,
-        )
-
         if uploaded_doc:
             st.info("🔷 Corpus Ready (5 docs)")
 
