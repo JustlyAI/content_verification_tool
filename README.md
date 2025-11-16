@@ -422,6 +422,7 @@ docker-compose logs > application.log
 **Infrastructure**: Docker • Docker Compose • UV/pip
 
 **AI Models**:
+
 - `gemini-2.5-flash` - Chunk verification
 - `gemini-2.5-flash-lite` - Metadata generation
 - File Search (RAG) - Reference corpus with automatic embeddings
@@ -431,6 +432,7 @@ docker-compose logs > application.log
 ## Future Improvements
 
 - Better semantic chunking of multi-sentence 'clauses'.
+- Structured outputs for verification results (awaiting availability with File Search)
 
 ---
 
@@ -443,6 +445,7 @@ Typical costs using Gemini models:
 - **Total for 50-page document**: ~$0.01
 
 **File Search (RAG):**
+
 - Storage: FREE
 - Query-time embeddings: FREE
 - Initial indexing: $0.15 per 1M tokens (one-time)
