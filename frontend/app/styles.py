@@ -230,6 +230,51 @@ def load_css():
        using the .st-key-{key_name} selector pattern instead.
     */
 
+    /* ===== FIX: Key-based targeting for sidebar metrics ===== */
+    /* Use .st-key-{key_name} pattern to target specific widgets */
+
+    /* Target the columns container */
+    .st-key-sidebar_metrics_cols,
+    .st-key-sidebar_metrics_cols > div,
+    .st-key-sidebar_metrics_cols [data-testid="stColumn"],
+    .st-key-sidebar_metrics_cols [data-testid="stColumn"] > div,
+    .st-key-sidebar_metrics_cols [data-testid="stVerticalBlock"],
+    .st-key-sidebar_metrics_cols [data-testid="stVerticalBlock"] > div {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+
+    /* Target individual metrics */
+    .st-key-sidebar_metric_docs,
+    .st-key-sidebar_metric_storage,
+    .st-key-sidebar_metric_pages,
+    .st-key-sidebar_metric_chunks {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+
+    /* Target all descendants of keyed metrics */
+    .st-key-sidebar_metric_docs *,
+    .st-key-sidebar_metric_storage *,
+    .st-key-sidebar_metric_pages *,
+    .st-key-sidebar_metric_chunks * {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+
+    /* Target metric-specific containers */
+    .st-key-sidebar_metric_docs [data-testid="stMetric"],
+    .st-key-sidebar_metric_storage [data-testid="stMetric"],
+    .st-key-sidebar_metric_pages [data-testid="stMetric"],
+    .st-key-sidebar_metric_chunks [data-testid="stMetric"],
+    .st-key-sidebar_metric_docs [data-testid="stMetric"] > div,
+    .st-key-sidebar_metric_storage [data-testid="stMetric"] > div,
+    .st-key-sidebar_metric_pages [data-testid="stMetric"] > div,
+    .st-key-sidebar_metric_chunks [data-testid="stMetric"] > div {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+
     /* Tighter button spacing - override any parent spacing */
     .fm-sidebar-content .stButton > button {
         margin-bottom: 0 !important;

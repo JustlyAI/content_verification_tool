@@ -76,13 +76,21 @@ def render_upload_card() -> None:
 
         # Upload button
         if not st.session_state.document_info:
-            if st.button(
+            # Check if we're already processing
+            is_processing = st.session_state.get("upload_in_progress", False)
+
+            # Use button with key to track clicks (no callback needed)
+            upload_clicked = st.button(
                 "🚀 Upload",
                 type="primary",
                 use_container_width=True,
-                disabled=st.session_state.upload_in_progress,
+                disabled=is_processing,
                 key="upload_btn",
-            ):
+            )
+
+            # Process upload when button is clicked (only once per click)
+            if upload_clicked and not is_processing:
+                # Set processing flag immediately to prevent double-execution
                 st.session_state.upload_in_progress = True
 
                 # Create progress indicators
@@ -111,6 +119,7 @@ def render_upload_card() -> None:
                     status_text.error("⚠️ Invalid response from server")
                 else:
                     st.session_state.upload_in_progress = False
+                # Streamlit will automatically rerun when session state changes
         else:
             st.success("✓ Ready to Verify")
             st.caption(
@@ -210,10 +219,13 @@ def render_verify_card() -> None:
         # Set processing flag immediately to prevent double-execution
         st.session_state.verification_in_progress = True
 
+        # Create progress indicators
         progress_bar = st.progress(0)
         status_text = st.empty()
 
-        status_text.text("Gemini is verifying...")
+        # Start verification
+        status_text.text("🔷 Gemini is verifying...")
+        progress_bar.progress(30)
 
         result = execute_verification(
             document_id=st.session_state.document_id,
@@ -225,15 +237,14 @@ def render_verify_card() -> None:
         if result:
             st.session_state.verification_complete = True
             st.session_state.verification_results = result
+            st.session_state.verification_in_progress = False
 
             progress_bar.progress(100)
             status_text.success("✅ Verification complete!")
         else:
+            st.session_state.verification_in_progress = False
             progress_bar.empty()
             status_text.empty()
-
-        # Clear processing flag
-        st.session_state.verification_in_progress = False
         # Streamlit will automatically rerun when session state changes
 
 
