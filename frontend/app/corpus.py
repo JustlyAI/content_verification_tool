@@ -35,23 +35,36 @@ def render_corpus_creation() -> None:
     if not reference_files:
         st.warning("⚠️ Please provide: Reference Documents")
 
-    if st.button(
+    def create_corpus_callback():
+        """Callback to set flag for corpus creation"""
+        st.session_state.trigger_corpus_creation = True
+        st.session_state.pending_case_context = case_context
+        st.session_state.pending_reference_files = reference_files
+
+    st.button(
         "Create Reference Library",
         disabled=not reference_files,
         type="primary",
         use_container_width=True,
-    ):
+        on_click=create_corpus_callback,
+    )
+
+    # Process corpus creation AFTER button callback
+    if st.session_state.get("trigger_corpus_creation", False):
+        st.session_state.trigger_corpus_creation = False
+        pending_context = st.session_state.pop("pending_case_context", "")
+        pending_files = st.session_state.pop("pending_reference_files", [])
+
         with st.spinner("Creating reference library..."):
-            result = upload_reference_documents(reference_files, case_context)
+            result = upload_reference_documents(pending_files, pending_context)
 
             if result:
                 # Store corpus information in session state
                 st.session_state.store_id = result["store_id"]
                 st.session_state.reference_docs_uploaded = True
-                st.session_state.case_context = case_context
+                st.session_state.case_context = pending_context
                 st.session_state.corpus_metadata = result.get("metadata", [])
                 st.session_state.corpus_just_created = True
-                # Force rerun to update sidebar status immediately
                 st.rerun()
 
 
@@ -154,12 +167,29 @@ def render_corpus_sidebar() -> None:
 
     # Quick Upload / Corpus Creation
     if not st.session_state.reference_docs_uploaded:
+        # Custom CSS to hide scrollbar but keep resize handle
+        # Target by data-testid which Streamlit generates for text areas
+        st.markdown("""
+            <style>
+            /* Hide scrollbar for the case context text area */
+            div[data-testid="stTextArea"] textarea {
+                overflow-y: hidden !important;
+                scrollbar-width: none !important; /* Firefox */
+                -ms-overflow-style: none !important; /* IE and Edge */
+            }
+            div[data-testid="stTextArea"] textarea::-webkit-scrollbar {
+                display: none !important; /* Chrome, Safari, Opera */
+            }
+            </style>
+        """, unsafe_allow_html=True)
+
         case_context = st.text_area(
             "Case Context",
             placeholder="Brief description of case or project...",
             height=120,
             key="case_context_sidebar",
             label_visibility="collapsed",
+            max_chars=500,
         )
 
         uploaded_refs = st.file_uploader(
@@ -172,23 +202,36 @@ def render_corpus_sidebar() -> None:
         )
 
         if uploaded_refs:
-            if st.button(
+            def create_corpus_sidebar_callback():
+                """Callback to set flag for sidebar corpus creation"""
+                st.session_state.trigger_corpus_creation_sidebar = True
+                st.session_state.pending_case_context_sidebar = case_context
+                st.session_state.pending_reference_files_sidebar = uploaded_refs
+
+            st.button(
                 "Create Corpus",
                 type="primary",
                 use_container_width=True,
                 key="create_corpus",
-            ):
+                on_click=create_corpus_sidebar_callback,
+            )
+
+            # Process corpus creation AFTER button callback
+            if st.session_state.get("trigger_corpus_creation_sidebar", False):
+                st.session_state.trigger_corpus_creation_sidebar = False
+                pending_context = st.session_state.pop("pending_case_context_sidebar", "")
+                pending_files = st.session_state.pop("pending_reference_files_sidebar", [])
+
                 with st.spinner("Creating reference library..."):
-                    result = upload_reference_documents(uploaded_refs, case_context)
+                    result = upload_reference_documents(pending_files, pending_context)
 
                     if result:
                         # Store corpus information in session state
                         st.session_state.store_id = result["store_id"]
                         st.session_state.reference_docs_uploaded = True
-                        st.session_state.case_context = case_context
+                        st.session_state.case_context = pending_context
                         st.session_state.corpus_metadata = result.get("metadata", [])
                         st.session_state.corpus_just_created = True
-                        # Force rerun to update sidebar status immediately
                         st.rerun()
 
     # Actions (if corpus is active)
@@ -204,6 +247,15 @@ def render_corpus_sidebar() -> None:
             st.session_state.corpus_just_created = False
 
         st.markdown("**Actions**")
+
+        # Custom CSS to reduce button spacing
+        st.markdown("""
+            <style>
+            div[data-testid="stVerticalBlock"] > div:has(button) {
+                margin-bottom: 0.25rem !important;
+            }
+            </style>
+        """, unsafe_allow_html=True)
 
         if st.button(
             "📄 View Library", key="view_docs_sidebar", use_container_width=True
@@ -255,8 +307,7 @@ def render_corpus_sidebar() -> None:
     if st.session_state.reference_docs_uploaded and st.session_state.get(
         "view_library_expanded", False
     ):
-        st.markdown("---")
-        with st.expander("Library Contents", expanded=True):
+        with st.expander("Library Contents", expanded=True, key="library_contents_expander"):
             if st.session_state.corpus_metadata:
                 for idx, meta in enumerate(st.session_state.corpus_metadata):
                     # Handle both dict and object formats

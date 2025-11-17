@@ -35,7 +35,7 @@ def render_backend_status() -> None:
     with col2:
         if st.button("🔄", help="Refresh connection status"):
             check_backend_health.clear()
-            st.rerun()
+            # Streamlit will automatically rerun when cache is cleared
 
 
 def render_sidebar() -> None:
@@ -83,7 +83,7 @@ def render_sidebar() -> None:
             if st.button("🔄 Start Over", use_container_width=True, type="secondary"):
                 reset_all_state()
                 check_backend_health.clear()
-                st.rerun()
+                # Streamlit will automatically rerun when session state changes
 
         # Debug info (if enabled)
         if FEATURES["show_debug_info"]:

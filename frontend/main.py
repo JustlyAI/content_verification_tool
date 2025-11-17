@@ -221,7 +221,7 @@ def render_verify_card() -> None:
 
             progress_bar.progress(100)
             status_text.success("✅ Verification complete!")
-            st.rerun()
+            # Streamlit will automatically rerun when session state changes
         else:
             st.session_state.verification_in_progress = False
             progress_bar.empty()
@@ -263,7 +263,7 @@ def render_export_card() -> None:
             disabled=st.session_state.verification_in_progress,
         ):
             st.session_state.last_generated = None
-            st.rerun()
+            # Streamlit will automatically rerun when session state changes
     else:
         # Generate button
         button_disabled = st.session_state.verification_in_progress
