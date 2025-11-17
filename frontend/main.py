@@ -139,7 +139,7 @@ def render_chunking_card() -> str:
         return "paragraph"
 
     st.markdown("**Processing Mode**")
-    chunking_mode = st.radio(
+    splitting_mode = st.radio(
         "Mode",
         options=["paragraph", "sentence"],
         index=0,
@@ -152,13 +152,13 @@ def render_chunking_card() -> str:
         horizontal=False,
     )
 
-    st.success(f"✓ {chunking_mode.capitalize()}-level")
-    st.caption(f"Split into {chunking_mode}s for detailed analysis")
+    st.success(f"✓ {splitting_mode.capitalize()}-level")
+    st.caption(f"Split into {splitting_mode}s for detailed analysis")
 
-    return chunking_mode
+    return splitting_mode
 
 
-def render_verify_card(chunking_mode: str) -> None:
+def render_verify_card(splitting_mode: str) -> None:
     """Render Card 3: AI Verification with Gemini branding"""
     if st.session_state.verification_complete:
         st.success("✅ Verification complete")
@@ -166,7 +166,7 @@ def render_verify_card(chunking_mode: str) -> None:
         return
 
     if not st.session_state.document_info:
-        st.caption("Upload a document to begin")
+        st.caption("Verify split content against the corpus")
         return
 
     if not st.session_state.reference_docs_uploaded:
@@ -196,13 +196,13 @@ def render_verify_card(chunking_mode: str) -> None:
             document_id=st.session_state.document_id,
             store_id=st.session_state.store_id,
             case_context=st.session_state.case_context,
-            chunking_mode=chunking_mode,
+            splitting_mode=splitting_mode,
         )
 
         if result:
             st.session_state.verification_complete = True
             st.session_state.verification_results = result
-            st.session_state.chunking_mode = chunking_mode
+            st.session_state.splitting_mode = splitting_mode
 
             progress_bar.progress(100)
             status_text.success("✅ Verification complete!")
@@ -212,10 +212,10 @@ def render_verify_card(chunking_mode: str) -> None:
             status_text.empty()
 
 
-def render_export_card(chunking_mode: str) -> None:
+def render_export_card(splitting_mode: str) -> None:
     """Render Card 4: Output format and export"""
     if not st.session_state.document_info:
-        st.caption("Upload a document first")
+        st.caption("Export split and verified content")
         return
 
     st.markdown("Select format & export")
@@ -253,7 +253,7 @@ def render_export_card(chunking_mode: str) -> None:
                 payload = {
                     "document_id": st.session_state.document_id,
                     "output_format": output_format,
-                    "chunking_mode": chunking_mode,
+                    "splitting_mode": splitting_mode,
                 }
 
                 export_result = export_document(payload)
@@ -392,7 +392,7 @@ def main() -> None:
         # Workflow explanation
         st.info(
             "**🔄 Verification Workflow:** Upload your document (Step 1) → "
-            "Choose splitting mode (Step 2) → Run Gemini verification against corpus (Step 3) → "
+            "Choose splitting mode (Step 2) → Run AI verification against corpus (Step 3) → "
             "Export results (Step 4)"
         )
 
@@ -430,7 +430,7 @@ def render_verification_workflow() -> None:
             '<div class="ff-card-title">Splitting</div>',
             unsafe_allow_html=True,
         )
-        chunking_mode = render_chunking_card()
+        splitting_mode = render_chunking_card()
         st.markdown("</div>", unsafe_allow_html=True)
 
     with col3:
@@ -442,7 +442,7 @@ def render_verification_workflow() -> None:
             unsafe_allow_html=True,
         )
 
-        render_verify_card(chunking_mode)
+        render_verify_card(splitting_mode)
         st.markdown("</div>", unsafe_allow_html=True)
 
     with col4:
@@ -452,7 +452,7 @@ def render_verification_workflow() -> None:
             '<div class="ff-card-title">Export</div>',
             unsafe_allow_html=True,
         )
-        render_export_card(chunking_mode)
+        render_export_card(splitting_mode)
         st.markdown("</div>", unsafe_allow_html=True)
 
     # Results section below cards

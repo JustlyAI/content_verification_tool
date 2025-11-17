@@ -47,7 +47,7 @@ def render_sidebar() -> None:
         ### Features
         - **Document Upload**: PDF or DOCX files (max {MAX_FILE_SIZE_MB} MB)
         - **AI Verification**: Upload reference documents for automated verification
-        - **Chunking Modes**:
+        - **Splitting modes**:
           - Paragraph-level (default)
           - Sentence-level
         - **Output Formats**:
@@ -60,7 +60,7 @@ def render_sidebar() -> None:
         ### How It Works
         1. (Optional) Create AI reference corpus
         2. Upload your document
-        3. Select chunking mode
+        3. Select splitting mode
         4. Run AI verification (if corpus active)
         5. Choose output format
         6. Generate and download

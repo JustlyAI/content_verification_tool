@@ -4,7 +4,7 @@ Freshfields-inspired compact sidebar design
 """
 
 import streamlit as st
-from .api_client import upload_reference_documents
+from .api_client import upload_reference_documents, delete_corpus
 from .state import reset_corpus_state
 
 
@@ -131,10 +131,33 @@ def render_corpus_sidebar() -> None:
                 else 0
             )
             st.metric("Documents", doc_count)
-            st.metric("Storage", "0 MB")  # TODO: Calculate from metadata
+
+            # Calculate total storage from metadata
+            total_bytes = 0
+            if st.session_state.corpus_metadata:
+                for doc_meta in st.session_state.corpus_metadata:
+                    # Access file_size_bytes attribute
+                    if hasattr(doc_meta, 'file_size_bytes'):
+                        total_bytes += doc_meta.file_size_bytes
+                    elif isinstance(doc_meta, dict) and 'file_size_bytes' in doc_meta:
+                        total_bytes += doc_meta['file_size_bytes']
+
+            total_mb = total_bytes / (1024 * 1024)
+            st.metric("Storage", f"{total_mb:.1f} MB")
+
         with col2:
-            st.metric("Pages", "0")  # TODO: Calculate from metadata
-            st.metric("Chunks", "0")  # TODO: Get from backend
+            # Calculate total pages from metadata
+            total_pages = 0
+            if st.session_state.corpus_metadata:
+                for doc_meta in st.session_state.corpus_metadata:
+                    # Access page_count attribute
+                    if hasattr(doc_meta, 'page_count'):
+                        total_pages += doc_meta.page_count
+                    elif isinstance(doc_meta, dict) and 'page_count' in doc_meta:
+                        total_pages += doc_meta['page_count']
+
+            st.metric("Pages", total_pages)
+            st.metric("Chunks", "N/A")  # Not available from File Search
 
         st.markdown("---")
 
@@ -187,11 +210,15 @@ def render_corpus_sidebar() -> None:
         if st.button(
             "📄 View Library", key="view_docs_sidebar", use_container_width=True
         ):
-            # Show modal or expander with corpus details
-            pass
+            # Toggle the view library expanded state
+            if "view_library_expanded" not in st.session_state:
+                st.session_state.view_library_expanded = True
+            else:
+                st.session_state.view_library_expanded = not st.session_state.view_library_expanded
+            st.rerun()
 
-        if st.button("⚙️ Configure", key="config_sidebar", use_container_width=True):
-            # Show configuration options
+        if st.button("⚙️ Configure", key="config_sidebar", use_container_width=True, disabled=True, help="Configuration coming soon"):
+            # Show configuration options (disabled for now)
             pass
 
         if st.button(
@@ -200,8 +227,46 @@ def render_corpus_sidebar() -> None:
             type="secondary",
             use_container_width=True,
         ):
-            reset_corpus_state()
-            st.rerun()
+            # Delete corpus from backend first
+            if st.session_state.store_id:
+                with st.spinner("Deleting corpus..."):
+                    success = delete_corpus(st.session_state.store_id)
+                    if success:
+                        reset_corpus_state()
+                        st.success("✅ Corpus deleted successfully!")
+                        st.rerun()
+                    else:
+                        st.error("❌ Failed to delete corpus. Clearing local state only.")
+                        reset_corpus_state()
+                        st.rerun()
+            else:
+                # No store_id, just reset state
+                reset_corpus_state()
+                st.rerun()
+
+    # View Library Expander (show when toggled)
+    if st.session_state.reference_docs_uploaded and st.session_state.get("view_library_expanded", False):
+        with st.expander("📄 Document Library", expanded=True):
+            if st.session_state.corpus_metadata:
+                for idx, meta in enumerate(st.session_state.corpus_metadata):
+                    # Handle both dict and object formats
+                    filename = meta.get('filename') if isinstance(meta, dict) else getattr(meta, 'filename', 'Unknown')
+                    doc_type = meta.get('document_type', 'N/A') if isinstance(meta, dict) else getattr(meta, 'document_type', 'N/A')
+                    summary = meta.get('summary', 'N/A') if isinstance(meta, dict) else getattr(meta, 'summary', 'N/A')
+                    file_size = meta.get('file_size_bytes', 0) if isinstance(meta, dict) else getattr(meta, 'file_size_bytes', 0)
+                    page_count = meta.get('page_count', 0) if isinstance(meta, dict) else getattr(meta, 'page_count', 0)
+                    keywords = meta.get('keywords', []) if isinstance(meta, dict) else getattr(meta, 'keywords', [])
+
+                    st.markdown(f"**{idx + 1}. {filename}**")
+                    st.caption(f"📑 Type: {doc_type}")
+                    st.caption(f"📄 Pages: {page_count} | 💾 Size: {file_size / 1024:.1f} KB")
+                    st.caption(f"📝 {summary}")
+                    if keywords:
+                        st.caption(f"🏷️ Keywords: {', '.join(keywords[:5])}")
+                    if idx < len(st.session_state.corpus_metadata) - 1:
+                        st.divider()
+            else:
+                st.info("No metadata available")
 
     st.markdown("</div>", unsafe_allow_html=True)
 

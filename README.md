@@ -184,7 +184,7 @@ curl -X POST "http://localhost:8000/export" \
   -H "Content-Type: application/json" \
   -d '{
     "document_id": "abc123...",
-    "chunking_mode": "sentence",
+    "splitting_mode": "sentence",
     "output_format": "word_landscape"
   }'
 ```
@@ -211,7 +211,7 @@ curl -X POST "http://localhost:8000/api/verify/execute" \
     "document_id": "abc123...",
     "store_id": "corpora/verification_case_abc123",
     "case_context": "Contract verification",
-    "chunking_mode": "paragraph"
+    "splitting_mode": "paragraph"
   }'
 ```
 

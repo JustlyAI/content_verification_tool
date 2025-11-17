@@ -840,7 +840,7 @@ with main_col:
 
     with col2:
         chunking = st.radio(
-            "Chunking Mode",
+            "Splitting mode",
             ["Paragraph", "Sentence"],
             key="chunk_mode",
             label_visibility="collapsed",

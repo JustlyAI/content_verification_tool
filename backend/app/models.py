@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 
 class ChunkingMode(str, Enum):
-    """Chunking mode options"""
+    """Splitting mode options"""
 
     PARAGRAPH = "paragraph"
     SENTENCE = "sentence"
@@ -82,14 +82,14 @@ class ChunkingRequest(BaseModel):
     """Request to chunk a document"""
 
     document_id: str = Field(..., description="Document ID from upload")
-    chunking_mode: ChunkingMode = Field(..., description="Chunking mode to use")
+    splitting_mode: ChunkingMode = Field(..., description="Splitting mode to use")
 
 
 class ChunkingResponse(BaseModel):
     """Response from document chunking"""
 
     document_id: str = Field(..., description="Document identifier")
-    chunking_mode: ChunkingMode = Field(..., description="Chunking mode used")
+    splitting_mode: ChunkingMode = Field(..., description="Splitting mode used")
     chunks: List[DocumentChunk] = Field(..., description="List of document chunks")
     total_chunks: int = Field(..., description="Total number of chunks")
     message: str = Field(..., description="Status message")
@@ -99,7 +99,7 @@ class ExportRequest(BaseModel):
     """Request to export verification document"""
 
     document_id: str = Field(..., description="Document ID from upload")
-    chunking_mode: ChunkingMode = Field(..., description="Chunking mode to use")
+    splitting_mode: ChunkingMode = Field(..., description="Splitting mode to use")
     output_format: OutputFormat = Field(..., description="Output format")
 
 
@@ -142,6 +142,8 @@ class DocumentMetadata(BaseModel):
     )
     keywords: List[str] = Field(..., description="Key terms extracted from document")
     generated_at: datetime = Field(..., description="When metadata was generated")
+    file_size_bytes: int = Field(..., description="File size in bytes")
+    page_count: int = Field(..., description="Number of pages in document")
 
 
 class VerificationResult(BaseModel):
@@ -182,7 +184,7 @@ class VerificationRequest(BaseModel):
     document_id: str = Field(..., description="Document ID to verify")
     store_id: str = Field(..., description="File Search store ID")
     case_context: str = Field(..., description="Context about the verification case")
-    chunking_mode: ChunkingMode = Field(..., description="Chunking mode used")
+    splitting_mode: ChunkingMode = Field(..., description="Splitting mode used")
 
 
 class VerificationResponse(BaseModel):

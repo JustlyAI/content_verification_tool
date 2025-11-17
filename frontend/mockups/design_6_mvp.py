@@ -725,7 +725,7 @@ with main_col:
     # Workflow explanation
     st.info(
         "**🔄 Verification Workflow:** Upload your document (Step 1) → "
-        "Choose chunking mode (Step 2) → Run Gemini verification against corpus (Step 3) → "
+        "Choose splitting mode (Step 2) → Run AI verification against corpus (Step 3) → "
         "Export results (Step 4)"
     )
 
@@ -814,7 +814,9 @@ with main_col:
                 st.success("Starting verification...")
         else:
             st.warning("⏳ Upload Needed")
-            st.caption("Upload a document to begin")
+            st.caption(
+                "Use AI to verify content against documents in the reference corpus"
+            )
 
         st.markdown("</div>", unsafe_allow_html=True)
 

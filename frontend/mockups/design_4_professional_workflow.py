@@ -13,7 +13,8 @@ st.set_page_config(
 )
 
 # Custom CSS for enhanced styling
-st.markdown("""
+st.markdown(
+    """
 <style>
     /* Main container padding */
     .main .block-container {
@@ -90,13 +91,21 @@ st.markdown("""
         border-left-color: #f59e0b;
     }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # ==================== HEADER ====================
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    st.markdown("<h1 style='text-align: center; color: #667eea;'>📋 Content Verification Tool</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #6b7280; font-size: 1.1rem;'>AI-Powered Legal Document Verification Workflow</p>", unsafe_allow_html=True)
+    st.markdown(
+        "<h1 style='text-align: center; color: #667eea;'>📋 Content Verification Tool</h1>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        "<p style='text-align: center; color: #6b7280; font-size: 1.1rem;'>AI-Powered Legal Document Verification Workflow</p>",
+        unsafe_allow_html=True,
+    )
 
 st.divider()
 
@@ -141,7 +150,9 @@ with col4:
 st.divider()
 
 # ==================== MAIN TABS ====================
-tab1, tab2, tab3 = st.tabs(["📚 Reference Corpus", "✅ Verification Workflow", "📊 Results Dashboard"])
+tab1, tab2, tab3 = st.tabs(
+    ["📚 Reference Corpus", "✅ Verification Workflow", "📊 Results Dashboard"]
+)
 
 # ==================== TAB 1: REFERENCE CORPUS ====================
 with tab1:
@@ -153,28 +164,18 @@ with tab1:
                 label="📦 Status",
                 value="Active",
                 delta="Ready for verification",
-                delta_color="normal"
+                delta_color="normal",
             )
         with col2:
-            st.metric(
-                label="📄 Documents",
-                value="5",
-                delta="+2 this week"
-            )
+            st.metric(label="📄 Documents", value="5", delta="+2 this week")
         with col3:
-            st.metric(
-                label="📑 Total Pages",
-                value="127",
-                delta="45 from contracts"
-            )
+            st.metric(label="📑 Total Pages", value="127", delta="45 from contracts")
         with col4:
-            st.metric(
-                label="💾 Storage",
-                value="23.4 MB",
-                delta="8.2 MB free"
-            )
+            st.metric(label="💾 Storage", value="23.4 MB", delta="8.2 MB free")
     else:
-        st.info("⚠️ **No Active Corpus** - Upload reference documents to enable AI verification")
+        st.info(
+            "⚠️ **No Active Corpus** - Upload reference documents to enable AI verification"
+        )
 
     st.divider()
 
@@ -188,21 +189,65 @@ with tab1:
         # Search and filters
         col_search, col_filter = st.columns([3, 1])
         with col_search:
-            st.text_input("🔍 Search documents", placeholder="Type to search...", label_visibility="collapsed")
+            st.text_input(
+                "🔍 Search documents",
+                placeholder="Type to search...",
+                label_visibility="collapsed",
+            )
         with col_filter:
-            st.selectbox("Filter", ["All Types", "Contracts", "Regulations", "Case Law"], label_visibility="collapsed")
+            st.selectbox(
+                "Filter",
+                ["All Types", "Contracts", "Regulations", "Case Law"],
+                label_visibility="collapsed",
+            )
 
         st.divider()
 
         # Document cards with enhanced styling
-        for idx, doc in enumerate([
-            ("Contract_2024.pdf", "Legal Contract", "45 pages", "5.2 MB", "Nov 10, 2025", "Active", "#10b981"),
-            ("Regulations.docx", "Regulatory", "23 pages", "1.8 MB", "Nov 9, 2025", "Active", "#10b981"),
-            ("Case_Law.pdf", "Precedent", "59 pages", "7.3 MB", "Nov 8, 2025", "Active", "#10b981"),
-            ("Analysis_Draft.pdf", "Analysis", "32 pages", "3.1 MB", "Nov 7, 2025", "Processing", "#f59e0b"),
-        ]):
+        for idx, doc in enumerate(
+            [
+                (
+                    "Contract_2024.pdf",
+                    "Legal Contract",
+                    "45 pages",
+                    "5.2 MB",
+                    "Nov 10, 2025",
+                    "Active",
+                    "#10b981",
+                ),
+                (
+                    "Regulations.docx",
+                    "Regulatory",
+                    "23 pages",
+                    "1.8 MB",
+                    "Nov 9, 2025",
+                    "Active",
+                    "#10b981",
+                ),
+                (
+                    "Case_Law.pdf",
+                    "Precedent",
+                    "59 pages",
+                    "7.3 MB",
+                    "Nov 8, 2025",
+                    "Active",
+                    "#10b981",
+                ),
+                (
+                    "Analysis_Draft.pdf",
+                    "Analysis",
+                    "32 pages",
+                    "3.1 MB",
+                    "Nov 7, 2025",
+                    "Processing",
+                    "#f59e0b",
+                ),
+            ]
+        ):
             with st.container():
-                col_icon, col_info, col_meta, col_status, col_action = st.columns([0.5, 2, 1.5, 1, 1])
+                col_icon, col_info, col_meta, col_status, col_action = st.columns(
+                    [0.5, 2, 1.5, 1, 1]
+                )
 
                 with col_icon:
                     if doc[1] == "Legal Contract":
@@ -224,12 +269,20 @@ with tab1:
 
                 with col_status:
                     if doc[5] == "Active":
-                        st.markdown(f"<span class='status-badge status-active'>✅ {doc[5]}</span>", unsafe_allow_html=True)
+                        st.markdown(
+                            f"<span class='status-badge status-active'>✅ {doc[5]}</span>",
+                            unsafe_allow_html=True,
+                        )
                     else:
-                        st.markdown(f"<span class='status-badge status-pending'>🔄 {doc[5]}</span>", unsafe_allow_html=True)
+                        st.markdown(
+                            f"<span class='status-badge status-pending'>🔄 {doc[5]}</span>",
+                            unsafe_allow_html=True,
+                        )
 
                 with col_action:
-                    if st.button("⚙️", key=f"doc_settings_{idx}", help="Document settings"):
+                    if st.button(
+                        "⚙️", key=f"doc_settings_{idx}", help="Document settings"
+                    ):
                         pass
 
                 # Expandable details
@@ -237,9 +290,13 @@ with tab1:
                     col_a, col_b = st.columns(2)
                     with col_a:
                         st.caption("**Summary:**")
-                        st.info("This contract outlines the terms of service agreement between parties...")
+                        st.info(
+                            "This contract outlines the terms of service agreement between parties..."
+                        )
                         st.caption("**Keywords:**")
-                        st.markdown("`liability` `indemnification` `termination` `confidentiality`")
+                        st.markdown(
+                            "`liability` `indemnification` `termination` `confidentiality`"
+                        )
                     with col_b:
                         st.caption("**Indexing Status:**")
                         st.success("✅ Fully indexed and searchable")
@@ -247,9 +304,18 @@ with tab1:
                         st.code("text-embedding-004", language="text")
                         col_x, col_y = st.columns(2)
                         with col_x:
-                            st.button("🔄 Reindex", key=f"reindex_{idx}", use_container_width=True)
+                            st.button(
+                                "🔄 Reindex",
+                                key=f"reindex_{idx}",
+                                use_container_width=True,
+                            )
                         with col_y:
-                            st.button("🗑️ Remove", key=f"remove_{idx}", use_container_width=True, type="secondary")
+                            st.button(
+                                "🗑️ Remove",
+                                key=f"remove_{idx}",
+                                use_container_width=True,
+                                type="secondary",
+                            )
 
                 st.divider()
 
@@ -265,12 +331,14 @@ with tab1:
                 type=["pdf", "docx"],
                 accept_multiple_files=True,
                 key="corpus_upload",
-                label_visibility="collapsed"
+                label_visibility="collapsed",
             )
 
             if uploaded_files:
                 st.success(f"✅ {len(uploaded_files)} file(s) selected")
-                st.button("📤 Upload & Process", type="primary", use_container_width=True)
+                st.button(
+                    "📤 Upload & Process", type="primary", use_container_width=True
+                )
 
             st.divider()
 
@@ -280,13 +348,16 @@ with tab1:
                 "AI Model",
                 ["Gemini 2.5 Flash (Fast)", "Gemini 2.5 Pro (Accurate)", "GPT-4 Turbo"],
                 help="Model for verification",
-                key="model_select"
+                key="model_select",
             )
 
             st.slider(
                 "Confidence Threshold",
-                0.0, 1.0, 0.7, 0.05,
-                help="Minimum score for verification"
+                0.0,
+                1.0,
+                0.7,
+                0.05,
+                help="Minimum score for verification",
             )
 
             st.divider()
@@ -295,7 +366,9 @@ with tab1:
             st.markdown("**Bulk Actions**")
             st.button("🔄 Rebuild All Indexes", use_container_width=True)
             st.button("📥 Export Corpus Metadata", use_container_width=True)
-            st.button("🗑️ Clear All Documents", use_container_width=True, type="secondary")
+            st.button(
+                "🗑️ Clear All Documents", use_container_width=True, type="secondary"
+            )
 
         st.divider()
 
@@ -323,7 +396,7 @@ with tab2:
                 "Select document to verify",
                 type=["pdf", "docx"],
                 key="doc_verify",
-                help="Upload the document you want to verify"
+                help="Upload the document you want to verify",
             )
 
             if uploaded_doc:
@@ -338,7 +411,9 @@ with tab2:
                     st.caption("📑 Pages: 15")
                     st.caption("⏱️ Est. time: 45s")
 
-                st.button("🚀 Process Document", type="primary", use_container_width=True)
+                st.button(
+                    "🚀 Process Document", type="primary", use_container_width=True
+                )
             else:
                 st.info("👆 Upload a document to get started")
 
@@ -354,12 +429,22 @@ with tab2:
                 # Verification options
                 col_a, col_b = st.columns(2)
                 with col_a:
-                    st.selectbox("Verification Mode", ["Standard", "Detailed", "Quick Scan"], key="verify_mode")
+                    st.selectbox(
+                        "Verification Mode",
+                        ["Standard", "Detailed", "Quick Scan"],
+                        key="verify_mode",
+                    )
                 with col_b:
-                    st.selectbox("Citation Format", ["APA", "Bluebook", "Chicago"], key="cite_format")
+                    st.selectbox(
+                        "Citation Format",
+                        ["APA", "Bluebook", "Chicago"],
+                        key="cite_format",
+                    )
 
                 # Start verification
-                if st.button("▶️ Start Verification", type="primary", use_container_width=True):
+                if st.button(
+                    "▶️ Start Verification", type="primary", use_container_width=True
+                ):
                     with st.status("Verifying document...", expanded=True) as status:
                         st.write("🔍 Analyzing document structure...")
                         st.write("📝 Extracting chunks...")
@@ -374,19 +459,27 @@ with tab2:
         with st.container():
             st.markdown("#### 2️⃣ Chunking Settings")
 
-            # Chunking mode with visual indicators
-            chunking_mode = st.radio(
+            # Splitting mode with visual indicators
+            splitting_mode = st.radio(
                 "Select chunking strategy",
                 options=[
-                    ("paragraph", "📝 Paragraph-Level", "Groups related sentences for contextual verification"),
-                    ("sentence", "📄 Sentence-Level", "Individual sentence verification for precision")
+                    (
+                        "paragraph",
+                        "📝 Paragraph-Level",
+                        "Groups related sentences for contextual verification",
+                    ),
+                    (
+                        "sentence",
+                        "📄 Sentence-Level",
+                        "Individual sentence verification for precision",
+                    ),
                 ],
                 format_func=lambda x: x[1],
-                key="chunk_mode_radio"
+                key="chunk_mode_radio",
             )
 
             # Show selected mode details
-            st.info(f"**{chunking_mode[1]}**\n\n{chunking_mode[2]}")
+            st.info(f"**{splitting_mode[1]}**\n\n{splitting_mode[2]}")
 
             # Advanced options
             with st.expander("⚙️ Advanced Options"):
@@ -409,18 +502,27 @@ with tab2:
                     ("word_portrait", "📄 Word Document (Portrait)"),
                     ("excel", "📊 Excel Spreadsheet"),
                     ("csv", "📋 CSV File"),
-                    ("json", "💾 JSON (with metadata)")
+                    ("json", "💾 JSON (with metadata)"),
                 ],
                 format_func=lambda x: x[1],
-                key="output_format_select"
+                key="output_format_select",
             )
 
             # Export options
             with st.expander("📝 Export Options"):
                 st.multiselect(
                     "Include columns",
-                    ["Page #", "Item #", "Text", "Verified", "Score", "Source", "Note", "Citations"],
-                    default=["Page #", "Item #", "Text", "Verified", "Score", "Source"]
+                    [
+                        "Page #",
+                        "Item #",
+                        "Text",
+                        "Verified",
+                        "Score",
+                        "Source",
+                        "Note",
+                        "Citations",
+                    ],
+                    default=["Page #", "Item #", "Text", "Verified", "Score", "Source"],
                 )
                 st.checkbox("Include unverified items", value=True)
                 st.checkbox("Include metadata", value=True)
@@ -450,7 +552,9 @@ with tab2:
                 st.caption(f"**P{i+1}**")
 
             with col_text:
-                st.caption("The plaintiff alleges that the defendant breached the contract by...")
+                st.caption(
+                    "The plaintiff alleges that the defendant breached the contract by..."
+                )
 
             with col_status:
                 if i == 0:
@@ -478,42 +582,23 @@ with tab3:
     col1, col2, col3, col4, col5 = st.columns(5)
 
     with col1:
-        st.metric(
-            label="Total Chunks",
-            value="124",
-            delta="From 15 pages"
-        )
+        st.metric(label="Total Chunks", value="124", delta="From 15 pages")
 
     with col2:
-        st.metric(
-            label="Verified",
-            value="89",
-            delta="+71.8%",
-            delta_color="normal"
-        )
+        st.metric(label="Verified", value="89", delta="+71.8%", delta_color="normal")
 
     with col3:
         st.metric(
-            label="Avg Confidence",
-            value="8.2/10",
-            delta="+0.8",
-            delta_color="normal"
+            label="Avg Confidence", value="8.2/10", delta="+0.8", delta_color="normal"
         )
 
     with col4:
         st.metric(
-            label="Processing Time",
-            value="45s",
-            delta="-15s",
-            delta_color="inverse"
+            label="Processing Time", value="45s", delta="-15s", delta_color="inverse"
         )
 
     with col5:
-        st.metric(
-            label="Status",
-            value="Complete",
-            delta="100%"
-        )
+        st.metric(label="Status", value="Complete", delta="100%")
 
     st.divider()
 
@@ -527,13 +612,30 @@ with tab3:
         # Filters row
         col_f1, col_f2, col_f3, col_f4 = st.columns(4)
         with col_f1:
-            filter_status = st.selectbox("Status", ["All", "✅ Verified", "⚠️ Review Needed", "❌ Unverified"], key="filter_status_tab3")
+            filter_status = st.selectbox(
+                "Status",
+                ["All", "✅ Verified", "⚠️ Review Needed", "❌ Unverified"],
+                key="filter_status_tab3",
+            )
         with col_f2:
-            filter_page = st.selectbox("Page", ["All Pages"] + [f"Page {i}" for i in range(1, 16)], key="filter_page_tab3")
+            filter_page = st.selectbox(
+                "Page",
+                ["All Pages"] + [f"Page {i}" for i in range(1, 16)],
+                key="filter_page_tab3",
+            )
         with col_f3:
-            filter_confidence = st.selectbox("Confidence", ["All Scores", "High (8-10)", "Medium (5-7)", "Low (<5)"], key="filter_conf_tab3")
+            filter_confidence = st.selectbox(
+                "Confidence",
+                ["All Scores", "High (8-10)", "Medium (5-7)", "Low (<5)"],
+                key="filter_conf_tab3",
+            )
         with col_f4:
-            st.text_input("🔍 Search", placeholder="Search text...", label_visibility="collapsed", key="search_tab3")
+            st.text_input(
+                "🔍 Search",
+                placeholder="Search text...",
+                label_visibility="collapsed",
+                key="search_tab3",
+            )
 
         st.divider()
 
@@ -578,7 +680,9 @@ with tab3:
                         st.progress(score / 10.0)
 
                     # Text preview
-                    st.caption("The defendant alleges that pursuant to Section 2.1 of the agreement, the plaintiff failed to provide adequate notice of termination...")
+                    st.caption(
+                        "The defendant alleges that pursuant to Section 2.1 of the agreement, the plaintiff failed to provide adequate notice of termination..."
+                    )
 
                     # Expandable details
                     with st.expander("View Details & Citations"):
@@ -589,11 +693,14 @@ with tab3:
                             st.info(source)
 
                             st.markdown("**AI Reasoning:**")
-                            st.caption("This statement directly references Section 2.1 of the contract, which outlines the termination notice requirements. The language matches the original contract text with 95% similarity.")
+                            st.caption(
+                                "This statement directly references Section 2.1 of the contract, which outlines the termination notice requirements. The language matches the original contract text with 95% similarity."
+                            )
 
                         with col_b:
                             st.markdown("**Citations:**")
-                            st.code('''
+                            st.code(
+                                """
 Citation 1:
   Document: Contract_2024.pdf
   Section: 2.1
@@ -601,16 +708,27 @@ Citation 1:
   Excerpt: "Party B shall provide written notice
   of termination no less than 30 days prior..."
   Confidence: 9.2/10
-                            ''', language="text")
+                            """,
+                                language="text",
+                            )
 
-                            st.button("📋 Copy Citation", key=f"copy_{idx}", use_container_width=True)
+                            st.button(
+                                "📋 Copy Citation",
+                                key=f"copy_{idx}",
+                                use_container_width=True,
+                            )
 
                 st.divider()
 
         # Pagination
         col_p1, col_p2, col_p3 = st.columns([1, 2, 1])
         with col_p2:
-            st.selectbox("Items per page", [10, 25, 50, 100], key="items_per_page", label_visibility="collapsed")
+            st.selectbox(
+                "Items per page",
+                [10, 25, 50, 100],
+                key="items_per_page",
+                label_visibility="collapsed",
+            )
         with col_p3:
             st.markdown("**Page 1 of 13**")
 
@@ -654,7 +772,12 @@ Citation 1:
             with st.container():
                 st.markdown(f"**Page {i+3}, Item {i+2}**")
                 st.caption("Low confidence (3.2/10)")
-                st.button("Review", key=f"review_{i}", use_container_width=True, type="secondary")
+                st.button(
+                    "Review",
+                    key=f"review_{i}",
+                    use_container_width=True,
+                    type="secondary",
+                )
                 if i < 2:
                     st.divider()
 
@@ -670,4 +793,6 @@ Citation 1:
 st.divider()
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    st.caption("Content Verification Tool v2.0.0 | Powered by Google Gemini AI | Built with ❤️ using Streamlit")
+    st.caption(
+        "Content Verification Tool v2.0.0 | Powered by Google Gemini AI | Built with ❤️ using Streamlit"
+    )

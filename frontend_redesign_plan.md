@@ -1456,7 +1456,7 @@ Use **only** `design_6_freshfields_single_screen_mvp.py` as the reference for th
 ### Workflow Cards
 
 - [ ] Card 1: Upload
-- [ ] Card 2: Chunking mode
+- [ ] Card 2: Splitting mode
 - [ ] Card 3: Gemini verification (enhanced)
 - [ ] Card 4: Export
 - [ ] Serif titles

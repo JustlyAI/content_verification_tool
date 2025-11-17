@@ -1,6 +1,7 @@
 """
 Unit tests for document chunker functionality
 """
+
 import pytest
 from app.processing.chunker import DocumentChunker
 from app.processing.document_processor import DocumentProcessor
@@ -24,17 +25,14 @@ class TestDocumentChunker:
 
         # Convert document first
         result = self.processor.convert_document(
-            file_content=sample_docx_content,
-            filename="test.docx",
-            use_cache=False
+            file_content=sample_docx_content, filename="test.docx", use_cache=False
         )
 
         docling_document = result["docling_document"]
 
         # Chunk document in paragraph mode
         chunks = self.chunker.chunk_document(
-            docling_document=docling_document,
-            mode=ChunkingMode.PARAGRAPH
+            docling_document=docling_document, mode=ChunkingMode.PARAGRAPH
         )
 
         # Verify chunks
@@ -67,17 +65,14 @@ class TestDocumentChunker:
 
         # Convert document first
         result = self.processor.convert_document(
-            file_content=sample_docx_content,
-            filename="test.docx",
-            use_cache=False
+            file_content=sample_docx_content, filename="test.docx", use_cache=False
         )
 
         docling_document = result["docling_document"]
 
         # Chunk document in sentence mode
         chunks = self.chunker.chunk_document(
-            docling_document=docling_document,
-            mode=ChunkingMode.SENTENCE
+            docling_document=docling_document, mode=ChunkingMode.SENTENCE
         )
 
         # Verify chunks
@@ -93,7 +88,9 @@ class TestDocumentChunker:
 
         # Verify hierarchical numbering (e.g., "1.1", "1.2", "2.1")
         for chunk in chunks:
-            assert "." in chunk.item_number, "Sentence mode should use hierarchical numbering"
+            assert (
+                "." in chunk.item_number
+            ), "Sentence mode should use hierarchical numbering"
 
         cprint(f"[TEST] ✓ Sentence chunking successful: {len(chunks)} chunks", "green")
 
@@ -103,29 +100,29 @@ class TestDocumentChunker:
 
         # Convert document first
         result = self.processor.convert_document(
-            file_content=sample_docx_content,
-            filename="test.docx",
-            use_cache=False
+            file_content=sample_docx_content, filename="test.docx", use_cache=False
         )
 
         docling_document = result["docling_document"]
 
         # Chunk in both modes
         paragraph_chunks = self.chunker.chunk_document(
-            docling_document=docling_document,
-            mode=ChunkingMode.PARAGRAPH
+            docling_document=docling_document, mode=ChunkingMode.PARAGRAPH
         )
 
         sentence_chunks = self.chunker.chunk_document(
-            docling_document=docling_document,
-            mode=ChunkingMode.SENTENCE
+            docling_document=docling_document, mode=ChunkingMode.SENTENCE
         )
 
         # Sentence mode should produce at least as many chunks as paragraph mode
-        assert len(sentence_chunks) >= len(paragraph_chunks), \
-            "Sentence mode should produce at least as many chunks as paragraph mode"
+        assert len(sentence_chunks) >= len(
+            paragraph_chunks
+        ), "Sentence mode should produce at least as many chunks as paragraph mode"
 
-        cprint(f"[TEST] ✓ Paragraph chunks: {len(paragraph_chunks)}, Sentence chunks: {len(sentence_chunks)}", "green")
+        cprint(
+            f"[TEST] ✓ Paragraph chunks: {len(paragraph_chunks)}, Sentence chunks: {len(sentence_chunks)}",
+            "green",
+        )
 
     def test_chunk_metadata_extraction(self, sample_docx_content):
         """Test metadata extraction from chunks"""
@@ -133,17 +130,14 @@ class TestDocumentChunker:
 
         # Convert document first
         result = self.processor.convert_document(
-            file_content=sample_docx_content,
-            filename="test.docx",
-            use_cache=False
+            file_content=sample_docx_content, filename="test.docx", use_cache=False
         )
 
         docling_document = result["docling_document"]
 
         # Chunk document
         chunks = self.chunker.chunk_document(
-            docling_document=docling_document,
-            mode=ChunkingMode.PARAGRAPH
+            docling_document=docling_document, mode=ChunkingMode.PARAGRAPH
         )
 
         # Verify page numbers are sequential
@@ -152,6 +146,7 @@ class TestDocumentChunker:
 
         # Verify item numbers are unique within each page
         from collections import defaultdict
+
         items_per_page = defaultdict(list)
         for chunk in chunks:
             items_per_page[chunk.page_number].append(chunk.item_number)
@@ -168,24 +163,24 @@ class TestDocumentChunker:
 
         # Convert document first
         result = self.processor.convert_document(
-            file_content=sample_docx_content,
-            filename="test.docx",
-            use_cache=False
+            file_content=sample_docx_content, filename="test.docx", use_cache=False
         )
 
         docling_document = result["docling_document"]
 
         # Chunk document
         chunks = self.chunker.chunk_document(
-            docling_document=docling_document,
-            mode=ChunkingMode.PARAGRAPH
+            docling_document=docling_document, mode=ChunkingMode.PARAGRAPH
         )
 
         # Verify is_overlap is a boolean for all chunks
         for chunk in chunks:
             assert isinstance(chunk.is_overlap, bool)
 
-        cprint("[TEST] ✓ Overlap detection working (all chunks have boolean is_overlap)", "green")
+        cprint(
+            "[TEST] ✓ Overlap detection working (all chunks have boolean is_overlap)",
+            "green",
+        )
 
     def test_empty_document_handling(self):
         """Test handling of empty or invalid document"""
@@ -199,15 +194,17 @@ class TestDocumentChunker:
         # Should handle gracefully or raise appropriate error
         try:
             chunks = self.chunker.chunk_document(
-                docling_document=empty_doc,
-                mode=ChunkingMode.PARAGRAPH
+                docling_document=empty_doc, mode=ChunkingMode.PARAGRAPH
             )
             # If it succeeds, chunks should be empty
             assert len(chunks) == 0, "Empty document should produce no chunks"
             cprint("[TEST] ✓ Empty document handled gracefully", "green")
         except Exception as e:
             # If it raises an error, that's also acceptable
-            cprint(f"[TEST] ✓ Empty document raised error as expected: {type(e).__name__}", "green")
+            cprint(
+                f"[TEST] ✓ Empty document raised error as expected: {type(e).__name__}",
+                "green",
+            )
 
     def test_chunk_text_not_empty(self, sample_docx_content):
         """Test that all chunks contain non-empty text"""
@@ -215,9 +212,7 @@ class TestDocumentChunker:
 
         # Convert document first
         result = self.processor.convert_document(
-            file_content=sample_docx_content,
-            filename="test.docx",
-            use_cache=False
+            file_content=sample_docx_content, filename="test.docx", use_cache=False
         )
 
         docling_document = result["docling_document"]
@@ -225,13 +220,13 @@ class TestDocumentChunker:
         # Chunk in both modes
         for mode in [ChunkingMode.PARAGRAPH, ChunkingMode.SENTENCE]:
             chunks = self.chunker.chunk_document(
-                docling_document=docling_document,
-                mode=mode
+                docling_document=docling_document, mode=mode
             )
 
             for chunk in chunks:
-                assert len(chunk.text.strip()) > 0, \
-                    f"Chunk should not be empty: {chunk.item_number}"
+                assert (
+                    len(chunk.text.strip()) > 0
+                ), f"Chunk should not be empty: {chunk.item_number}"
 
         cprint("[TEST] ✓ All chunks contain non-empty text", "green")
 
@@ -241,32 +236,34 @@ class TestDocumentChunker:
 
         # Convert document first
         result = self.processor.convert_document(
-            file_content=sample_docx_content,
-            filename="test.docx",
-            use_cache=False
+            file_content=sample_docx_content, filename="test.docx", use_cache=False
         )
 
         docling_document = result["docling_document"]
 
         # Chunk document in sentence mode
         chunks = self.chunker.chunk_document(
-            docling_document=docling_document,
-            mode=ChunkingMode.SENTENCE
+            docling_document=docling_document, mode=ChunkingMode.SENTENCE
         )
 
         # Verify hierarchical structure
         for chunk in chunks:
             parts = chunk.item_number.split(".")
-            assert len(parts) == 2, f"Hierarchical number should have format 'X.Y': {chunk.item_number}"
+            assert (
+                len(parts) == 2
+            ), f"Hierarchical number should have format 'X.Y': {chunk.item_number}"
             assert parts[0].isdigit(), f"Base number should be numeric: {parts[0]}"
             assert parts[1].isdigit(), f"Sub number should be numeric: {parts[1]}"
 
-        cprint(f"[TEST] ✓ Hierarchical numbering verified for {len(chunks)} chunks", "green")
+        cprint(
+            f"[TEST] ✓ Hierarchical numbering verified for {len(chunks)} chunks",
+            "green",
+        )
 
 
 @pytest.mark.unit
 class TestChunkingModes:
-    """Test suite for different chunking modes"""
+    """Test suite for different splitting modes"""
 
     @pytest.fixture(autouse=True)
     def setup(self):
@@ -274,46 +271,42 @@ class TestChunkingModes:
         self.chunker = DocumentChunker()
         self.processor = DocumentProcessor()
 
-    def test_chunking_mode_paragraph(self, sample_docx_content):
-        """Test paragraph chunking mode behavior"""
-        cprint("\n[TEST] Testing PARAGRAPH chunking mode behavior", "cyan")
+    def test_splitting_mode_paragraph(self, sample_docx_content):
+        """Test paragraph splitting mode behavior"""
+        cprint("\n[TEST] Testing PARAGRAPH splitting mode behavior", "cyan")
 
         result = self.processor.convert_document(
-            file_content=sample_docx_content,
-            filename="test.docx",
-            use_cache=False
+            file_content=sample_docx_content, filename="test.docx", use_cache=False
         )
 
         chunks = self.chunker.chunk_document(
-            docling_document=result["docling_document"],
-            mode=ChunkingMode.PARAGRAPH
+            docling_document=result["docling_document"], mode=ChunkingMode.PARAGRAPH
         )
 
         # Paragraph mode should use simple numbering (1, 2, 3...)
         for chunk in chunks:
-            assert "." not in chunk.item_number, \
-                f"Paragraph mode should use simple numbering: {chunk.item_number}"
+            assert (
+                "." not in chunk.item_number
+            ), f"Paragraph mode should use simple numbering: {chunk.item_number}"
 
         cprint("[TEST] ✓ Paragraph mode uses simple numbering", "green")
 
-    def test_chunking_mode_sentence(self, sample_docx_content):
-        """Test sentence chunking mode behavior"""
-        cprint("\n[TEST] Testing SENTENCE chunking mode behavior", "cyan")
+    def test_splitting_mode_sentence(self, sample_docx_content):
+        """Test sentence splitting mode behavior"""
+        cprint("\n[TEST] Testing SENTENCE splitting mode behavior", "cyan")
 
         result = self.processor.convert_document(
-            file_content=sample_docx_content,
-            filename="test.docx",
-            use_cache=False
+            file_content=sample_docx_content, filename="test.docx", use_cache=False
         )
 
         chunks = self.chunker.chunk_document(
-            docling_document=result["docling_document"],
-            mode=ChunkingMode.SENTENCE
+            docling_document=result["docling_document"], mode=ChunkingMode.SENTENCE
         )
 
         # Sentence mode should use hierarchical numbering (1.1, 1.2...)
         for chunk in chunks:
-            assert "." in chunk.item_number, \
-                f"Sentence mode should use hierarchical numbering: {chunk.item_number}"
+            assert (
+                "." in chunk.item_number
+            ), f"Sentence mode should use hierarchical numbering: {chunk.item_number}"
 
         cprint("[TEST] ✓ Sentence mode uses hierarchical numbering", "green")
