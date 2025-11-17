@@ -88,7 +88,7 @@ def render_sidebar() -> None:
         # Debug info (if enabled)
         if FEATURES["show_debug_info"]:
             st.divider()
-            with st.expander("🔍 Debug Information"):
+            with st.expander("🔍 Debug Information", key="debug_info_expander"):
                 st.json(
                     {
                         "document_id": st.session_state.document_id,

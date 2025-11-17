@@ -92,7 +92,7 @@ def render_active_corpus() -> None:
 
     # Display metadata if available
     if st.session_state.corpus_metadata:
-        with st.expander("📄 View Document Metadata", expanded=False):
+        with st.expander("📄 View Document Metadata", expanded=False, key="corpus_metadata_expander"):
             for meta in st.session_state.corpus_metadata:
                 st.markdown(f"**{meta['filename']}**")
                 st.caption(f"Type: {meta.get('document_type', 'N/A')}")
