@@ -181,6 +181,12 @@ def load_css():
         box-sizing: border-box !important;
     }
 
+    /* Ensure all child divs of sidebar column also have blue background */
+    [data-testid="stColumn"]:has(.fm-sidebar-content) > div,
+    [data-testid="stColumn"]:has(.fm-sidebar-content) > div > div {
+        background: var(--fm-blue-100) !important;
+    }
+
     /* Sidebar content - no extra padding needed, column handles it */
     .fm-sidebar-content {
         padding: 0 !important;
@@ -188,11 +194,22 @@ def load_css():
         box-sizing: border-box !important;
     }
 
-    /* NUCLEAR OPTION: Force ALL divs in sidebar to have transparent backgrounds */
+    /* ULTRA NUCLEAR OPTION: Force ALL elements in sidebar to have transparent backgrounds */
+    .fm-sidebar-content *,
     .fm-sidebar-content div,
+    .fm-sidebar-content [data-testid="stColumn"],
+    .fm-sidebar-content [data-testid="stColumn"] *,
     .fm-sidebar-content [data-testid="stColumn"] div,
+    .fm-sidebar-content [data-testid="stVerticalBlock"],
+    .fm-sidebar-content [data-testid="stVerticalBlock"] *,
     .fm-sidebar-content [data-testid="stVerticalBlock"] div,
-    .fm-sidebar-content [data-testid="stHorizontalBlock"] div {
+    .fm-sidebar-content [data-testid="stHorizontalBlock"],
+    .fm-sidebar-content [data-testid="stHorizontalBlock"] *,
+    .fm-sidebar-content [data-testid="stHorizontalBlock"] div,
+    .fm-sidebar-content [data-testid="element-container"],
+    .fm-sidebar-content [data-testid="element-container"] *,
+    .fm-sidebar-content .element-container,
+    .fm-sidebar-content .element-container * {
         background-color: transparent !important;
         background: transparent !important;
     }
@@ -215,7 +232,7 @@ def load_css():
 
     /* Compact spacing for sidebar text area */
     .fm-sidebar-content .stTextArea {
-        margin-bottom: calc(var(--space-3) / 2) !important;
+        margin-bottom: 0 !important;
     }
 
     /* Fix text area overhang - ensure proper box sizing */
@@ -255,11 +272,19 @@ def load_css():
     .fm-sidebar-content [data-testid="stColumn"] {
         padding: 0 var(--space-1) !important;
         background: transparent !important;
+        background-color: transparent !important;
     }
 
-    /* Ensure all column children have transparent backgrounds */
-    .fm-sidebar-content [data-testid="stColumn"] > div {
+    /* Force all children of nested columns to be transparent */
+    .fm-sidebar-content [data-testid="stColumn"] > *,
+    .fm-sidebar-content [data-testid="stColumn"] > div,
+    .fm-sidebar-content [data-testid="stColumn"] > div > *,
+    .fm-sidebar-content [data-testid="stColumn"] [data-testid="stVerticalBlock"],
+    .fm-sidebar-content [data-testid="stColumn"] [data-testid="stVerticalBlock"] > *,
+    .fm-sidebar-content [data-testid="stColumn"] [data-testid="stVerticalBlock"] > div,
+    .fm-sidebar-content [data-testid="stColumn"] [data-testid="stVerticalBlock"] > div > * {
         background: transparent !important;
+        background-color: transparent !important;
     }
 
     .fm-sidebar-content > div > [data-testid="stColumn"]:first-child {
@@ -268,18 +293,6 @@ def load_css():
 
     .fm-sidebar-content > div > [data-testid="stColumn"]:last-child {
         padding-right: 0 !important;
-    }
-
-    /* Ensure metric containers in sidebar have transparent backgrounds */
-    .fm-sidebar-content .stMetric > div {
-        background: transparent !important;
-    }
-
-    /* Force all nested elements to have transparent backgrounds */
-    .fm-sidebar-content [data-testid="stVerticalBlock"],
-    .fm-sidebar-content [data-testid="stHorizontalBlock"],
-    .fm-sidebar-content .element-container {
-        background: transparent !important;
     }
 
     /* Sidebar headings - first h2 with no top spacing (column padding handles it) */

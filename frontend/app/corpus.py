@@ -36,22 +36,31 @@ def render_corpus_creation() -> None:
         st.warning("⚠️ Please provide: Reference Documents")
 
     def create_corpus_callback():
-        """Callback to set flag for corpus creation"""
-        st.session_state.trigger_corpus_creation = True
-        st.session_state.pending_case_context = case_context
-        st.session_state.pending_reference_files = reference_files
+        """Callback to initiate corpus creation (sets flag only)"""
+        # Only set flag if not already processing
+        if not st.session_state.get("corpus_creation_in_progress", False):
+            st.session_state.trigger_corpus_creation = True
+            st.session_state.pending_case_context = case_context
+            st.session_state.pending_reference_files = reference_files
+
+    # Check if we're already processing to prevent double-click
+    is_processing = st.session_state.get("corpus_creation_in_progress", False)
 
     st.button(
         "Create Reference Library",
-        disabled=not reference_files,
+        disabled=not reference_files or is_processing,
         type="primary",
         use_container_width=True,
         on_click=create_corpus_callback,
     )
 
-    # Process corpus creation AFTER button callback
-    if st.session_state.get("trigger_corpus_creation", False):
+    # Process corpus creation AFTER button callback (only once)
+    if st.session_state.get("trigger_corpus_creation", False) and not is_processing:
+        # Immediately set processing flag and clear trigger to prevent double-execution
+        st.session_state.corpus_creation_in_progress = True
         st.session_state.trigger_corpus_creation = False
+
+        # Get pending data
         pending_context = st.session_state.pop("pending_case_context", "")
         pending_files = st.session_state.pop("pending_reference_files", [])
 
@@ -65,7 +74,10 @@ def render_corpus_creation() -> None:
                 st.session_state.case_context = pending_context
                 st.session_state.corpus_metadata = result.get("metadata", [])
                 st.session_state.corpus_just_created = True
-                st.rerun()
+
+            # Clear processing flag
+            st.session_state.corpus_creation_in_progress = False
+            st.rerun()
 
 
 def render_active_corpus() -> None:
@@ -171,13 +183,14 @@ def render_corpus_sidebar() -> None:
         # Target by data-testid which Streamlit generates for text areas
         st.markdown("""
             <style>
-            /* Hide scrollbar for the case context text area */
-            div[data-testid="stTextArea"] textarea {
-                overflow-y: hidden !important;
+            /* Hide scrollbar for the case context text area while keeping resize capability */
+            .fm-sidebar-content div[data-testid="stTextArea"] textarea {
+                overflow: hidden !important;
+                resize: vertical !important;
                 scrollbar-width: none !important; /* Firefox */
                 -ms-overflow-style: none !important; /* IE and Edge */
             }
-            div[data-testid="stTextArea"] textarea::-webkit-scrollbar {
+            .fm-sidebar-content div[data-testid="stTextArea"] textarea::-webkit-scrollbar {
                 display: none !important; /* Chrome, Safari, Opera */
             }
             </style>
@@ -203,10 +216,15 @@ def render_corpus_sidebar() -> None:
 
         if uploaded_refs:
             def create_corpus_sidebar_callback():
-                """Callback to set flag for sidebar corpus creation"""
-                st.session_state.trigger_corpus_creation_sidebar = True
-                st.session_state.pending_case_context_sidebar = case_context
-                st.session_state.pending_reference_files_sidebar = uploaded_refs
+                """Callback to initiate corpus creation (sets flag only)"""
+                # Only set flag if not already processing
+                if not st.session_state.get("corpus_creation_in_progress", False):
+                    st.session_state.trigger_corpus_creation_sidebar = True
+                    st.session_state.pending_case_context_sidebar = case_context
+                    st.session_state.pending_reference_files_sidebar = uploaded_refs
+
+            # Check if we're already processing to prevent double-click
+            is_processing = st.session_state.get("corpus_creation_in_progress", False)
 
             st.button(
                 "Create Corpus",
@@ -214,11 +232,16 @@ def render_corpus_sidebar() -> None:
                 use_container_width=True,
                 key="create_corpus",
                 on_click=create_corpus_sidebar_callback,
+                disabled=is_processing,
             )
 
-            # Process corpus creation AFTER button callback
-            if st.session_state.get("trigger_corpus_creation_sidebar", False):
+            # Process corpus creation AFTER button callback (only once)
+            if st.session_state.get("trigger_corpus_creation_sidebar", False) and not is_processing:
+                # Immediately set processing flag and clear trigger to prevent double-execution
+                st.session_state.corpus_creation_in_progress = True
                 st.session_state.trigger_corpus_creation_sidebar = False
+
+                # Get pending data
                 pending_context = st.session_state.pop("pending_case_context_sidebar", "")
                 pending_files = st.session_state.pop("pending_reference_files_sidebar", [])
 
@@ -232,7 +255,10 @@ def render_corpus_sidebar() -> None:
                         st.session_state.case_context = pending_context
                         st.session_state.corpus_metadata = result.get("metadata", [])
                         st.session_state.corpus_just_created = True
-                        st.rerun()
+
+                    # Clear processing flag
+                    st.session_state.corpus_creation_in_progress = False
+                    st.rerun()
 
     # Actions (if corpus is active)
     if st.session_state.reference_docs_uploaded:
@@ -267,7 +293,7 @@ def render_corpus_sidebar() -> None:
                 st.session_state.view_library_expanded = (
                     not st.session_state.view_library_expanded
                 )
-            # Streamlit will automatically rerun when session state changes
+            st.rerun()
 
         if st.button(
             "⚙️ Configure",
@@ -291,17 +317,17 @@ def render_corpus_sidebar() -> None:
                     success = delete_corpus(st.session_state.store_id)
                     if success:
                         reset_corpus_state()
-                        # Streamlit will automatically rerun when session state changes
+                        st.rerun()
                     else:
                         st.error(
                             "❌ Failed to delete corpus. Clearing local state only."
                         )
                         reset_corpus_state()
-                        # Streamlit will automatically rerun when session state changes
+                        st.rerun()
             else:
                 # No store_id, just reset state
                 reset_corpus_state()
-                # Streamlit will automatically rerun when session state changes
+                st.rerun()
 
     # View Library Expander (show when toggled)
     if st.session_state.reference_docs_uploaded and st.session_state.get(

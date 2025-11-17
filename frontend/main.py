@@ -193,15 +193,31 @@ def render_verify_card() -> None:
     )
     st.info(f"🔷 Corpus Ready ({doc_count} docs)")
 
-    # Run verification button
-    if st.button(
+    # Run verification button with callback pattern to prevent double-rendering
+    def run_verification_callback():
+        """Callback to initiate verification (sets flag only)"""
+        # Only set flag if not already processing
+        if not st.session_state.get("verification_in_progress", False):
+            st.session_state.trigger_verification = True
+
+    # Check if we're already processing to prevent double-click
+    is_processing = st.session_state.get("verification_in_progress", False)
+
+    st.button(
         "▶ Run Verification",
         type="primary",
         use_container_width=True,
-        disabled=st.session_state.verification_in_progress,
+        disabled=is_processing,
         key="verify_gemini",
-    ):
+        on_click=run_verification_callback,
+    )
+
+    # Process verification AFTER button callback (only once)
+    if st.session_state.get("trigger_verification", False) and not is_processing:
+        # Immediately set processing flag and clear trigger to prevent double-execution
         st.session_state.verification_in_progress = True
+        st.session_state.trigger_verification = False
+
         progress_bar = st.progress(0)
         status_text = st.empty()
 
@@ -221,11 +237,13 @@ def render_verify_card() -> None:
 
             progress_bar.progress(100)
             status_text.success("✅ Verification complete!")
-            # Streamlit will automatically rerun when session state changes
         else:
             st.session_state.verification_in_progress = False
             progress_bar.empty()
             status_text.empty()
+
+        # Explicit rerun after completion
+        st.rerun()
 
 
 def render_export_card() -> None:
@@ -415,9 +433,9 @@ def main() -> None:
 
         # Workflow explanation
         st.info(
-            "**🔄 Verification Workflow:** Upload your document (Step 1) → "
-            "Choose splitting mode (Step 2) → Run AI verification against corpus (Step 3) → "
-            "Export results (Step 4)"
+            "**🔄 Verification Workflow:** (1) Upload your document → "
+            "(2) Choose splitting mode → (3) Run AI verification against corpus → "
+            "(4) Export results"
         )
 
         # Render verification workflow (4 horizontal cards)

@@ -27,12 +27,16 @@ def init_session_state() -> None:
         st.session_state.case_context = None
     if "corpus_metadata" not in st.session_state:
         st.session_state.corpus_metadata = None
+    if "corpus_creation_in_progress" not in st.session_state:
+        st.session_state.corpus_creation_in_progress = False
     if "verification_complete" not in st.session_state:
         st.session_state.verification_complete = False
     if "verification_results" not in st.session_state:
         st.session_state.verification_results = None
     if "verification_in_progress" not in st.session_state:
         st.session_state.verification_in_progress = False
+    if "trigger_verification" not in st.session_state:
+        st.session_state.trigger_verification = False
 
     # Processing state
     if "splitting_mode" not in st.session_state:
@@ -53,6 +57,7 @@ def reset_corpus_state() -> None:
     st.session_state.reference_docs_uploaded = False
     st.session_state.case_context = None
     st.session_state.corpus_metadata = None
+    st.session_state.corpus_creation_in_progress = False
 
 
 def reset_verification_state() -> None:
@@ -60,6 +65,7 @@ def reset_verification_state() -> None:
     st.session_state.verification_complete = False
     st.session_state.verification_results = None
     st.session_state.verification_in_progress = False
+    st.session_state.trigger_verification = False
     st.session_state.splitting_mode = "paragraph"
 
 

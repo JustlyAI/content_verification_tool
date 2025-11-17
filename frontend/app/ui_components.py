@@ -117,7 +117,7 @@ def render_footer() -> None:
         f"""
 <div class="fm-footer">
     <div class="fm-footer-left">
-        Powered by <span class="fm-footer-highlight">Gemini 2.5 Flash</span> and <span class="fm-footer-highlight">Gemini File Search API</span>•
+        Powered by <span class="fm-footer-highlight">Gemini 2.5 Flash</span> and <span class="fm-footer-highlight">Gemini File Search API</span> •
         Content Verification Tool v2.1 •
         Built for Demo
     </div>
