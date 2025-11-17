@@ -35,12 +35,23 @@ def render_corpus_creation() -> None:
     if not reference_files:
         st.warning("⚠️ Please provide: Reference Documents")
 
-    if st.button(
+    # Check if we're already processing to prevent double-click
+    is_processing = st.session_state.get("corpus_creation_in_progress", False)
+
+    # Use button with key to track clicks (no callback needed)
+    create_clicked = st.button(
         "Create Reference Library",
-        disabled=not reference_files,
+        disabled=not reference_files or is_processing,
         type="primary",
         use_container_width=True,
-    ):
+        key="create_corpus_main",
+    )
+
+    # Process corpus creation when button is clicked (only once per click)
+    if create_clicked and not is_processing:
+        # Set processing flag immediately to prevent double-execution
+        st.session_state.corpus_creation_in_progress = True
+
         with st.spinner("Creating reference library..."):
             result = upload_reference_documents(reference_files, case_context)
 
@@ -50,25 +61,25 @@ def render_corpus_creation() -> None:
                 st.session_state.reference_docs_uploaded = True
                 st.session_state.case_context = case_context
                 st.session_state.corpus_metadata = result.get("metadata", [])
+                st.session_state.corpus_just_created = True
 
-                st.success(
-                    f"✅ Uploaded {result['documents_uploaded']} reference documents"
-                )
-                st.info(f"📦 Store ID: `{result['store_id']}`")
-
-                # Show metadata
-                if result.get("metadata"):
-                    with st.expander("View Document Metadata"):
-                        for meta in result["metadata"]:
-                            st.markdown(f"**{meta['filename']}**")
-                            st.caption(f"Type: {meta['document_type']}")
-                            st.caption(f"Summary: {meta['summary']}")
-
-                st.rerun()
+        # Clear processing flag
+        st.session_state.corpus_creation_in_progress = False
+        # Streamlit will automatically rerun when session state changes
 
 
 def render_active_corpus() -> None:
     """Render active corpus information and management"""
+    # Show one-time success message if corpus was just created
+    if st.session_state.get("corpus_just_created", False):
+        doc_count = (
+            len(st.session_state.corpus_metadata)
+            if st.session_state.corpus_metadata
+            else 0
+        )
+        st.success(f"✅ Uploaded {doc_count} reference document(s) successfully!")
+        st.session_state.corpus_just_created = False
+
     st.success("✅ Corpus is active and ready for verification")
 
     # Display corpus information
@@ -95,7 +106,7 @@ def render_active_corpus() -> None:
     with col3:
         if st.button("🗑️ Clear Corpus", type="secondary", use_container_width=True):
             reset_corpus_state()
-            st.rerun()
+            # Streamlit will automatically rerun when session state changes
 
 
 def render_corpus_sidebar() -> None:
@@ -154,16 +165,36 @@ def render_corpus_sidebar() -> None:
             st.metric("Pages", total_pages)
             st.metric("Chunks", "N/A")  # Not available from File Search
 
-        st.markdown("---")
-
     # Quick Upload / Corpus Creation
     if not st.session_state.reference_docs_uploaded:
+        # Custom CSS to hide scrollbar but keep resize handle
+        # Target by unique key to ensure proper scoping
+        st.markdown("""
+            <style>
+            /* Hide scrollbar for the case context text area while keeping resize capability */
+            .st-key-case_context_sidebar textarea {
+                overflow: hidden !important;
+                resize: vertical !important;
+                scrollbar-width: none !important; /* Firefox */
+                -ms-overflow-style: none !important; /* IE and Edge */
+            }
+            .st-key-case_context_sidebar textarea::-webkit-scrollbar {
+                display: none !important; /* Chrome, Safari, Opera */
+            }
+            /* Remove extra margin below text area */
+            .st-key-case_context_sidebar div[data-testid="stTextArea"] {
+                margin-bottom: 0 !important;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+
         case_context = st.text_area(
             "Case Context",
             placeholder="Brief description of case or project...",
-            height=80,
+            height=120,
             key="case_context_sidebar",
             label_visibility="collapsed",
+            max_chars=500,
         )
 
         uploaded_refs = st.file_uploader(
@@ -176,12 +207,23 @@ def render_corpus_sidebar() -> None:
         )
 
         if uploaded_refs:
-            if st.button(
+            # Check if we're already processing to prevent double-click
+            is_processing = st.session_state.get("corpus_creation_in_progress", False)
+
+            # Use button with key to track clicks (no callback needed)
+            create_sidebar_clicked = st.button(
                 "Create Corpus",
                 type="primary",
                 use_container_width=True,
-                key="create_corpus",
-            ):
+                key="create_corpus_sidebar",
+                disabled=is_processing,
+            )
+
+            # Process corpus creation when button is clicked (only once per click)
+            if create_sidebar_clicked and not is_processing:
+                # Set processing flag immediately to prevent double-execution
+                st.session_state.corpus_creation_in_progress = True
+
                 with st.spinner("Creating reference library..."):
                     result = upload_reference_documents(uploaded_refs, case_context)
 
@@ -191,14 +233,34 @@ def render_corpus_sidebar() -> None:
                         st.session_state.reference_docs_uploaded = True
                         st.session_state.case_context = case_context
                         st.session_state.corpus_metadata = result.get("metadata", [])
-                        st.success(f"✅ {len(uploaded_refs)} file(s) uploaded")
-                        st.rerun()
+                        st.session_state.corpus_just_created = True
 
-        st.markdown("---")
+                # Clear processing flag
+                st.session_state.corpus_creation_in_progress = False
+                # Streamlit will automatically rerun when session state changes
 
     # Actions (if corpus is active)
     if st.session_state.reference_docs_uploaded:
+        # Show one-time success message if corpus was just created
+        if st.session_state.get("corpus_just_created", False):
+            doc_count = (
+                len(st.session_state.corpus_metadata)
+                if st.session_state.corpus_metadata
+                else 0
+            )
+            st.success(f"✅ Created! {doc_count} document(s) uploaded")
+            st.session_state.corpus_just_created = False
+
         st.markdown("**Actions**")
+
+        # Custom CSS to reduce button spacing
+        st.markdown("""
+            <style>
+            div[data-testid="stVerticalBlock"] > div:has(button) {
+                margin-bottom: 0.25rem !important;
+            }
+            </style>
+        """, unsafe_allow_html=True)
 
         if st.button(
             "📄 View Library", key="view_docs_sidebar", use_container_width=True
@@ -234,7 +296,6 @@ def render_corpus_sidebar() -> None:
                     success = delete_corpus(st.session_state.store_id)
                     if success:
                         reset_corpus_state()
-                        st.success("✅ Corpus deleted successfully!")
                         st.rerun()
                     else:
                         st.error(
@@ -251,7 +312,6 @@ def render_corpus_sidebar() -> None:
     if st.session_state.reference_docs_uploaded and st.session_state.get(
         "view_library_expanded", False
     ):
-        st.markdown("---")
         with st.expander("Library Contents", expanded=True):
             if st.session_state.corpus_metadata:
                 for idx, meta in enumerate(st.session_state.corpus_metadata):

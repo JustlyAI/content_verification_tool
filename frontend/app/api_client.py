@@ -6,6 +6,7 @@ import requests
 import streamlit as st
 import logging
 from typing import Optional, Dict, Any
+from urllib.parse import quote
 from termcolor import cprint
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -363,8 +364,11 @@ def delete_corpus(store_id: str, timeout: int = 10) -> bool:
     try:
         cprint(f"[FRONTEND] Deleting corpus: {store_id}", "cyan")
 
+        # URL-encode the store_id to handle forward slashes
+        encoded_store_id = quote(store_id, safe='')
+
         response = API_SESSION.delete(
-            f"{BACKEND_URL}/api/corpus/{store_id}",
+            f"{BACKEND_URL}/api/corpus/{encoded_store_id}",
             timeout=timeout,
         )
 

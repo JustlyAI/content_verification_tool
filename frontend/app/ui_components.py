@@ -35,7 +35,7 @@ def render_backend_status() -> None:
     with col2:
         if st.button("🔄", help="Refresh connection status"):
             check_backend_health.clear()
-            st.rerun()
+            # Streamlit will automatically rerun when cache is cleared
 
 
 def render_sidebar() -> None:
@@ -83,7 +83,7 @@ def render_sidebar() -> None:
             if st.button("🔄 Start Over", use_container_width=True, type="secondary"):
                 reset_all_state()
                 check_backend_health.clear()
-                st.rerun()
+                # Streamlit will automatically rerun when session state changes
 
         # Debug info (if enabled)
         if FEATURES["show_debug_info"]:
@@ -117,7 +117,7 @@ def render_footer() -> None:
         f"""
 <div class="fm-footer">
     <div class="fm-footer-left">
-        Powered by <span class="fm-footer-highlight">Gemini 2.5 Flash</span> and <span class="fm-footer-highlight">Gemini File Search API</span>•
+        Powered by <span class="fm-footer-highlight">Gemini 2.5 Flash</span> and <span class="fm-footer-highlight">Gemini File Search API</span> •
         Content Verification Tool v2.1 •
         Built for Demo
     </div>

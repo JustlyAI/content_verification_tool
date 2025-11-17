@@ -193,15 +193,23 @@ def render_verify_card() -> None:
     )
     st.info(f"🔷 Corpus Ready ({doc_count} docs)")
 
-    # Run verification button
-    if st.button(
+    # Check if we're already processing
+    is_processing = st.session_state.get("verification_in_progress", False)
+
+    # Use button with key to track clicks (no callback needed)
+    verify_clicked = st.button(
         "▶ Run Verification",
         type="primary",
         use_container_width=True,
-        disabled=st.session_state.verification_in_progress,
+        disabled=is_processing,
         key="verify_gemini",
-    ):
+    )
+
+    # Process verification when button is clicked (only once per click)
+    if verify_clicked and not is_processing:
+        # Set processing flag immediately to prevent double-execution
         st.session_state.verification_in_progress = True
+
         progress_bar = st.progress(0)
         status_text = st.empty()
 
@@ -217,15 +225,16 @@ def render_verify_card() -> None:
         if result:
             st.session_state.verification_complete = True
             st.session_state.verification_results = result
-            st.session_state.verification_in_progress = False
 
             progress_bar.progress(100)
             status_text.success("✅ Verification complete!")
-            st.rerun()
         else:
-            st.session_state.verification_in_progress = False
             progress_bar.empty()
             status_text.empty()
+
+        # Clear processing flag
+        st.session_state.verification_in_progress = False
+        # Streamlit will automatically rerun when session state changes
 
 
 def render_export_card() -> None:
@@ -263,7 +272,7 @@ def render_export_card() -> None:
             disabled=st.session_state.verification_in_progress,
         ):
             st.session_state.last_generated = None
-            st.rerun()
+            # Streamlit will automatically rerun when session state changes
     else:
         # Generate button
         button_disabled = st.session_state.verification_in_progress
@@ -415,9 +424,9 @@ def main() -> None:
 
         # Workflow explanation
         st.info(
-            "**🔄 Verification Workflow:** Upload your document (Step 1) → "
-            "Choose splitting mode (Step 2) → Run AI verification against corpus (Step 3) → "
-            "Export results (Step 4)"
+            "**🔄 Verification Workflow:** (1) Upload your document → "
+            "(2) Choose splitting mode → (3) Run AI verification against corpus → "
+            "(4) Export results"
         )
 
         # Render verification workflow (4 horizontal cards)

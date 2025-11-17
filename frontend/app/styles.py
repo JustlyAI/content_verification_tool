@@ -181,6 +181,12 @@ def load_css():
         box-sizing: border-box !important;
     }
 
+    /* Ensure all child divs of sidebar column also have blue background */
+    [data-testid="stColumn"]:has(.fm-sidebar-content) > div,
+    [data-testid="stColumn"]:has(.fm-sidebar-content) > div > div {
+        background: var(--fm-blue-100) !important;
+    }
+
     /* Sidebar content - no extra padding needed, column handles it */
     .fm-sidebar-content {
         padding: 0 !important;
@@ -188,11 +194,22 @@ def load_css():
         box-sizing: border-box !important;
     }
 
-    /* NUCLEAR OPTION: Force ALL divs in sidebar to have transparent backgrounds */
+    /* ULTRA NUCLEAR OPTION: Force ALL elements in sidebar to have transparent backgrounds */
+    .fm-sidebar-content *,
     .fm-sidebar-content div,
+    .fm-sidebar-content [data-testid="stColumn"],
+    .fm-sidebar-content [data-testid="stColumn"] *,
     .fm-sidebar-content [data-testid="stColumn"] div,
+    .fm-sidebar-content [data-testid="stVerticalBlock"],
+    .fm-sidebar-content [data-testid="stVerticalBlock"] *,
     .fm-sidebar-content [data-testid="stVerticalBlock"] div,
-    .fm-sidebar-content [data-testid="stHorizontalBlock"] div {
+    .fm-sidebar-content [data-testid="stHorizontalBlock"],
+    .fm-sidebar-content [data-testid="stHorizontalBlock"] *,
+    .fm-sidebar-content [data-testid="stHorizontalBlock"] div,
+    .fm-sidebar-content [data-testid="element-container"],
+    .fm-sidebar-content [data-testid="element-container"] *,
+    .fm-sidebar-content .element-container,
+    .fm-sidebar-content .element-container * {
         background-color: transparent !important;
         background: transparent !important;
     }
@@ -207,34 +224,11 @@ def load_css():
         margin-bottom: var(--space-1) !important;
     }
 
-    /* Compact space around sidebar file uploader */
-    .fm-sidebar-content .stFileUploader {
-        margin-top: var(--space-1) !important;
-        margin-bottom: var(--space-1) !important;
-    }
-
-    /* Compact spacing for sidebar text area */
-    .fm-sidebar-content .stTextArea {
-        margin-bottom: calc(var(--space-3) / 2) !important;
-    }
-
-    /* Fix text area overhang - ensure proper box sizing */
-    .fm-sidebar-content .stTextArea textarea {
-        box-sizing: border-box !important;
-        padding: 0.625rem 0.75rem !important;
-        line-height: 1.5 !important;
-        vertical-align: top !important;
-    }
-
-    /* Fix text area container to prevent overflow */
-    .fm-sidebar-content .stTextArea > div {
-        box-sizing: border-box !important;
-    }
-
-    /* Compact space between sidebar buttons */
-    .fm-sidebar-content .stButton {
-        margin-bottom: var(--space-1) !important;
-    }
+    /* NOTE: .fm-sidebar-content class doesn't work with Streamlit components
+       because st.markdown() HTML divs don't properly wrap Streamlit widgets.
+       Component-specific CSS should be added inline in the respective files
+       using the .st-key-{key_name} selector pattern instead.
+    */
 
     /* Tighter button spacing - override any parent spacing */
     .fm-sidebar-content .stButton > button {
@@ -255,11 +249,35 @@ def load_css():
     .fm-sidebar-content [data-testid="stColumn"] {
         padding: 0 var(--space-1) !important;
         background: transparent !important;
+        background-color: transparent !important;
     }
 
-    /* Ensure all column children have transparent backgrounds */
-    .fm-sidebar-content [data-testid="stColumn"] > div {
+    /* Force all children of nested columns to be transparent */
+    .fm-sidebar-content [data-testid="stColumn"] > *,
+    .fm-sidebar-content [data-testid="stColumn"] > div,
+    .fm-sidebar-content [data-testid="stColumn"] > div > *,
+    .fm-sidebar-content [data-testid="stColumn"] [data-testid="stVerticalBlock"],
+    .fm-sidebar-content [data-testid="stColumn"] [data-testid="stVerticalBlock"] > *,
+    .fm-sidebar-content [data-testid="stColumn"] [data-testid="stVerticalBlock"] > div,
+    .fm-sidebar-content [data-testid="stColumn"] [data-testid="stVerticalBlock"] > div > * {
         background: transparent !important;
+        background-color: transparent !important;
+    }
+
+    /* Target vertical blocks inside nested columns within sidebar - NUCLEAR OVERRIDE */
+    .fm-sidebar-content [data-testid="stColumn"] [data-testid="stVerticalBlock"],
+    .fm-sidebar-content [data-testid="stHorizontalBlock"] [data-testid="stColumn"] [data-testid="stVerticalBlock"],
+    .fm-sidebar-content > div > [data-testid="stHorizontalBlock"] > div > [data-testid="stColumn"] > div > [data-testid="stVerticalBlock"] {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+
+    /* Also target the stMetric divs themselves */
+    .fm-sidebar-content [data-testid="stMetric"],
+    .fm-sidebar-content [data-testid="stMetric"] > div,
+    .fm-sidebar-content [data-testid="stMetric"] > div > div {
+        background: transparent !important;
+        background-color: transparent !important;
     }
 
     .fm-sidebar-content > div > [data-testid="stColumn"]:first-child {
@@ -268,18 +286,6 @@ def load_css():
 
     .fm-sidebar-content > div > [data-testid="stColumn"]:last-child {
         padding-right: 0 !important;
-    }
-
-    /* Ensure metric containers in sidebar have transparent backgrounds */
-    .fm-sidebar-content .stMetric > div {
-        background: transparent !important;
-    }
-
-    /* Force all nested elements to have transparent backgrounds */
-    .fm-sidebar-content [data-testid="stVerticalBlock"],
-    .fm-sidebar-content [data-testid="stHorizontalBlock"],
-    .fm-sidebar-content .element-container {
-        background: transparent !important;
     }
 
     /* Sidebar headings - first h2 with no top spacing (column padding handles it) */
