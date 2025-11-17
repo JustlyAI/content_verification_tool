@@ -2,6 +2,7 @@
 FastAPI Backend for Content Verification Tool
 """
 
+import os
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -47,9 +48,13 @@ app = FastAPI(
 )
 
 # Add CORS middleware to allow frontend communication
+# Get allowed origins from environment variable (comma-separated list)
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:8501").split(",")
+allowed_origins = [origin.strip() for origin in allowed_origins]  # Remove whitespace
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify exact origins
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -70,6 +75,7 @@ async def startup_event():
     cprint("[API] Initializing chunker...", "cyan")
     cprint("[API] Initializing output generator...", "cyan")
     cprint("[API] All services initialized successfully ✓", "green")
+    cprint(f"[API] CORS allowed origins: {', '.join(allowed_origins)}", "cyan")
     cprint("=" * 80, "cyan")
 
 
@@ -158,13 +164,13 @@ async def upload_document(file: UploadFile = File(...)):
 
 @app.post("/api/verify/upload-references", response_model=UploadReferencesResponse)
 async def upload_references(
-    case_context: str = Form(...), files: List[UploadFile] = File(...)
+    case_context: str = Form(None), files: List[UploadFile] = File(...)
 ):
     """
     Upload reference documents and create File Search store
 
     Args:
-        case_context: Context about the verification case
+        case_context: Context about the verification case (optional)
         files: List of reference documents (PDF/DOCX)
 
     Returns:
@@ -175,14 +181,17 @@ async def upload_references(
         "cyan",
         attrs=["bold"],
     )
-    cprint(f"[API] Case context: {case_context[:100]}...", "cyan")
+    if case_context:
+        cprint(f"[API] Case context: {case_context[:100]}...", "cyan")
+    else:
+        cprint("[API] No case context provided", "cyan")
 
     try:
         # Generate a case ID
         import hashlib
         import time
 
-        case_id = hashlib.md5(f"{case_context}{time.time()}".encode()).hexdigest()[:8]
+        case_id = hashlib.md5(f"{case_context or 'default'}{time.time()}".encode()).hexdigest()[:8]
 
         # Create File Search store
         store_name, display_name = corpus_manager.create_store(case_id)

@@ -7,7 +7,7 @@ import os
 import time
 import asyncio
 import json
-from typing import List
+from typing import List, Optional
 from termcolor import cprint
 from dotenv import load_dotenv
 
@@ -104,7 +104,7 @@ class GeminiVerifier:
                 time.sleep(wait_time)
 
     def verify_chunk(
-        self, chunk: DocumentChunk, store_name: str, case_context: str
+        self, chunk: DocumentChunk, store_name: str, case_context: Optional[str] = None
     ) -> DocumentChunk:
         """
         Verify a single chunk against the File Search store
@@ -112,7 +112,7 @@ class GeminiVerifier:
         Args:
             chunk: DocumentChunk to verify
             store_name: Name of the File Search store
-            case_context: Context about the verification case
+            case_context: Context about the verification case (optional)
 
         Returns:
             DocumentChunk with verification fields populated
@@ -121,13 +121,16 @@ class GeminiVerifier:
             raise ValueError("Gemini client not initialized - check GEMINI_API_KEY")
 
         try:
-            prompt = f"""You are a document verification assistant with access to reference documents.
-
+            # Build prompt with optional case context section
+            context_section = f"""
 ## CONTEXT of the verification case:
 
 {case_context}
 
-## TASK:
+""" if case_context else ""
+
+            prompt = f"""You are a document verification assistant with access to reference documents.
+{context_section}## TASK:
 
 Verify if the following statement is supported by the reference documents.
 
@@ -300,7 +303,7 @@ Provide ONLY the JSON object, no other text."""
         self,
         chunks: List[DocumentChunk],
         store_name: str,
-        case_context: str,
+        case_context: Optional[str] = None,
         batch_size: int = 3,
     ) -> List[DocumentChunk]:
         """
@@ -309,7 +312,7 @@ Provide ONLY the JSON object, no other text."""
         Args:
             chunks: List of DocumentChunk objects to verify
             store_name: Name of the File Search store
-            case_context: Context about the verification case
+            case_context: Context about the verification case (optional)
             batch_size: Number of chunks to process concurrently
 
         Returns:

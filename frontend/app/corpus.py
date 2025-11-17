@@ -1,6 +1,6 @@
 """
 Corpus Management UI Components for AI Verification
-Freshfields-inspired compact sidebar design
+Firm-inspired compact sidebar design
 """
 
 import streamlit as st
@@ -13,13 +13,13 @@ def render_corpus_creation() -> None:
     st.markdown("Upload reference documents to enable AI verification")
 
     # Show clearer instructions
-    st.info("📝 **Instructions:** Fill in both fields below to enable the button")
+    st.info("📝 **Instructions:** Upload reference documents to enable the button")
 
     case_context = st.text_area(
-        "Case Context *",
+        "Case Context (Optional)",
         placeholder="Describe what you're verifying (e.g., 'Contract verification for Project X')",
         max_chars=500,
-        help="Provide context to help AI understand the verification case",
+        help="Provide context to help AI understand the verification case (optional but recommended)",
         key="case_context_input",
     )
 
@@ -32,17 +32,12 @@ def render_corpus_creation() -> None:
     )
 
     # Show status of required fields
-    if not case_context or not reference_files:
-        missing = []
-        if not case_context:
-            missing.append("Case Context")
-        if not reference_files:
-            missing.append("Reference Documents")
-        st.warning(f"⚠️ Please provide: {', '.join(missing)}")
+    if not reference_files:
+        st.warning("⚠️ Please provide: Reference Documents")
 
     if st.button(
         "Create Reference Library",
-        disabled=not reference_files or not case_context,
+        disabled=not reference_files,
         type="primary",
         use_container_width=True,
     ):
@@ -105,10 +100,10 @@ def render_active_corpus() -> None:
 
 def render_corpus_sidebar() -> None:
     """
-    Render the corpus sidebar with Freshfields styling
+    Render the corpus sidebar with Firm styling
     Compact design for always-visible sidebar
     """
-    st.markdown('<div class="ff-sidebar-content">', unsafe_allow_html=True)
+    st.markdown('<div class="fm-sidebar-content">', unsafe_allow_html=True)
 
     st.markdown("## Reference Corpus")
     st.info(
@@ -117,7 +112,7 @@ def render_corpus_sidebar() -> None:
 
     # Status
     if st.session_state.reference_docs_uploaded:
-        st.success("✓ Active & Gemini-Ready")
+        st.success("✓ Active & Verification-Ready")
     else:
         st.warning("⏳ No Corpus Loaded")
 
@@ -137,10 +132,10 @@ def render_corpus_sidebar() -> None:
             if st.session_state.corpus_metadata:
                 for doc_meta in st.session_state.corpus_metadata:
                     # Access file_size_bytes attribute
-                    if hasattr(doc_meta, 'file_size_bytes'):
+                    if hasattr(doc_meta, "file_size_bytes"):
                         total_bytes += doc_meta.file_size_bytes
-                    elif isinstance(doc_meta, dict) and 'file_size_bytes' in doc_meta:
-                        total_bytes += doc_meta['file_size_bytes']
+                    elif isinstance(doc_meta, dict) and "file_size_bytes" in doc_meta:
+                        total_bytes += doc_meta["file_size_bytes"]
 
             total_mb = total_bytes / (1024 * 1024)
             st.metric("Storage", f"{total_mb:.1f} MB")
@@ -151,10 +146,10 @@ def render_corpus_sidebar() -> None:
             if st.session_state.corpus_metadata:
                 for doc_meta in st.session_state.corpus_metadata:
                     # Access page_count attribute
-                    if hasattr(doc_meta, 'page_count'):
+                    if hasattr(doc_meta, "page_count"):
                         total_pages += doc_meta.page_count
-                    elif isinstance(doc_meta, dict) and 'page_count' in doc_meta:
-                        total_pages += doc_meta['page_count']
+                    elif isinstance(doc_meta, dict) and "page_count" in doc_meta:
+                        total_pages += doc_meta["page_count"]
 
             st.metric("Pages", total_pages)
             st.metric("Chunks", "N/A")  # Not available from File Search
@@ -180,7 +175,7 @@ def render_corpus_sidebar() -> None:
             help="These documents form the knowledge base that Gemini uses to verify your document",
         )
 
-        if uploaded_refs and case_context:
+        if uploaded_refs:
             if st.button(
                 "Create Corpus",
                 type="primary",
@@ -198,8 +193,6 @@ def render_corpus_sidebar() -> None:
                         st.session_state.corpus_metadata = result.get("metadata", [])
                         st.success(f"✅ {len(uploaded_refs)} file(s) uploaded")
                         st.rerun()
-        elif uploaded_refs:
-            st.caption("⚠️ Add case context to continue")
 
         st.markdown("---")
 
@@ -214,10 +207,18 @@ def render_corpus_sidebar() -> None:
             if "view_library_expanded" not in st.session_state:
                 st.session_state.view_library_expanded = True
             else:
-                st.session_state.view_library_expanded = not st.session_state.view_library_expanded
+                st.session_state.view_library_expanded = (
+                    not st.session_state.view_library_expanded
+                )
             st.rerun()
 
-        if st.button("⚙️ Configure", key="config_sidebar", use_container_width=True, disabled=True, help="Configuration coming soon"):
+        if st.button(
+            "⚙️ Configure",
+            key="config_sidebar",
+            use_container_width=True,
+            disabled=True,
+            help="Configuration coming soon",
+        ):
             # Show configuration options (disabled for now)
             pass
 
@@ -236,7 +237,9 @@ def render_corpus_sidebar() -> None:
                         st.success("✅ Corpus deleted successfully!")
                         st.rerun()
                     else:
-                        st.error("❌ Failed to delete corpus. Clearing local state only.")
+                        st.error(
+                            "❌ Failed to delete corpus. Clearing local state only."
+                        )
                         reset_corpus_state()
                         st.rerun()
             else:
@@ -245,21 +248,50 @@ def render_corpus_sidebar() -> None:
                 st.rerun()
 
     # View Library Expander (show when toggled)
-    if st.session_state.reference_docs_uploaded and st.session_state.get("view_library_expanded", False):
-        with st.expander("📄 Document Library", expanded=True):
+    if st.session_state.reference_docs_uploaded and st.session_state.get(
+        "view_library_expanded", False
+    ):
+        st.markdown("---")
+        with st.expander("Library Contents", expanded=True):
             if st.session_state.corpus_metadata:
                 for idx, meta in enumerate(st.session_state.corpus_metadata):
                     # Handle both dict and object formats
-                    filename = meta.get('filename') if isinstance(meta, dict) else getattr(meta, 'filename', 'Unknown')
-                    doc_type = meta.get('document_type', 'N/A') if isinstance(meta, dict) else getattr(meta, 'document_type', 'N/A')
-                    summary = meta.get('summary', 'N/A') if isinstance(meta, dict) else getattr(meta, 'summary', 'N/A')
-                    file_size = meta.get('file_size_bytes', 0) if isinstance(meta, dict) else getattr(meta, 'file_size_bytes', 0)
-                    page_count = meta.get('page_count', 0) if isinstance(meta, dict) else getattr(meta, 'page_count', 0)
-                    keywords = meta.get('keywords', []) if isinstance(meta, dict) else getattr(meta, 'keywords', [])
+                    filename = (
+                        meta.get("filename")
+                        if isinstance(meta, dict)
+                        else getattr(meta, "filename", "Unknown")
+                    )
+                    doc_type = (
+                        meta.get("document_type", "N/A")
+                        if isinstance(meta, dict)
+                        else getattr(meta, "document_type", "N/A")
+                    )
+                    summary = (
+                        meta.get("summary", "N/A")
+                        if isinstance(meta, dict)
+                        else getattr(meta, "summary", "N/A")
+                    )
+                    file_size = (
+                        meta.get("file_size_bytes", 0)
+                        if isinstance(meta, dict)
+                        else getattr(meta, "file_size_bytes", 0)
+                    )
+                    page_count = (
+                        meta.get("page_count", 0)
+                        if isinstance(meta, dict)
+                        else getattr(meta, "page_count", 0)
+                    )
+                    keywords = (
+                        meta.get("keywords", [])
+                        if isinstance(meta, dict)
+                        else getattr(meta, "keywords", [])
+                    )
 
                     st.markdown(f"**{idx + 1}. {filename}**")
                     st.caption(f"📑 Type: {doc_type}")
-                    st.caption(f"📄 Pages: {page_count} | 💾 Size: {file_size / 1024:.1f} KB")
+                    st.caption(
+                        f"📄 Pages: {page_count} | 💾 Size: {file_size / 1024:.1f} KB"
+                    )
                     st.caption(f"📝 {summary}")
                     if keywords:
                         st.caption(f"🏷️ Keywords: {', '.join(keywords[:5])}")

@@ -164,7 +164,7 @@ class VerificationResult(BaseModel):
 class UploadReferencesRequest(BaseModel):
     """Request to upload reference documents"""
 
-    case_context: str = Field(..., description="Context about the verification case")
+    case_context: Optional[str] = Field(None, description="Context about the verification case (optional)")
 
 
 class UploadReferencesResponse(BaseModel):
@@ -183,7 +183,7 @@ class VerificationRequest(BaseModel):
 
     document_id: str = Field(..., description="Document ID to verify")
     store_id: str = Field(..., description="File Search store ID")
-    case_context: str = Field(..., description="Context about the verification case")
+    case_context: Optional[str] = Field(None, description="Context about the verification case (optional)")
     splitting_mode: ChunkingMode = Field(..., description="Splitting mode used")
 
 

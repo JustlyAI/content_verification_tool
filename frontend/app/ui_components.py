@@ -9,12 +9,12 @@ from .state import reset_all_state, reset_verification_state
 
 
 def render_header() -> None:
-    """Render the Freshfields-inspired header with Gemini badge"""
+    """Render the Firm-inspired header with Gemini badge"""
     st.markdown(
         """
-<div class="ff-header">
-    <div class="ff-header-title">Content Verification Assistant</div>
-    <div class="ff-gemini-badge">🔷 Powered by Gemini</div>
+<div class="fm-header">
+    <div class="fm-header-title">Content Verification Assistant</div>
+    <div class="fm-gemini-badge">🔷 Powered by Gemini</div>
 </div>
 """,
         unsafe_allow_html=True,
@@ -103,25 +103,25 @@ def render_sidebar() -> None:
 
 
 def render_footer() -> None:
-    """Render the Freshfields-inspired footer with connection status"""
+    """Render the Firm-inspired footer with connection status"""
     from .api_client import check_backend_health
 
     # Check backend health status
     backend_healthy = check_backend_health()
     status_indicator = "🟢 Connected" if backend_healthy else "🔴 Disconnected"
     status_class = (
-        "ff-status-connected" if backend_healthy else "ff-status-disconnected"
+        "fm-status-connected" if backend_healthy else "fm-status-disconnected"
     )
 
     st.markdown(
         f"""
-<div class="ff-footer">
-    <div class="ff-footer-left">
-        Powered by <span class="ff-footer-highlight">Gemini 2.5 Flash</span> and <span class="ff-footer-highlight">Gemini File Search API</span>•
+<div class="fm-footer">
+    <div class="fm-footer-left">
+        Powered by <span class="fm-footer-highlight">Gemini 2.5 Flash</span> and <span class="fm-footer-highlight">Gemini File Search API</span>•
         Content Verification Tool v2.1 •
         Built for Demo
     </div>
-    <div class="ff-footer-right">
+    <div class="fm-footer-right">
         <span class="{status_class}">{status_indicator}</span>
     </div>
 </div>

@@ -10,7 +10,7 @@ st.set_page_config(
     page_title="Content Verification | Powered by Gemini",
     page_icon="🔷",
     layout="wide",
-    initial_sidebar_state="collapsed",  # Freshfields single-screen design
+    initial_sidebar_state="collapsed",  # Firm single-screen design
 )
 
 # Then other imports
@@ -132,17 +132,29 @@ def render_upload_card() -> None:
         st.caption("Supported: PDF, DOCX")
 
 
-def render_chunking_card() -> str:
+def render_chunking_card() -> None:
     """Render Card 2: Splitting mode selection"""
     if not st.session_state.document_info:
         st.caption("Choose how to split your document")
-        return "paragraph"
+        return
 
     st.markdown("**Processing Mode**")
+
+    # If verification is complete, show locked selection
+    if st.session_state.verification_complete:
+        mode_display = st.session_state.splitting_mode.capitalize()
+        st.info(f"🔒 {mode_display}-level (locked)")
+        st.caption(f"Selected for verification")
+        return
+
+    # Otherwise, show radio button and update session state
+    # Get the current index based on session state
+    current_index = 0 if st.session_state.splitting_mode == "paragraph" else 1
+
     splitting_mode = st.radio(
         "Mode",
         options=["paragraph", "sentence"],
-        index=0,
+        index=current_index,
         format_func=lambda x: {
             "paragraph": "Paragraph",
             "sentence": "Sentence",
@@ -152,13 +164,14 @@ def render_chunking_card() -> str:
         horizontal=False,
     )
 
+    # Update session state with selected value
+    st.session_state.splitting_mode = splitting_mode
+
     st.success(f"✓ {splitting_mode.capitalize()}-level")
     st.caption(f"Split into {splitting_mode}s for detailed analysis")
 
-    return splitting_mode
 
-
-def render_verify_card(splitting_mode: str) -> None:
+def render_verify_card() -> None:
     """Render Card 3: AI Verification with Gemini branding"""
     if st.session_state.verification_complete:
         st.success("✅ Verification complete")
@@ -185,8 +198,10 @@ def render_verify_card(splitting_mode: str) -> None:
         "▶ Run Verification",
         type="primary",
         use_container_width=True,
+        disabled=st.session_state.verification_in_progress,
         key="verify_gemini",
     ):
+        st.session_state.verification_in_progress = True
         progress_bar = st.progress(0)
         status_text = st.empty()
 
@@ -196,23 +211,24 @@ def render_verify_card(splitting_mode: str) -> None:
             document_id=st.session_state.document_id,
             store_id=st.session_state.store_id,
             case_context=st.session_state.case_context,
-            splitting_mode=splitting_mode,
+            splitting_mode=st.session_state.splitting_mode,
         )
 
         if result:
             st.session_state.verification_complete = True
             st.session_state.verification_results = result
-            st.session_state.splitting_mode = splitting_mode
+            st.session_state.verification_in_progress = False
 
             progress_bar.progress(100)
             status_text.success("✅ Verification complete!")
             st.rerun()
         else:
+            st.session_state.verification_in_progress = False
             progress_bar.empty()
             status_text.empty()
 
 
-def render_export_card(splitting_mode: str) -> None:
+def render_export_card() -> None:
     """Render Card 4: Output format and export"""
     if not st.session_state.document_info:
         st.caption("Export split and verified content")
@@ -226,6 +242,7 @@ def render_export_card(splitting_mode: str) -> None:
         format_func=lambda x: OUTPUT_FORMAT_LABELS[x].split(" - ")[0],  # Shorter labels
         help="Select output format",
         label_visibility="collapsed",
+        disabled=st.session_state.verification_in_progress,
     )
 
     # Show download if already generated
@@ -237,23 +254,30 @@ def render_export_card(splitting_mode: str) -> None:
             mime=st.session_state.last_generated["mime_type"],
             type="primary",
             use_container_width=True,
+            disabled=st.session_state.verification_in_progress,
         )
 
-        if st.button("🔄 New Format", use_container_width=True):
+        if st.button(
+            "🔄 New Format",
+            use_container_width=True,
+            disabled=st.session_state.verification_in_progress,
+        ):
             st.session_state.last_generated = None
             st.rerun()
     else:
         # Generate button
+        button_disabled = st.session_state.verification_in_progress
         if st.button(
             "🎯 Generate",
             type="primary",
             use_container_width=True,
+            disabled=button_disabled,
         ):
             with st.spinner("Generating..."):
                 payload = {
                     "document_id": st.session_state.document_id,
                     "output_format": output_format,
-                    "splitting_mode": splitting_mode,
+                    "splitting_mode": st.session_state.splitting_mode,
                 }
 
                 export_result = export_document(payload)
@@ -349,7 +373,7 @@ def render_results_section() -> None:
 
 
 def main() -> None:
-    """Main Streamlit application - Freshfields single-screen design"""
+    """Main Streamlit application - Firm single-screen design"""
 
     # Validate configuration
     validate_backend_url()
@@ -357,7 +381,7 @@ def main() -> None:
     # Initialize session state
     init_session_state()
 
-    # Load Freshfields CSS
+    # Load Firm CSS
     load_css()
 
     # Render header
@@ -375,7 +399,7 @@ def main() -> None:
         st.code(f"Expected backend at: {BACKEND_URL}", language="text")
         st.stop()
 
-    # Main layout: sidebar + content (Freshfields single-screen)
+    # Main layout: sidebar + content (Firm single-screen)
     sidebar_col, main_col = st.columns([1, 3], gap="small")
 
     # SIDEBAR: Corpus
@@ -384,7 +408,7 @@ def main() -> None:
 
     # MAIN CONTENT: Workflow + Results
     with main_col:
-        st.markdown('<div class="ff-main-content">', unsafe_allow_html=True)
+        st.markdown('<div class="fm-main-content">', unsafe_allow_html=True)
 
         # Header
         st.markdown("## AI-Powered Content Verification")
@@ -415,9 +439,9 @@ def render_verification_workflow() -> None:
 
     with col1:
         st.markdown(
-            '<div class="ff-card">'
-            '<div class="ff-card-number">STEP 1</div>'
-            '<div class="ff-card-title">Upload</div>',
+            '<div class="fm-card">'
+            '<div class="fm-card-number">STEP 1</div>'
+            '<div class="fm-card-title">Upload</div>',
             unsafe_allow_html=True,
         )
         render_upload_card()
@@ -425,34 +449,34 @@ def render_verification_workflow() -> None:
 
     with col2:
         st.markdown(
-            '<div class="ff-card">'
-            '<div class="ff-card-number">STEP 2</div>'
-            '<div class="ff-card-title">Splitting</div>',
+            '<div class="fm-card">'
+            '<div class="fm-card-number">STEP 2</div>'
+            '<div class="fm-card-title">Splitting</div>',
             unsafe_allow_html=True,
         )
-        splitting_mode = render_chunking_card()
+        render_chunking_card()
         st.markdown("</div>", unsafe_allow_html=True)
 
     with col3:
         # Gemini card with special styling
         st.markdown(
-            '<div class="ff-card ff-gemini-card">'
-            '<div class="ff-card-number">STEP 3</div>'
-            '<div class="ff-card-title">Verify with AI</div>',
+            '<div class="fm-card fm-gemini-card">'
+            '<div class="fm-card-number">STEP 3</div>'
+            '<div class="fm-card-title">Verify with AI</div>',
             unsafe_allow_html=True,
         )
 
-        render_verify_card(splitting_mode)
+        render_verify_card()
         st.markdown("</div>", unsafe_allow_html=True)
 
     with col4:
         st.markdown(
-            '<div class="ff-card">'
-            '<div class="ff-card-number">STEP 4</div>'
-            '<div class="ff-card-title">Export</div>',
+            '<div class="fm-card">'
+            '<div class="fm-card-number">STEP 4</div>'
+            '<div class="fm-card-title">Export</div>',
             unsafe_allow_html=True,
         )
-        render_export_card(splitting_mode)
+        render_export_card()
         st.markdown("</div>", unsafe_allow_html=True)
 
     # Results section below cards

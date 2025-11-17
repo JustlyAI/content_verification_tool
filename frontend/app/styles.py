@@ -1,11 +1,11 @@
 """
-Freshfields Design System - CSS injection for Streamlit
+Firm Design System - CSS injection for Streamlit
 Sophisticated legal technology aesthetic with Gemini AI branding
 
 Design Philosophy:
 - Lora (serif headlines) + IBM Plex Sans (body text)
 - Powder blue (#e5f0f7) sidebar with lime green (#c8e86b) accents
-- Compact, efficient spacing (16-24px standard) matching real Freshfields
+- Compact, efficient spacing (16-24px standard) matching real Firm
 - Pill-shaped interactive elements
 - Gemini prominently featured throughout workflow
 - Fixed header/footer with scrollable content area
@@ -15,7 +15,7 @@ import streamlit as st
 
 
 def load_css():
-    """Load Freshfields-inspired design system CSS"""
+    """Load Firm-inspired design system CSS"""
     st.markdown(
         """
 <style>
@@ -37,21 +37,21 @@ def load_css():
         --charcoal: #3d3935;
         --black: #1a1816;
 
-        /* Freshfields Blues - Powder/Soft */
-        --ff-blue-50: #f7fbfd;
-        --ff-blue-100: #e5f0f7;
-        --ff-blue-200: #cce1ee;
-        --ff-blue-300: #a4c8e1;
-        --ff-blue-400: #7ba8c9;
-        --ff-blue-500: #5a8fb5;
+        /* Firm Blues - Powder/Soft */
+        --fm-blue-50: #f7fbfd;
+        --fm-blue-100: #e5f0f7;
+        --fm-blue-200: #cce1ee;
+        --fm-blue-300: #a4c8e1;
+        --fm-blue-400: #7ba8c9;
+        --fm-blue-500: #5a8fb5;
 
-        /* Freshfields Green - Lime/Chartreuse */
-        --ff-green-50: #f9fced;
-        --ff-green-100: #f0f7d6;
-        --ff-green-200: #e3f0b8;
-        --ff-green-300: #c8e86b;
-        --ff-green-400: #b0d94f;
-        --ff-green-500: #9ac93d;
+        /* Firm Green - Lime/Chartreuse */
+        --fm-green-50: #f9fced;
+        --fm-green-100: #f0f7d6;
+        --fm-green-200: #e3f0b8;
+        --fm-green-300: #c8e86b;
+        --fm-green-400: #b0d94f;
+        --fm-green-500: #9ac93d;
 
         /* Gemini Brand */
         --gemini-blue-light: #e8f4f8;
@@ -127,7 +127,7 @@ def load_css():
     }
 
     /* ===== HEADER ===== */
-    .ff-header {
+    .fm-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -142,7 +142,7 @@ def load_css():
         min-height: 72px;
     }
 
-    .ff-header-title {
+    .fm-header-title {
         font-family: var(--font-display);
         font-size: 1.75rem;
         font-weight: 600;
@@ -151,7 +151,7 @@ def load_css():
         letter-spacing: -0.02em;
     }
 
-    .ff-gemini-badge {
+    .fm-gemini-badge {
         display: inline-flex;
         align-items: center;
         gap: 0.625rem;
@@ -166,15 +166,15 @@ def load_css():
         transition: all 0.3s ease;
     }
 
-    .ff-gemini-badge:hover {
+    .fm-gemini-badge:hover {
         transform: translateY(-1px);
         box-shadow: var(--shadow-md);
     }
 
     /* ===== SIDEBAR COLUMN ===== */
     /* Target the column containing sidebar content - shaded box */
-    [data-testid="stColumn"]:has(.ff-sidebar-content) {
-        background: var(--ff-blue-100) !important;
+    [data-testid="stColumn"]:has(.fm-sidebar-content) {
+        background: var(--fm-blue-100) !important;
         min-height: calc(100vh - 160px);
         padding: var(--space-3) var(--space-4) var(--space-4) var(--space-4) !important;
         border-radius: var(--radius-lg);
@@ -182,88 +182,144 @@ def load_css():
     }
 
     /* Sidebar content - no extra padding needed, column handles it */
-    .ff-sidebar-content {
+    .fm-sidebar-content {
         padding: 0 !important;
         margin: 0 !important;
         box-sizing: border-box !important;
     }
 
+    /* NUCLEAR OPTION: Force ALL divs in sidebar to have transparent backgrounds */
+    .fm-sidebar-content div,
+    .fm-sidebar-content [data-testid="stColumn"] div,
+    .fm-sidebar-content [data-testid="stVerticalBlock"] div,
+    .fm-sidebar-content [data-testid="stHorizontalBlock"] div {
+        background-color: transparent !important;
+        background: transparent !important;
+    }
+
     /* Sidebar section spacing - MUCH TIGHTER (50% reduction) */
-    .ff-sidebar-content > div {
+    .fm-sidebar-content > div {
         margin-bottom: var(--space-1);
     }
 
     /* Compact spacing for metrics in sidebar */
-    .ff-sidebar-content .stMetric {
+    .fm-sidebar-content .stMetric {
         margin-bottom: var(--space-1) !important;
     }
 
     /* Compact space around sidebar file uploader */
-    .ff-sidebar-content .stFileUploader {
+    .fm-sidebar-content .stFileUploader {
         margin-top: var(--space-1) !important;
         margin-bottom: var(--space-1) !important;
     }
 
     /* Compact spacing for sidebar text area */
-    .ff-sidebar-content .stTextArea {
+    .fm-sidebar-content .stTextArea {
         margin-bottom: calc(var(--space-3) / 2) !important;
     }
 
+    /* Fix text area overhang - ensure proper box sizing */
+    .fm-sidebar-content .stTextArea textarea {
+        box-sizing: border-box !important;
+        padding: 0.625rem 0.75rem !important;
+        line-height: 1.5 !important;
+        vertical-align: top !important;
+    }
+
+    /* Fix text area container to prevent overflow */
+    .fm-sidebar-content .stTextArea > div {
+        box-sizing: border-box !important;
+    }
+
     /* Compact space between sidebar buttons */
-    .ff-sidebar-content .stButton {
+    .fm-sidebar-content .stButton {
         margin-bottom: var(--space-1) !important;
     }
 
+    /* Tighter button spacing - override any parent spacing */
+    .fm-sidebar-content .stButton > button {
+        margin-bottom: 0 !important;
+    }
+
+    /* Reduce spacing for markdown labels (like "Actions") in sidebar */
+    .fm-sidebar-content .stMarkdown:has(strong) {
+        margin-bottom: calc(var(--space-1) / 2) !important;
+    }
+
     /* Reduce spacing for alerts in sidebar */
-    .ff-sidebar-content .stAlert {
+    .fm-sidebar-content .stAlert {
         margin-bottom: var(--space-1) !important;
     }
 
     /* Sidebar column gap for metrics - nested columns only */
-    .ff-sidebar-content [data-testid="stColumn"] {
+    .fm-sidebar-content [data-testid="stColumn"] {
         padding: 0 var(--space-1) !important;
         background: transparent !important;
     }
 
-    .ff-sidebar-content > div > [data-testid="stColumn"]:first-child {
+    /* Ensure all column children have transparent backgrounds */
+    .fm-sidebar-content [data-testid="stColumn"] > div {
+        background: transparent !important;
+    }
+
+    .fm-sidebar-content > div > [data-testid="stColumn"]:first-child {
         padding-left: 0 !important;
     }
 
-    .ff-sidebar-content > div > [data-testid="stColumn"]:last-child {
+    .fm-sidebar-content > div > [data-testid="stColumn"]:last-child {
         padding-right: 0 !important;
     }
 
     /* Ensure metric containers in sidebar have transparent backgrounds */
-    .ff-sidebar-content .stMetric > div {
+    .fm-sidebar-content .stMetric > div {
+        background: transparent !important;
+    }
+
+    /* Force all nested elements to have transparent backgrounds */
+    .fm-sidebar-content [data-testid="stVerticalBlock"],
+    .fm-sidebar-content [data-testid="stHorizontalBlock"],
+    .fm-sidebar-content .element-container {
         background: transparent !important;
     }
 
     /* Sidebar headings - first h2 with no top spacing (column padding handles it) */
-    .ff-sidebar-content h2:first-of-type {
+    .fm-sidebar-content h2:first-of-type {
         margin-top: 0 !important;
         padding-top: 0 !important;
         margin-bottom: var(--space-1) !important;
     }
 
-    .ff-sidebar-content h2 {
+    .fm-sidebar-content h2 {
         margin-bottom: var(--space-1) !important;
     }
 
-    .ff-sidebar-content h3 {
+    .fm-sidebar-content h3 {
         margin-bottom: var(--space-1) !important;
     }
 
     /* Sidebar horizontal rules - reduced spacing */
-    .ff-sidebar-content hr {
-        margin: calc(var(--space-3) / 2) 0 !important;
+    .fm-sidebar-content hr {
+        margin: var(--space-1) 0 !important;
+    }
+
+    /* Sidebar expander content - control padding and spacing */
+    .fm-sidebar-content .streamlit-expanderContent {
+        padding-bottom: var(--space-1) !important;
+    }
+
+    /* Tighter caption spacing in sidebar */
+    .fm-sidebar-content .stMarkdown .stCaption,
+    .fm-sidebar-content [data-testid="stCaptionContainer"] {
+        margin-top: 0 !important;
+        margin-bottom: calc(var(--space-1) / 2) !important;
     }
 
     /* Tighten spacing for markdown/paragraphs in sidebar */
-    .ff-sidebar-content .stMarkdown {
+    .fm-sidebar-content .stMarkdown {
         margin-bottom: var(--space-1) !important;
     }
 
-    .ff-sidebar-content p {
+    .fm-sidebar-content p {
         margin-bottom: var(--space-1) !important;
     }
 
@@ -274,7 +330,7 @@ def load_css():
     }
 
     /* Main content - container provides horizontal padding */
-    .ff-main-content {
+    .fm-main-content {
         padding-top: var(--space-1) !important;
         padding-bottom: var(--space-6) !important;
         padding-left: var(--space-3) !important;
@@ -285,32 +341,32 @@ def load_css():
     }
 
     /* Remove top margin/padding from first elements */
-    .ff-main-content > .element-container:first-child {
+    .fm-main-content > .element-container:first-child {
         margin-top: 0 !important;
         padding-top: 0 !important;
     }
 
-    .ff-main-content h2:first-of-type {
+    .fm-main-content h2:first-of-type {
         margin-top: 0 !important;
         padding-top: 0 !important;
     }
 
     /* ===== WORKFLOW CARDS ===== */
     /* Compact spacing between columns - only nested columns inside main content */
-    .ff-main-content > div > [data-testid="stColumn"] {
+    .fm-main-content > div > [data-testid="stColumn"] {
         padding: 0 0.625rem !important;
     }
 
-    .ff-main-content > div > [data-testid="stColumn"]:first-child {
+    .fm-main-content > div > [data-testid="stColumn"]:first-child {
         padding-left: 0 !important;
     }
 
-    .ff-main-content > div > [data-testid="stColumn"]:last-child {
+    .fm-main-content > div > [data-testid="stColumn"]:last-child {
         padding-right: 0 !important;
     }
 
     /* Card container styling - COMPACT & EFFICIENT */
-    .ff-card {
+    .fm-card {
         background: var(--white);
         border: 2px solid var(--warm-gray-200);
         border-radius: var(--radius-lg);
@@ -322,13 +378,13 @@ def load_css():
         flex-direction: column;
     }
 
-    .ff-card:hover {
+    .fm-card:hover {
         border-color: var(--warm-gray-300);
         box-shadow: var(--shadow-md);
         transform: translateY(-2px);
     }
 
-    .ff-card-number {
+    .fm-card-number {
         font-family: var(--font-display);
         font-size: 0.875rem;
         font-weight: 500;
@@ -337,7 +393,7 @@ def load_css():
         letter-spacing: 0.05em;
     }
 
-    .ff-card-title {
+    .fm-card-title {
         font-family: var(--font-display);
         font-size: 1.25rem;
         font-weight: 600;
@@ -348,30 +404,30 @@ def load_css():
     }
 
     /* Compact spacing within cards */
-    .ff-card .stMarkdown {
+    .fm-card .stMarkdown {
         margin-bottom: var(--space-2) !important;
     }
 
-    .ff-card .stRadio {
+    .fm-card .stRadio {
         margin-top: var(--space-1) !important;
         margin-bottom: var(--space-2) !important;
     }
 
-    .ff-card .stSelectbox {
+    .fm-card .stSelectbox {
         margin-bottom: var(--space-2) !important;
     }
 
-    .ff-card .stFileUploader {
+    .fm-card .stFileUploader {
         margin-top: var(--space-1) !important;
         margin-bottom: var(--space-2) !important;
     }
 
-    .ff-card .stButton {
+    .fm-card .stButton {
         margin-top: var(--space-1) !important;
     }
 
     /* Gemini Card - Special Treatment */
-    .ff-gemini-card {
+    .fm-gemini-card {
         background: linear-gradient(135deg, var(--gemini-blue-light) 0%, var(--white) 50%, var(--white) 100%);
         border: 2.5px solid var(--gemini-blue);
         box-shadow: 0 0 0 4px rgba(79, 195, 247, 0.1);
@@ -379,7 +435,7 @@ def load_css():
         overflow: hidden;
     }
 
-    .ff-gemini-card::before {
+    .fm-gemini-card::before {
         content: '';
         position: absolute;
         top: -50%;
@@ -390,7 +446,7 @@ def load_css():
         pointer-events: none;
     }
 
-    .ff-gemini-card:hover {
+    .fm-gemini-card:hover {
         border-color: var(--gemini-blue-dark);
         box-shadow: 0 0 0 4px rgba(79, 195, 247, 0.2), var(--shadow-lg);
         transform: translateY(-3px);
@@ -416,12 +472,12 @@ def load_css():
 
     /* Primary Button - Lime Green */
     .stButton > button[kind="primary"] {
-        background: var(--ff-green-300) !important;
+        background: var(--fm-green-300) !important;
         color: var(--black) !important;
     }
 
     .stButton > button[kind="primary"]:hover {
-        background: var(--ff-green-400) !important;
+        background: var(--fm-green-400) !important;
     }
 
     /* Secondary Button */
@@ -439,7 +495,7 @@ def load_css():
 
     /* ===== FILE UPLOADER ===== */
     .stFileUploader {
-        border: 2px dashed var(--ff-blue-300) !important;
+        border: 2px dashed var(--fm-blue-300) !important;
         border-radius: var(--radius-md) !important;
         background: var(--white) !important;
         padding: var(--space-2) !important;
@@ -447,8 +503,8 @@ def load_css():
     }
 
     .stFileUploader:hover {
-        border-color: var(--ff-blue-400) !important;
-        background: var(--ff-blue-50) !important;
+        border-color: var(--fm-blue-400) !important;
+        background: var(--fm-blue-50) !important;
     }
 
     /* ===== METRICS ===== */
@@ -466,6 +522,11 @@ def load_css():
         text-transform: uppercase !important;
         letter-spacing: 0.08em !important;
         font-weight: 600 !important;
+    }
+
+    /* Sidebar-specific metric sizing - reduce from 2rem to 1.25rem */
+    .fm-sidebar-content [data-testid="stMetricValue"] {
+        font-size: 1.25rem !important;
     }
 
     /* ===== RADIO BUTTONS ===== */
@@ -489,7 +550,7 @@ def load_css():
     }
 
     .stTextInput input:focus, .stTextArea textarea:focus {
-        border-color: var(--ff-blue-300) !important;
+        border-color: var(--fm-blue-300) !important;
         box-shadow: 0 0 0 3px rgba(164, 200, 225, 0.15) !important;
     }
 
@@ -506,7 +567,7 @@ def load_css():
 
     /* ===== PROGRESS BAR ===== */
     .stProgress > div > div {
-        background: var(--ff-green-300) !important;
+        background: var(--fm-green-300) !important;
         border-radius: var(--radius-sm) !important;
     }
 
@@ -551,9 +612,9 @@ def load_css():
     }
 
     /* Sidebar alerts - compact */
-    .ff-sidebar-content .stSuccess,
-    .ff-sidebar-content .stInfo,
-    .ff-sidebar-content .stWarning {
+    .fm-sidebar-content .stSuccess,
+    .fm-sidebar-content .stInfo,
+    .fm-sidebar-content .stWarning {
         padding: var(--space-2) var(--space-3) !important;
         margin-bottom: var(--space-2) !important;
     }
@@ -571,8 +632,8 @@ def load_css():
     }
 
     /* First heading in main content - eliminate top gap */
-    .ff-main-content > .element-container:first-child h2,
-    .ff-main-content > .element-container:first-child h3 {
+    .fm-main-content > .element-container:first-child h2,
+    .fm-main-content > .element-container:first-child h3 {
         margin-top: 0 !important;
         padding-top: 0 !important;
     }
@@ -609,12 +670,12 @@ def load_css():
     }
 
     /* Main content section spacing */
-    .ff-main-content > .element-container {
+    .fm-main-content > .element-container {
         margin-bottom: var(--space-3) !important;
     }
 
     /* Results section spacing */
-    .ff-main-content .stMetric {
+    .fm-main-content .stMetric {
         margin-bottom: var(--space-2) !important;
     }
 
@@ -637,7 +698,7 @@ def load_css():
     }
 
     /* ===== FOOTER ===== */
-    .ff-footer {
+    .fm-footer {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -651,29 +712,29 @@ def load_css():
         margin: 0 calc(-1 * var(--space-6));
     }
 
-    .ff-footer-left {
+    .fm-footer-left {
         flex: 1;
     }
 
-    .ff-footer-right {
+    .fm-footer-right {
         display: flex;
         align-items: center;
         gap: var(--space-2);
     }
 
-    .ff-footer-highlight {
+    .fm-footer-highlight {
         color: var(--gemini-blue-dark);
         font-weight: 600;
     }
 
     /* Connection status indicators */
-    .ff-status-connected {
+    .fm-status-connected {
         color: var(--success);
         font-weight: 600;
         font-size: 0.875rem;
     }
 
-    .ff-status-disconnected {
+    .fm-status-disconnected {
         color: var(--error);
         font-weight: 600;
         font-size: 0.875rem;

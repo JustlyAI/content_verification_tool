@@ -22,7 +22,7 @@ from app.processing.cache import document_cache
 
 
 # Maximum file size: 10 MB
-MAX_FILE_SIZE = 10 * 1024 * 1024
+MAX_FILE_SIZE = 100 * 1024 * 1024
 
 # Supported file extensions
 SUPPORTED_EXTENSIONS = {".pdf", ".docx"}

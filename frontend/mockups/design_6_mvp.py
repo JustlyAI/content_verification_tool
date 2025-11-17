@@ -1,5 +1,5 @@
 """
-Design 6 MVP: Freshfields-Inspired Single-Screen Verification Interface
+Design 6 MVP: Firm-Inspired Single-Screen Verification Interface
 Production-ready mockup with all issues resolved
 
 Design Philosophy: Sophisticated Legal Technology
@@ -14,7 +14,7 @@ Key Features:
 ✓ Single-row header with proper flexbox layout
 ✓ Sidebar blue background properly applied to column
 ✓ Card borders visible with correct CSS selectors
-✓ Generous spacing matching Freshfields aesthetic (increased padding)
+✓ Generous spacing matching Firm aesthetic (increased padding)
 ✓ Gemini Card 3 visually distinct with gradient and border
 ✓ Production-grade component architecture
 ✓ Clear distinction between two uploaders:
@@ -23,7 +23,7 @@ Key Features:
 ✓ Compact, streamlined step cards
 ✓ Visual callouts explaining workflow and purpose
 
-Latest Updates (Freshfields-Accurate Compact Spacing):
+Latest Updates (Firm-Accurate Compact Spacing):
 - **CORRECTED TO MATCH FRESHFIELDS**: Reduced all excessive vertical spacing
 - Sidebar padding: 32px vertical, 24px horizontal (var(--space-4), var(--space-3))
 - Main content padding: 40px vertical, 48px horizontal (var(--space-5), var(--space-6))
@@ -37,7 +37,7 @@ Latest Updates (Freshfields-Accurate Compact Spacing):
 - Compact spacing hierarchy: micro (8px), standard (16-24px), section (24-32px)
 - Element containers: 16px default margin-bottom
 - Removed all excessive st.markdown("") spacing tricks
-- Result: Efficient, Freshfields-inspired compact layout with proper visual hierarchy
+- Result: Efficient, Firm-inspired compact layout with proper visual hierarchy
 """
 
 import streamlit as st
@@ -72,21 +72,21 @@ st.markdown(
         --charcoal: #3d3935;
         --black: #1a1816;
 
-        /* Freshfields Blues - Powder/Soft */
-        --ff-blue-50: #f7fbfd;
-        --ff-blue-100: #e5f0f7;
-        --ff-blue-200: #cce1ee;
-        --ff-blue-300: #a4c8e1;
-        --ff-blue-400: #7ba8c9;
-        --ff-blue-500: #5a8fb5;
+        /* Firm Blues - Powder/Soft */
+        --fm-blue-50: #f7fbfd;
+        --fm-blue-100: #e5f0f7;
+        --fm-blue-200: #cce1ee;
+        --fm-blue-300: #a4c8e1;
+        --fm-blue-400: #7ba8c9;
+        --fm-blue-500: #5a8fb5;
 
-        /* Freshfields Green - Lime/Chartreuse */
-        --ff-green-50: #f9fced;
-        --ff-green-100: #f0f7d6;
-        --ff-green-200: #e3f0b8;
-        --ff-green-300: #c8e86b;
-        --ff-green-400: #b0d94f;
-        --ff-green-500: #9ac93d;
+        /* Firm Green - Lime/Chartreuse */
+        --fm-green-50: #f9fced;
+        --fm-green-100: #f0f7d6;
+        --fm-green-200: #e3f0b8;
+        --fm-green-300: #c8e86b;
+        --fm-green-400: #b0d94f;
+        --fm-green-500: #9ac93d;
 
         /* Gemini Brand */
         --gemini-blue-light: #e8f4f8;
@@ -160,7 +160,7 @@ st.markdown(
     }
 
     /* ===== HEADER ===== */
-    .ff-header {
+    .fm-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -171,7 +171,7 @@ st.markdown(
         min-height: 80px;
     }
 
-    .ff-header-title {
+    .fm-header-title {
         font-family: var(--font-display);
         font-size: 1.75rem;
         font-weight: 600;
@@ -180,7 +180,7 @@ st.markdown(
         letter-spacing: -0.02em;
     }
 
-    .ff-gemini-badge {
+    .fm-gemini-badge {
         display: inline-flex;
         align-items: center;
         gap: 0.625rem;
@@ -195,7 +195,7 @@ st.markdown(
         transition: all 0.3s ease;
     }
 
-    .ff-gemini-badge:hover {
+    .fm-gemini-badge:hover {
         transform: translateY(-1px);
         box-shadow: var(--shadow-md);
     }
@@ -203,68 +203,68 @@ st.markdown(
     /* ===== SIDEBAR COLUMN ===== */
     /* Target the first column specifically */
     [data-testid="column"]:first-child {
-        background: var(--ff-blue-100) !important;
-        border-right: 2px solid var(--ff-blue-200);
+        background: var(--fm-blue-100) !important;
+        border-right: 2px solid var(--fm-blue-200);
         min-height: calc(100vh - 160px);
     }
 
     /* Sidebar internal padding - COMPACT & EFFICIENT */
-    .ff-sidebar-content {
+    .fm-sidebar-content {
         padding: var(--space-4) var(--space-3);
     }
 
     /* Sidebar section spacing - TIGHTER */
-    .ff-sidebar-content > div {
+    .fm-sidebar-content > div {
         margin-bottom: var(--space-2);
     }
 
     /* Compact spacing for metrics in sidebar */
-    .ff-sidebar-content .stMetric {
+    .fm-sidebar-content .stMetric {
         margin-bottom: var(--space-2) !important;
     }
 
     /* Compact space around sidebar file uploader */
-    .ff-sidebar-content .stFileUploader {
+    .fm-sidebar-content .stFileUploader {
         margin-top: var(--space-2) !important;
         margin-bottom: var(--space-2) !important;
     }
 
     /* Compact spacing for sidebar text area */
-    .ff-sidebar-content .stTextArea {
+    .fm-sidebar-content .stTextArea {
         margin-bottom: var(--space-3) !important;
     }
 
     /* Compact space between sidebar buttons */
-    .ff-sidebar-content .stButton {
+    .fm-sidebar-content .stButton {
         margin-bottom: var(--space-2) !important;
     }
 
     /* Sidebar column gap for metrics */
-    .ff-sidebar-content [data-testid="column"] {
+    .fm-sidebar-content [data-testid="column"] {
         padding: 0 var(--space-1) !important;
     }
 
-    .ff-sidebar-content [data-testid="column"]:first-child {
+    .fm-sidebar-content [data-testid="column"]:first-child {
         padding-left: 0 !important;
     }
 
-    .ff-sidebar-content [data-testid="column"]:last-child {
+    .fm-sidebar-content [data-testid="column"]:last-child {
         padding-right: 0 !important;
     }
 
     /* Sidebar headings */
-    .ff-sidebar-content h3 {
+    .fm-sidebar-content h3 {
         margin-top: 0 !important;
         margin-bottom: var(--space-2) !important;
     }
 
     /* Sidebar horizontal rules */
-    .ff-sidebar-content hr {
+    .fm-sidebar-content hr {
         margin: var(--space-3) 0 !important;
     }
 
     /* ===== MAIN CONTENT COLUMN ===== */
-    .ff-main-content {
+    .fm-main-content {
         padding: var(--space-5) var(--space-6);
         background: var(--white);
     }
@@ -284,7 +284,7 @@ st.markdown(
     }
 
     /* Card container styling - COMPACT & EFFICIENT */
-    .ff-card {
+    .fm-card {
         background: var(--white);
         border: 2px solid var(--warm-gray-200);
         border-radius: var(--radius-lg);
@@ -296,13 +296,13 @@ st.markdown(
         flex-direction: column;
     }
 
-    .ff-card:hover {
+    .fm-card:hover {
         border-color: var(--warm-gray-300);
         box-shadow: var(--shadow-md);
         transform: translateY(-2px);
     }
 
-    .ff-card-number {
+    .fm-card-number {
         font-family: var(--font-display);
         font-size: 0.875rem;
         font-weight: 500;
@@ -311,7 +311,7 @@ st.markdown(
         letter-spacing: 0.05em;
     }
 
-    .ff-card-title {
+    .fm-card-title {
         font-family: var(--font-display);
         font-size: 1.25rem;
         font-weight: 600;
@@ -322,30 +322,30 @@ st.markdown(
     }
 
     /* Compact spacing within cards */
-    .ff-card .stMarkdown {
+    .fm-card .stMarkdown {
         margin-bottom: var(--space-2) !important;
     }
 
-    .ff-card .stRadio {
+    .fm-card .stRadio {
         margin-top: var(--space-1) !important;
         margin-bottom: var(--space-2) !important;
     }
 
-    .ff-card .stSelectbox {
+    .fm-card .stSelectbox {
         margin-bottom: var(--space-2) !important;
     }
 
-    .ff-card .stFileUploader {
+    .fm-card .stFileUploader {
         margin-top: var(--space-1) !important;
         margin-bottom: var(--space-2) !important;
     }
 
-    .ff-card .stButton {
+    .fm-card .stButton {
         margin-top: var(--space-1) !important;
     }
 
     /* Gemini Card - Special Treatment */
-    .ff-gemini-card {
+    .fm-gemini-card {
         background: linear-gradient(135deg, var(--gemini-blue-light) 0%, var(--white) 50%, var(--white) 100%);
         border: 2.5px solid var(--gemini-blue);
         box-shadow: 0 0 0 4px rgba(79, 195, 247, 0.1);
@@ -353,7 +353,7 @@ st.markdown(
         overflow: hidden;
     }
 
-    .ff-gemini-card::before {
+    .fm-gemini-card::before {
         content: '';
         position: absolute;
         top: -50%;
@@ -364,7 +364,7 @@ st.markdown(
         pointer-events: none;
     }
 
-    .ff-gemini-card:hover {
+    .fm-gemini-card:hover {
         border-color: var(--gemini-blue-dark);
         box-shadow: 0 0 0 4px rgba(79, 195, 247, 0.2), var(--shadow-lg);
         transform: translateY(-3px);
@@ -390,12 +390,12 @@ st.markdown(
 
     /* Primary Button - Lime Green */
     .stButton > button[kind="primary"] {
-        background: var(--ff-green-300) !important;
+        background: var(--fm-green-300) !important;
         color: var(--black) !important;
     }
 
     .stButton > button[kind="primary"]:hover {
-        background: var(--ff-green-400) !important;
+        background: var(--fm-green-400) !important;
     }
 
     /* Secondary Button */
@@ -413,7 +413,7 @@ st.markdown(
 
     /* ===== FILE UPLOADER ===== */
     .stFileUploader {
-        border: 2px dashed var(--ff-blue-300) !important;
+        border: 2px dashed var(--fm-blue-300) !important;
         border-radius: var(--radius-md) !important;
         background: var(--white) !important;
         padding: var(--space-2) !important;
@@ -421,8 +421,8 @@ st.markdown(
     }
 
     .stFileUploader:hover {
-        border-color: var(--ff-blue-400) !important;
-        background: var(--ff-blue-50) !important;
+        border-color: var(--fm-blue-400) !important;
+        background: var(--fm-blue-50) !important;
     }
 
     /* ===== METRICS ===== */
@@ -463,7 +463,7 @@ st.markdown(
     }
 
     .stTextInput input:focus, .stTextArea textarea:focus {
-        border-color: var(--ff-blue-300) !important;
+        border-color: var(--fm-blue-300) !important;
         box-shadow: 0 0 0 3px rgba(164, 200, 225, 0.15) !important;
     }
 
@@ -480,7 +480,7 @@ st.markdown(
 
     /* ===== PROGRESS BAR ===== */
     .stProgress > div > div {
-        background: var(--ff-green-300) !important;
+        background: var(--fm-green-300) !important;
         border-radius: var(--radius-sm) !important;
     }
 
@@ -525,9 +525,9 @@ st.markdown(
     }
 
     /* Sidebar alerts - compact */
-    .ff-sidebar-content .stSuccess,
-    .ff-sidebar-content .stInfo,
-    .ff-sidebar-content .stWarning {
+    .fm-sidebar-content .stSuccess,
+    .fm-sidebar-content .stInfo,
+    .fm-sidebar-content .stWarning {
         padding: var(--space-2) var(--space-3) !important;
         margin-bottom: var(--space-2) !important;
     }
@@ -576,12 +576,12 @@ st.markdown(
     }
 
     /* Main content section spacing */
-    .ff-main-content > .element-container {
+    .fm-main-content > .element-container {
         margin-bottom: var(--space-3) !important;
     }
 
     /* Results section spacing */
-    .ff-main-content .stMetric {
+    .fm-main-content .stMetric {
         margin-bottom: var(--space-2) !important;
     }
 
@@ -604,7 +604,7 @@ st.markdown(
     }
 
     /* ===== FOOTER ===== */
-    .ff-footer {
+    .fm-footer {
         text-align: center;
         padding: var(--space-4);
         background: var(--cream-white);
@@ -615,7 +615,7 @@ st.markdown(
         letter-spacing: 0.01em;
     }
 
-    .ff-footer-highlight {
+    .fm-footer-highlight {
         color: var(--gemini-blue-dark);
         font-weight: 600;
     }
@@ -627,9 +627,9 @@ st.markdown(
 # ==================== HEADER ====================
 st.markdown(
     """
-<div class="ff-header">
-    <div class="ff-header-title">Content Verification Assistant</div>
-    <div class="ff-gemini-badge">🔷 Powered by Gemini</div>
+<div class="fm-header">
+    <div class="fm-header-title">Content Verification Assistant</div>
+    <div class="fm-gemini-badge">🔷 Powered by Gemini</div>
 </div>
 """,
     unsafe_allow_html=True,
@@ -640,7 +640,7 @@ sidebar_col, main_col = st.columns([1, 3], gap="small")
 
 # ==================== SIDEBAR: CORPUS ====================
 with sidebar_col:
-    st.markdown('<div class="ff-sidebar-content">', unsafe_allow_html=True)
+    st.markdown('<div class="fm-sidebar-content">', unsafe_allow_html=True)
 
     st.markdown("### Reference Corpus")
     st.info(
@@ -650,7 +650,7 @@ with sidebar_col:
     st.markdown("")
 
     # Status
-    st.success("✓ Active & Gemini-Ready")
+    st.success("✓ Active & Verification-Ready")
 
     st.markdown("")
 
@@ -714,7 +714,7 @@ with sidebar_col:
 
 # ==================== MAIN CONTENT ====================
 with main_col:
-    st.markdown('<div class="ff-main-content">', unsafe_allow_html=True)
+    st.markdown('<div class="fm-main-content">', unsafe_allow_html=True)
 
     st.markdown("## Gemini-Powered Document Verification")
     st.caption(
@@ -735,9 +735,9 @@ with main_col:
     # CARD 1: Upload - CLARIFIED
     with card1:
         st.markdown(
-            '<div class="ff-card">'
-            '<div class="ff-card-number">STEP 1</div>'
-            '<div class="ff-card-title">Upload Document</div>',
+            '<div class="fm-card">'
+            '<div class="fm-card-number">STEP 1</div>'
+            '<div class="fm-card-title">Upload Document</div>',
             unsafe_allow_html=True,
         )
 
@@ -766,9 +766,9 @@ with main_col:
     # CARD 2: Chunking
     with card2:
         st.markdown(
-            '<div class="ff-card">'
-            '<div class="ff-card-number">STEP 2</div>'
-            '<div class="ff-card-title">Chunking</div>',
+            '<div class="fm-card">'
+            '<div class="fm-card-number">STEP 2</div>'
+            '<div class="fm-card-title">Chunking</div>',
             unsafe_allow_html=True,
         )
 
@@ -794,9 +794,9 @@ with main_col:
     # CARD 3: Gemini Verification (SPECIAL)
     with card3:
         st.markdown(
-            '<div class="ff-card ff-gemini-card">'
-            '<div class="ff-card-number">STEP 3</div>'
-            '<div class="ff-card-title">Verify with AI</div>',
+            '<div class="fm-card fm-gemini-card">'
+            '<div class="fm-card-number">STEP 3</div>'
+            '<div class="fm-card-title">Verify with AI</div>',
             unsafe_allow_html=True,
         )
 
@@ -823,9 +823,9 @@ with main_col:
     # CARD 4: Export
     with card4:
         st.markdown(
-            '<div class="ff-card">'
-            '<div class="ff-card-number">STEP 4</div>'
-            '<div class="ff-card-title">Export</div>',
+            '<div class="fm-card">'
+            '<div class="fm-card-number">STEP 4</div>'
+            '<div class="fm-card-title">Export</div>',
             unsafe_allow_html=True,
         )
 
@@ -947,8 +947,8 @@ with main_col:
 # ==================== FOOTER ====================
 st.markdown(
     """
-<div class="ff-footer">
-    Powered by <span class="ff-footer-highlight">Gemini 2.5 Flash</span> •
+<div class="fm-footer">
+    Powered by <span class="fm-footer-highlight">Gemini 2.5 Flash</span> •
     Content Verification Tool v2.1 •
     Built for Demo
 </div>

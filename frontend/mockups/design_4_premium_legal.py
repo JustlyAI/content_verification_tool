@@ -1,6 +1,6 @@
 """
 Design Mockup 4: Premium Legal Tech Aesthetic
-Inspired by Freshfields - refined minimalism with sophisticated details
+Inspired by Firm - refined minimalism with sophisticated details
 
 Color Philosophy: Deep charcoal + warm gold accents + soft neutrals
 Typography: Serif headings + clean sans-serif body
@@ -11,7 +11,7 @@ import streamlit as st
 import time
 
 st.set_page_config(
-    page_title="Content Verification | Freshfields",
+    page_title="Content Verification | Firm",
     page_icon="⚖️",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -1015,7 +1015,7 @@ with col2:
     st.markdown(
         """
     <div style="text-align: center; color: var(--text-secondary); font-size: 0.875rem; font-family: 'Inter', sans-serif;">
-        Content Verification Tool v2.0 • Built for Freshfields
+        Content Verification Tool v2.0 • Built for Firm
     </div>
     """,
         unsafe_allow_html=True,
