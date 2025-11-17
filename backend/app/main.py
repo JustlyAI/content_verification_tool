@@ -1,6 +1,8 @@
 """
 FastAPI Backend for Content Verification Tool
 """
+
+import os
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,9 +24,14 @@ from app.models import (
     OutputFormat,
     UploadReferencesResponse,
     VerificationRequest,
-    VerificationResponse
+    VerificationResponse,
 )
-from app.processing import document_processor, document_chunker, output_generator, document_cache
+from app.processing import (
+    document_processor,
+    document_chunker,
+    output_generator,
+    document_cache,
+)
 from app.corpus import corpus_manager
 from app.verification import gemini_verifier
 
@@ -37,13 +44,17 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Content Verification Tool API",
     description="Backend API for document verification checklist generation",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # Add CORS middleware to allow frontend communication
+# Get allowed origins from environment variable (comma-separated list)
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:8501").split(",")
+allowed_origins = [origin.strip() for origin in allowed_origins]  # Remove whitespace
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify exact origins
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -64,6 +75,7 @@ async def startup_event():
     cprint("[API] Initializing chunker...", "cyan")
     cprint("[API] Initializing output generator...", "cyan")
     cprint("[API] All services initialized successfully ✓", "green")
+    cprint(f"[API] CORS allowed origins: {', '.join(allowed_origins)}", "cyan")
     cprint("=" * 80, "cyan")
 
 
@@ -77,8 +89,8 @@ async def root():
             "upload": "/upload",
             "chunk": "/chunk",
             "export": "/export",
-            "download": "/download/{document_id}"
-        }
+            "download": "/download/{document_id}",
+        },
     }
 
 
@@ -89,7 +101,7 @@ async def health_check():
         "status": "healthy",
         "cache_dir": str(document_cache.cache_dir),
         "output_dir": str(output_generator.output_dir),
-        "documents_in_store": len(DOCUMENT_STORE)
+        "documents_in_store": len(DOCUMENT_STORE),
     }
 
 
@@ -113,13 +125,12 @@ async def upload_document(file: UploadFile = File(...)):
 
         # Process document with Docling
         result = document_processor.convert_document(
-            file_content=file_content,
-            filename=file.filename,
-            use_cache=True
+            file_content=file_content, filename=file.filename, use_cache=True
         )
 
         # Generate document ID (use hash of file content)
         import hashlib
+
         document_id = hashlib.md5(file_content).hexdigest()
 
         # Store document data
@@ -128,7 +139,7 @@ async def upload_document(file: UploadFile = File(...)):
             "filename": result["filename"],
             "page_count": result["page_count"],
             "file_size": result["file_size"],
-            "chunks_cache": {}  # Cache chunks by mode
+            "chunks_cache": {},  # Cache chunks by mode
         }
 
         cprint(f"[API] Document stored with ID: {document_id}", "green")
@@ -138,7 +149,7 @@ async def upload_document(file: UploadFile = File(...)):
             filename=result["filename"],
             page_count=result["page_count"],
             file_size=result["file_size"],
-            message=f"Document uploaded and converted successfully ({result['page_count']} pages)"
+            message=f"Document uploaded and converted successfully ({result['page_count']} pages)",
         )
 
     except ValueError as e:
@@ -146,32 +157,41 @@ async def upload_document(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         cprint(f"[API] Error processing upload: {e}", "red")
-        raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error processing document: {str(e)}"
+        )
 
 
 @app.post("/api/verify/upload-references", response_model=UploadReferencesResponse)
 async def upload_references(
-    case_context: str = Form(...),
-    files: List[UploadFile] = File(...)
+    case_context: str = Form(None), files: List[UploadFile] = File(...)
 ):
     """
     Upload reference documents and create File Search store
 
     Args:
-        case_context: Context about the verification case
+        case_context: Context about the verification case (optional)
         files: List of reference documents (PDF/DOCX)
 
     Returns:
         UploadReferencesResponse with store information and metadata
     """
-    cprint(f"\n[API] Received reference upload request: {len(files)} files", "cyan", attrs=["bold"])
-    cprint(f"[API] Case context: {case_context[:100]}...", "cyan")
+    cprint(
+        f"\n[API] Received reference upload request: {len(files)} files",
+        "cyan",
+        attrs=["bold"],
+    )
+    if case_context:
+        cprint(f"[API] Case context: {case_context[:100]}...", "cyan")
+    else:
+        cprint("[API] No case context provided", "cyan")
 
     try:
         # Generate a case ID
         import hashlib
         import time
-        case_id = hashlib.md5(f"{case_context}{time.time()}".encode()).hexdigest()[:8]
+
+        case_id = hashlib.md5(f"{case_context or 'default'}{time.time()}".encode()).hexdigest()[:8]
 
         # Create File Search store
         store_name, display_name = corpus_manager.create_store(case_id)
@@ -182,11 +202,15 @@ async def upload_references(
         temp_files = []
 
         for idx, file in enumerate(files):
-            cprint(f"[API] Processing file {idx + 1}/{len(files)}: {file.filename}", "cyan")
+            cprint(
+                f"[API] Processing file {idx + 1}/{len(files)}: {file.filename}", "cyan"
+            )
 
             # Save file temporarily
             file_content = await file.read()
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=Path(file.filename).suffix)
+            temp_file = tempfile.NamedTemporaryFile(
+                delete=False, suffix=Path(file.filename).suffix
+            )
             temp_file.write(file_content)
             temp_file.close()
             temp_files.append(temp_file.name)
@@ -197,10 +221,12 @@ async def upload_references(
                     file_path=temp_file.name,
                     filename=file.filename,
                     store_name=store_name,
-                    case_context=case_context
+                    case_context=case_context,
                 )
                 metadata_list.append(metadata)
-                cprint(f"[API] ✓ Uploaded {file.filename} to store (optimized)", "green")
+                cprint(
+                    f"[API] ✓ Uploaded {file.filename} to store (optimized)", "green"
+                )
 
             except Exception as e:
                 cprint(f"[API] ✗ Error processing {file.filename}: {e}", "red")
@@ -213,13 +239,15 @@ async def upload_references(
             except:
                 pass
 
-        cprint(f"[API] Reference upload complete: {len(metadata_list)} documents", "green")
+        cprint(
+            f"[API] Reference upload complete: {len(metadata_list)} documents", "green"
+        )
 
         return UploadReferencesResponse(
             store_id=store_name,
             store_name=display_name,
             documents_uploaded=len(metadata_list),
-            metadata=metadata_list
+            metadata=metadata_list,
         )
 
     except ValueError as e:
@@ -227,7 +255,9 @@ async def upload_references(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         cprint(f"[API] Error uploading references: {e}", "red")
-        raise HTTPException(status_code=500, detail=f"Error uploading references: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error uploading references: {str(e)}"
+        )
 
 
 @app.post("/api/verify/execute", response_model=VerificationResponse)
@@ -236,16 +266,21 @@ async def execute_verification(request: VerificationRequest):
     Execute AI verification on chunked document
 
     Args:
-        request: VerificationRequest with document_id, store_id, case_context, chunking_mode
+        request: VerificationRequest with document_id, store_id, case_context, splitting_mode
 
     Returns:
         VerificationResponse with verified chunks and statistics
     """
-    cprint(f"\n[API] Received verification request: {request.document_id}", "cyan", attrs=["bold"])
+    cprint(
+        f"\n[API] Received verification request: {request.document_id}",
+        "cyan",
+        attrs=["bold"],
+    )
     cprint(f"[API] Store ID: {request.store_id}", "cyan")
-    cprint(f"[API] Chunking mode: {request.chunking_mode.value}", "cyan")
+    cprint(f"[API] Splitting mode: {request.splitting_mode.value}", "cyan")
 
     import time
+
     start_time = time.time()
 
     try:
@@ -256,16 +291,16 @@ async def execute_verification(request: VerificationRequest):
         doc_data = DOCUMENT_STORE[request.document_id]
 
         # Get or generate chunks
-        if request.chunking_mode.value in doc_data["chunks_cache"]:
-            chunks = doc_data["chunks_cache"][request.chunking_mode.value]
+        if request.splitting_mode.value in doc_data["chunks_cache"]:
+            chunks = doc_data["chunks_cache"][request.splitting_mode.value]
             cprint(f"[API] Using cached chunks: {len(chunks)} chunks", "green")
         else:
             # Chunk document
             chunks = document_chunker.chunk_document(
                 docling_document=doc_data["docling_document"],
-                mode=request.chunking_mode
+                mode=request.splitting_mode,
             )
-            doc_data["chunks_cache"][request.chunking_mode.value] = chunks
+            doc_data["chunks_cache"][request.splitting_mode.value] = chunks
             cprint(f"[API] Generated chunks: {len(chunks)} chunks", "green")
 
         # Verify chunks using Gemini
@@ -273,17 +308,20 @@ async def execute_verification(request: VerificationRequest):
         verified_chunks = await gemini_verifier.verify_batch(
             chunks=chunks,
             store_name=request.store_id,
-            case_context=request.case_context
+            case_context=request.case_context,
         )
 
         # Update cached chunks with verification results
-        doc_data["chunks_cache"][request.chunking_mode.value] = verified_chunks
+        doc_data["chunks_cache"][request.splitting_mode.value] = verified_chunks
 
         # Calculate statistics
         total_verified = sum(1 for c in verified_chunks if c.verified)
         processing_time = time.time() - start_time
 
-        cprint(f"[API] ✓ Verification complete: {total_verified}/{len(verified_chunks)} verified in {processing_time:.2f}s", "green")
+        cprint(
+            f"[API] ✓ Verification complete: {total_verified}/{len(verified_chunks)} verified in {processing_time:.2f}s",
+            "green",
+        )
 
         return VerificationResponse(
             document_id=request.document_id,
@@ -291,14 +329,16 @@ async def execute_verification(request: VerificationRequest):
             total_verified=total_verified,
             total_chunks=len(verified_chunks),
             processing_time_seconds=processing_time,
-            store_id=request.store_id
+            store_id=request.store_id,
         )
 
     except HTTPException:
         raise
     except Exception as e:
         cprint(f"[API] Error executing verification: {e}", "red")
-        raise HTTPException(status_code=500, detail=f"Error executing verification: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error executing verification: {str(e)}"
+        )
 
 
 @app.post("/chunk", response_model=ChunkingResponse)
@@ -307,12 +347,16 @@ async def chunk_document(request: ChunkingRequest):
     Chunk document according to specified mode
 
     Args:
-        request: ChunkingRequest with document_id and chunking_mode
+        request: ChunkingRequest with document_id and splitting_mode
 
     Returns:
         ChunkingResponse with chunks and metadata
     """
-    cprint(f"\n[API] Received chunking request: {request.document_id} ({request.chunking_mode.value})", "cyan", attrs=["bold"])
+    cprint(
+        f"\n[API] Received chunking request: {request.document_id} ({request.splitting_mode.value})",
+        "cyan",
+        attrs=["bold"],
+    )
 
     try:
         # Get document from store
@@ -322,33 +366,40 @@ async def chunk_document(request: ChunkingRequest):
         doc_data = DOCUMENT_STORE[request.document_id]
 
         # Check if chunks are already cached for this mode
-        if request.chunking_mode.value in doc_data["chunks_cache"]:
-            cprint(f"[API] Using cached chunks for {request.chunking_mode.value} mode", "green")
-            chunks = doc_data["chunks_cache"][request.chunking_mode.value]
+        if request.splitting_mode.value in doc_data["chunks_cache"]:
+            cprint(
+                f"[API] Using cached chunks for {request.splitting_mode.value} mode",
+                "green",
+            )
+            chunks = doc_data["chunks_cache"][request.splitting_mode.value]
         else:
             # Chunk document
             chunks = document_chunker.chunk_document(
                 docling_document=doc_data["docling_document"],
-                mode=request.chunking_mode
+                mode=request.splitting_mode,
             )
 
             # Cache chunks
-            doc_data["chunks_cache"][request.chunking_mode.value] = chunks
-            cprint(f"[API] Cached chunks for {request.chunking_mode.value} mode", "green")
+            doc_data["chunks_cache"][request.splitting_mode.value] = chunks
+            cprint(
+                f"[API] Cached chunks for {request.splitting_mode.value} mode", "green"
+            )
 
         return ChunkingResponse(
             document_id=request.document_id,
-            chunking_mode=request.chunking_mode,
+            splitting_mode=request.splitting_mode,
             chunks=chunks,
             total_chunks=len(chunks),
-            message=f"Document chunked successfully ({len(chunks)} chunks in {request.chunking_mode.value} mode)"
+            message=f"Document chunked successfully ({len(chunks)} chunks in {request.splitting_mode.value} mode)",
         )
 
     except HTTPException:
         raise
     except Exception as e:
         cprint(f"[API] Error chunking document: {e}", "red")
-        raise HTTPException(status_code=500, detail=f"Error chunking document: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error chunking document: {str(e)}"
+        )
 
 
 @app.post("/export", response_model=ExportResponse)
@@ -357,12 +408,16 @@ async def export_document(request: ExportRequest):
     Export verification document in specified format
 
     Args:
-        request: ExportRequest with document_id, chunking_mode, and output_format
+        request: ExportRequest with document_id, splitting_mode, and output_format
 
     Returns:
         ExportResponse with export metadata
     """
-    cprint(f"\n[API] Received export request: {request.document_id} ({request.chunking_mode.value} -> {request.output_format.value})", "cyan", attrs=["bold"])
+    cprint(
+        f"\n[API] Received export request: {request.document_id} ({request.splitting_mode.value} -> {request.output_format.value})",
+        "cyan",
+        attrs=["bold"],
+    )
 
     try:
         # Get document from store
@@ -372,28 +427,28 @@ async def export_document(request: ExportRequest):
         doc_data = DOCUMENT_STORE[request.document_id]
 
         # Get or generate chunks
-        if request.chunking_mode.value in doc_data["chunks_cache"]:
-            chunks = doc_data["chunks_cache"][request.chunking_mode.value]
+        if request.splitting_mode.value in doc_data["chunks_cache"]:
+            chunks = doc_data["chunks_cache"][request.splitting_mode.value]
         else:
             # Chunk document
             chunks = document_chunker.chunk_document(
                 docling_document=doc_data["docling_document"],
-                mode=request.chunking_mode
+                mode=request.splitting_mode,
             )
-            doc_data["chunks_cache"][request.chunking_mode.value] = chunks
+            doc_data["chunks_cache"][request.splitting_mode.value] = chunks
 
         # Generate output
         output_path = output_generator.generate_output(
             chunks=chunks,
             original_filename=doc_data["filename"],
-            output_format=request.output_format
+            output_format=request.output_format,
         )
 
         # Store output path in document data
         doc_data["last_export"] = {
             "path": output_path,
             "format": request.output_format.value,
-            "filename": output_path.name
+            "filename": output_path.name,
         }
 
         cprint(f"[API] Export complete: {output_path.name}", "green")
@@ -402,14 +457,16 @@ async def export_document(request: ExportRequest):
             document_id=request.document_id,
             output_format=request.output_format,
             filename=output_path.name,
-            message=f"Document exported successfully as {request.output_format.value}"
+            message=f"Document exported successfully as {request.output_format.value}",
         )
 
     except HTTPException:
         raise
     except Exception as e:
         cprint(f"[API] Error exporting document: {e}", "red")
-        raise HTTPException(status_code=500, detail=f"Error exporting document: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error exporting document: {str(e)}"
+        )
 
 
 @app.get("/download/{document_id}")
@@ -434,7 +491,9 @@ async def download_file(document_id: str):
 
         # Check if export exists
         if "last_export" not in doc_data:
-            raise HTTPException(status_code=404, detail="No export found for this document")
+            raise HTTPException(
+                status_code=404, detail="No export found for this document"
+            )
 
         export_data = doc_data["last_export"]
         file_path = export_data["path"]
@@ -448,16 +507,16 @@ async def download_file(document_id: str):
         if export_data["format"] in ["word_landscape", "word_portrait"]:
             media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         elif export_data["format"] == "excel":
-            media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            media_type = (
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
         elif export_data["format"] == "json":
             media_type = "application/json"
         else:  # CSV
             media_type = "text/csv"
 
         return FileResponse(
-            path=file_path,
-            filename=export_data["filename"],
-            media_type=media_type
+            path=file_path, filename=export_data["filename"], media_type=media_type
         )
 
     except HTTPException:
@@ -478,7 +537,11 @@ async def reset_verification(document_id: str):
     Returns:
         Success message
     """
-    cprint(f"\n[API] Received reset verification request: {document_id}", "cyan", attrs=["bold"])
+    cprint(
+        f"\n[API] Received reset verification request: {document_id}",
+        "cyan",
+        attrs=["bold"],
+    )
 
     try:
         # Get document from store
@@ -503,14 +566,48 @@ async def reset_verification(document_id: str):
 
         return {
             "message": "Verification results cleared successfully",
-            "chunks_reset": chunks_reset
+            "chunks_reset": chunks_reset,
         }
 
     except HTTPException:
         raise
     except Exception as e:
         cprint(f"[API] Error resetting verification: {e}", "red")
-        raise HTTPException(status_code=500, detail=f"Error resetting verification: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error resetting verification: {str(e)}"
+        )
+
+
+@app.delete("/api/corpus/{store_id}")
+async def delete_corpus(store_id: str):
+    """
+    Delete a File Search corpus/store
+
+    Args:
+        store_id: File Search store ID to delete
+
+    Returns:
+        Success message
+    """
+    cprint(
+        f"\n[API] Received delete corpus request: {store_id}", "cyan", attrs=["bold"]
+    )
+
+    try:
+        # Delete the store using corpus_manager
+        success = corpus_manager.delete_store(store_id)
+
+        if success:
+            cprint(f"[API] ✓ Corpus deleted successfully: {store_id}", "green")
+            return {"message": "Corpus deleted successfully", "store_id": store_id}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to delete corpus")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        cprint(f"[API] Error deleting corpus: {e}", "red")
+        raise HTTPException(status_code=500, detail=f"Error deleting corpus: {str(e)}")
 
 
 @app.delete("/cache/clear")
@@ -522,10 +619,7 @@ async def clear_cache():
         document_cache.clear_all()
         DOCUMENT_STORE.clear()
 
-        return {
-            "message": "Cache cleared successfully",
-            "documents_cleared": 0
-        }
+        return {"message": "Cache cleared successfully", "documents_cleared": 0}
 
     except Exception as e:
         cprint(f"[API] Error clearing cache: {e}", "red")
@@ -542,10 +636,4 @@ if __name__ == "__main__":
     cprint("🏥 Health Check: http://localhost:8000/health", "yellow")
     cprint("=" * 80 + "\n", "cyan")
 
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
-    )
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, log_level="info")

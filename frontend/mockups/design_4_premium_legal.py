@@ -1,6 +1,6 @@
 """
 Design Mockup 4: Premium Legal Tech Aesthetic
-Inspired by Freshfields - refined minimalism with sophisticated details
+Inspired by Firm - refined minimalism with sophisticated details
 
 Color Philosophy: Deep charcoal + warm gold accents + soft neutrals
 Typography: Serif headings + clean sans-serif body
@@ -11,14 +11,15 @@ import streamlit as st
 import time
 
 st.set_page_config(
-    page_title="Content Verification | Freshfields",
+    page_title="Content Verification | Firm",
     page_icon="⚖️",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed",
 )
 
 # ==================== CUSTOM CSS ====================
-st.markdown("""
+st.markdown(
+    """
 <style>
     /* Import sophisticated fonts */
     @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@300;400;600;700&family=Inter:wght@300;400;500;600&display=swap');
@@ -508,10 +509,13 @@ st.markdown("""
         transition-timing-function: ease-in-out;
     }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # ==================== HEADER ====================
-st.markdown("""
+st.markdown(
+    """
 <div class="premium-header">
     <div class="header-content">
         <h1 class="header-title">Content Verification</h1>
@@ -519,17 +523,22 @@ st.markdown("""
         <span class="header-badge">Powered by Google Gemini</span>
     </div>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # Connection status
 col1, col2 = st.columns([6, 1])
 with col1:
-    st.markdown("""
+    st.markdown(
+        """
     <div class="connection-status">
         <span class="status-dot"></span>
         <span>Backend Connected</span>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 with col2:
     st.button("⟳", help="Refresh")
 
@@ -545,7 +554,8 @@ with tab1:
     # Status banner with premium styling
     status_col1, status_col2, status_col3 = st.columns([3, 1, 1])
     with status_col1:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="status-badge status-active">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                 <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5z"/>
@@ -553,7 +563,9 @@ with tab1:
             Corpus Active
         </div>
         <span style="margin-left: 1rem; color: var(--text-secondary); font-size: 0.875rem;">5 documents indexed • 127 pages • Ready for verification</span>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
     st.markdown("<br><br>", unsafe_allow_html=True)
 
@@ -562,19 +574,28 @@ with tab1:
 
     with col1:
         st.markdown('<div class="premium-card">', unsafe_allow_html=True)
-        st.markdown('<h3 style="margin-top: 0;">Reference Library</h3>', unsafe_allow_html=True)
+        st.markdown(
+            '<h3 style="margin-top: 0;">Reference Library</h3>', unsafe_allow_html=True
+        )
 
         # Search
-        st.text_input("🔍 Search documents", placeholder="Search by name, type, or keyword...", label_visibility="collapsed", key="corpus_search")
+        st.text_input(
+            "🔍 Search documents",
+            placeholder="Search by name, type, or keyword...",
+            label_visibility="collapsed",
+            key="corpus_search",
+        )
 
         st.markdown("<br>", unsafe_allow_html=True)
 
         # Document list - premium styling
-        for idx, (name, pages, size, date) in enumerate([
-            ("Case Law Analysis 2023.pdf", "45 pages", "5.2 MB", "Nov 10, 2025"),
-            ("Regulatory Framework.docx", "23 pages", "1.8 MB", "Nov 9, 2025"),
-            ("Precedent Study.pdf", "59 pages", "7.3 MB", "Nov 8, 2025"),
-        ]):
+        for idx, (name, pages, size, date) in enumerate(
+            [
+                ("Case Law Analysis 2023.pdf", "45 pages", "5.2 MB", "Nov 10, 2025"),
+                ("Regulatory Framework.docx", "23 pages", "1.8 MB", "Nov 9, 2025"),
+                ("Precedent Study.pdf", "59 pages", "7.3 MB", "Nov 8, 2025"),
+            ]
+        ):
             with st.expander(f"📄 {name}", expanded=False):
                 col_a, col_b = st.columns(2)
                 with col_a:
@@ -589,99 +610,119 @@ with tab1:
                 with btn_col1:
                     st.button("Reindex", key=f"reindex_{idx}", use_container_width=True)
                 with btn_col2:
-                    st.button("Remove", key=f"remove_{idx}", type="secondary", use_container_width=True)
+                    st.button(
+                        "Remove",
+                        key=f"remove_{idx}",
+                        type="secondary",
+                        use_container_width=True,
+                    )
 
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
         # Upload new documents
         st.markdown('<div class="premium-card">', unsafe_allow_html=True)
-        st.markdown('<h3 style="margin-top: 0;">Add Reference Documents</h3>', unsafe_allow_html=True)
+        st.markdown(
+            '<h3 style="margin-top: 0;">Add Reference Documents</h3>',
+            unsafe_allow_html=True,
+        )
 
         uploaded_files = st.file_uploader(
             "Upload documents",
             type=["pdf", "docx"],
             accept_multiple_files=True,
             key="new_corpus_files",
-            label_visibility="collapsed"
+            label_visibility="collapsed",
         )
 
         if uploaded_files:
             st.info(f"📦 {len(uploaded_files)} file(s) selected")
             st.button("Upload & Index", type="primary", use_container_width=True)
 
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
     with col2:
         # Corpus statistics
         st.markdown('<div class="premium-card">', unsafe_allow_html=True)
-        st.markdown('<h3 style="margin-top: 0;">Statistics</h3>', unsafe_allow_html=True)
+        st.markdown(
+            '<h3 style="margin-top: 0;">Statistics</h3>', unsafe_allow_html=True
+        )
 
-        st.markdown("""
+        st.markdown(
+            """
         <div class="metric-card">
             <div class="metric-value">5</div>
             <div class="metric-label">Documents</div>
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        st.markdown("""
+        st.markdown(
+            """
         <div class="metric-card">
             <div class="metric-value">127</div>
             <div class="metric-label">Total Pages</div>
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        st.markdown("""
+        st.markdown(
+            """
         <div class="metric-card">
             <div class="metric-value">23.4</div>
             <div class="metric-label">MB Storage</div>
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
         # Configuration
         st.markdown('<div class="premium-card">', unsafe_allow_html=True)
-        st.markdown('<h3 style="margin-top: 0;">Configuration</h3>', unsafe_allow_html=True)
+        st.markdown(
+            '<h3 style="margin-top: 0;">Configuration</h3>', unsafe_allow_html=True
+        )
 
         st.text_area(
             "Case Context",
             placeholder="Describe the verification context...",
             height=120,
             help="Provides AI with context for better verification",
-            key="case_context"
+            key="case_context",
         )
 
-        st.selectbox(
-            "AI Model",
-            ["Gemini 2.5 Flash", "Gemini 2.5 Pro"],
-            key="ai_model"
-        )
+        st.selectbox("AI Model", ["Gemini 2.5 Flash", "Gemini 2.5 Pro"], key="ai_model")
 
         st.slider(
             "Confidence Threshold",
-            0.0, 1.0, 0.7, 0.05,
-            help="Minimum confidence score for verification"
+            0.0,
+            1.0,
+            0.7,
+            0.05,
+            help="Minimum confidence score for verification",
         )
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.button("💾 Save Configuration", type="primary", use_container_width=True)
 
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # ==================== TAB 2: VERIFICATION ====================
 with tab2:
     st.markdown("<br>", unsafe_allow_html=True)
 
     # Workflow steps - 4 cards horizontal
-    st.markdown('<h2>Verification Workflow</h2>', unsafe_allow_html=True)
+    st.markdown("<h2>Verification Workflow</h2>", unsafe_allow_html=True)
     st.caption("Complete each step to generate your verified document")
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -697,64 +738,83 @@ with tab2:
             "Select document",
             type=["pdf", "docx"],
             key="verify_upload",
-            label_visibility="collapsed"
+            label_visibility="collapsed",
         )
 
         if uploaded_doc:
-            st.markdown("""
+            st.markdown(
+                """
             <div class="status-badge status-active" style="margin-top: 1rem;">
                 ✓ Document Ready
             </div>
-            """, unsafe_allow_html=True)
+            """,
+                unsafe_allow_html=True,
+            )
             st.caption(f"📄 {uploaded_doc.name}")
-            st.button("Process", type="primary", use_container_width=True, key="process_btn")
+            st.button(
+                "Process", type="primary", use_container_width=True, key="process_btn"
+            )
         else:
-            st.markdown("""
+            st.markdown(
+                """
             <div class="status-badge status-pending" style="margin-top: 1rem;">
                 ⏳ Waiting
             </div>
-            """, unsafe_allow_html=True)
+            """,
+                unsafe_allow_html=True,
+            )
 
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
     with step2:
         st.markdown('<div class="workflow-card">', unsafe_allow_html=True)
         st.markdown('<div class="step-number">2</div>', unsafe_allow_html=True)
         st.markdown('<div class="step-title">Chunking</div>', unsafe_allow_html=True)
 
-        chunking_mode = st.radio(
+        splitting_mode = st.radio(
             "Select mode",
             ["Paragraph", "Sentence"],
             key="chunk_radio",
-            label_visibility="collapsed"
+            label_visibility="collapsed",
         )
 
-        st.caption(f"**Selected:** {chunking_mode}-level analysis")
+        st.caption(f"**Selected:** {splitting_mode}-level analysis")
 
-        st.markdown("""
+        st.markdown(
+            """
         <div class="status-badge status-active" style="margin-top: 1rem;">
             ✓ Mode Selected
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
     with step3:
         st.markdown('<div class="workflow-card">', unsafe_allow_html=True)
         st.markdown('<div class="step-number">3</div>', unsafe_allow_html=True)
         st.markdown('<div class="step-title">Verify</div>', unsafe_allow_html=True)
 
-        st.markdown("""
+        st.markdown(
+            """
         <div class="status-badge status-active" style="margin-bottom: 1rem;">
             ✓ Corpus Ready
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
         st.caption("AI verification against reference corpus")
 
-        st.button("▶ Run Verification", type="primary", use_container_width=True, key="verify_btn")
+        st.button(
+            "▶ Run Verification",
+            type="primary",
+            use_container_width=True,
+            key="verify_btn",
+        )
 
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
     with step4:
         st.markdown('<div class="workflow-card">', unsafe_allow_html=True)
@@ -765,13 +825,19 @@ with tab2:
             "Output format",
             ["Word (Landscape)", "Word (Portrait)", "Excel", "CSV", "JSON"],
             key="export_format",
-            label_visibility="collapsed"
+            label_visibility="collapsed",
         )
 
         st.button("Generate", use_container_width=True, key="gen_btn")
-        st.button("⬇ Download", type="primary", use_container_width=True, disabled=True, key="dl_btn")
+        st.button(
+            "⬇ Download",
+            type="primary",
+            use_container_width=True,
+            disabled=True,
+            key="dl_btn",
+        )
 
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("<br><br>", unsafe_allow_html=True)
 
@@ -779,50 +845,65 @@ with tab2:
     st.markdown("<hr>", unsafe_allow_html=True)
 
     # Results section
-    st.markdown('<h2>Verification Results</h2>', unsafe_allow_html=True)
+    st.markdown("<h2>Verification Results</h2>", unsafe_allow_html=True)
 
     # Metrics row with premium styling
     metric1, metric2, metric3, metric4, metric5 = st.columns(5)
 
     with metric1:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="metric-card">
             <div class="metric-value">124</div>
             <div class="metric-label">Total Chunks</div>
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
     with metric2:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="metric-card">
             <div class="metric-value">89</div>
             <div class="metric-label">Verified</div>
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
     with metric3:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="metric-card">
             <div class="metric-value">8.2</div>
             <div class="metric-label">Avg Score</div>
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
     with metric4:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="metric-card">
             <div class="metric-value">45s</div>
             <div class="metric-label">Process Time</div>
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
     with metric5:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="metric-card">
             <div class="metric-value" style="color: var(--success-green);">✓</div>
             <div class="metric-label">Complete</div>
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
     st.markdown("<br><br>", unsafe_allow_html=True)
 
@@ -831,9 +912,13 @@ with tab2:
 
     with col1:
         st.markdown('<div class="premium-card">', unsafe_allow_html=True)
-        st.markdown('<h3 style="margin-top: 0;">Confidence Distribution</h3>', unsafe_allow_html=True)
+        st.markdown(
+            '<h3 style="margin-top: 0;">Confidence Distribution</h3>',
+            unsafe_allow_html=True,
+        )
 
-        st.markdown("""
+        st.markdown(
+            """
         <div style="margin: 1.5rem 0;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                 <span style="font-weight: 500; color: var(--success-green);">● High Confidence (8-10)</span>
@@ -844,9 +929,12 @@ with tab2:
             </div>
             <span style="font-size: 0.875rem; color: var(--text-secondary);">67 chunks</span>
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
-        st.markdown("""
+        st.markdown(
+            """
         <div style="margin: 1.5rem 0;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                 <span style="font-weight: 500; color: var(--warning-amber);">● Medium Confidence (5-7)</span>
@@ -857,9 +945,12 @@ with tab2:
             </div>
             <span style="font-size: 0.875rem; color: var(--text-secondary);">22 chunks</span>
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
-        st.markdown("""
+        st.markdown(
+            """
         <div style="margin: 1.5rem 0;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                 <span style="font-weight: 500; color: var(--error-red);">● Low/Unverified</span>
@@ -870,13 +961,18 @@ with tab2:
             </div>
             <span style="font-size: 0.875rem; color: var(--text-secondary);">35 chunks - Manual review needed</span>
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
     with col2:
         st.markdown('<div class="premium-card">', unsafe_allow_html=True)
-        st.markdown('<h3 style="margin-top: 0;">Items Requiring Review</h3>', unsafe_allow_html=True)
+        st.markdown(
+            '<h3 style="margin-top: 0;">Items Requiring Review</h3>',
+            unsafe_allow_html=True,
+        )
 
         with st.expander("⚠️ Page 2, Item 4 - Low Confidence", expanded=True):
             st.markdown("*Furthermore, the analysis indicates that...*")
@@ -894,27 +990,33 @@ with tab2:
             st.caption("**Issue:** Multiple conflicting sources detected")
             st.button("View Details", key="detail3", use_container_width=True)
 
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # ==================== FOOTER ====================
 st.markdown("<br><br>", unsafe_allow_html=True)
 st.markdown("<hr>", unsafe_allow_html=True)
 
-st.markdown("""
+st.markdown(
+    """
 <div class="powered-by">
     <div class="powered-by-text">Powered by</div>
     <img src="https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg"
          alt="Google Gemini"
          style="height: 32px; opacity: 0.8;">
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    st.markdown("""
+    st.markdown(
+        """
     <div style="text-align: center; color: var(--text-secondary); font-size: 0.875rem; font-family: 'Inter', sans-serif;">
-        Content Verification Tool v2.0 • Built for Freshfields
+        Content Verification Tool v2.0 • Built for Firm
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )

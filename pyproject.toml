@@ -29,6 +29,7 @@ backend = [
     "python-multipart==0.0.20",
     # Document processing
     "docling==2.61.2",
+    "pypdf==6.3.0",
     # LangChain for chunking
     "langchain==1.0.5",
     "langchain-text-splitters==1.0.0",

@@ -356,6 +356,54 @@ class TestGeminiChunkVerification:
 
         cprint("[TEST] ✓ Retry mechanism works correctly", "green")
 
+    @pytest.mark.slow
+    def test_verify_chunk_without_case_context(self, sample_docx_content, sample_metadata, temp_dir):
+        """Test verifying a chunk without providing case_context (should work with None)"""
+        cprint("\n[TEST] Testing chunk verification without case_context", "cyan")
+
+        # Create store and upload reference document
+        case_id = "test_case_no_context"
+        store_name, _ = self.service.create_store(case_id)
+        self.stores_to_cleanup.append(store_name)
+
+        temp_file = temp_dir / "reference.docx"
+        temp_file.write_bytes(sample_docx_content)
+
+        self.service.upload_to_store(
+            file_path=str(temp_file),
+            store_name=store_name,
+            metadata=sample_metadata
+        )
+
+        # Create a chunk to verify
+        chunk = DocumentChunk(
+            page_number=1,
+            item_number="1",
+            text="This is a test paragraph for verification without context.",
+            is_overlap=False
+        )
+
+        # Verify chunk with case_context=None (explicitly testing optional parameter)
+        verified_chunk = self.service.verify_chunk(
+            chunk=chunk,
+            store_name=store_name,
+            case_context=None
+        )
+
+        # Verify results - should work the same as with case_context
+        assert verified_chunk.verified is not None
+        assert isinstance(verified_chunk.verified, bool)
+        assert verified_chunk.verification_score is not None
+        assert 1 <= verified_chunk.verification_score <= 10
+        assert verified_chunk.verification_source is not None
+        assert verified_chunk.verification_note is not None
+        assert isinstance(verified_chunk.citations, list)
+
+        cprint(f"[TEST] ✓ Chunk verification without case_context complete:", "green")
+        cprint(f"  - Verified: {verified_chunk.verified}", "cyan")
+        cprint(f"  - Score: {verified_chunk.verification_score}/10", "cyan")
+        cprint(f"  - Note: {verified_chunk.verification_note[:100]}...", "cyan")
+
 
 @pytest.mark.gemini
 @pytest.mark.integration

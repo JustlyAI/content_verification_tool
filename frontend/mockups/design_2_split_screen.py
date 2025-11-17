@@ -35,7 +35,7 @@ with tab1:
                 "Drag and drop files here",
                 type=["pdf", "docx"],
                 accept_multiple_files=True,
-                key="corpus_files"
+                key="corpus_files",
             )
 
             if uploaded_files:
@@ -65,11 +65,13 @@ with tab1:
         st.divider()
 
         # Document cards
-        for i, doc in enumerate([
-            ("Case Law 2023.pdf", "45 pages", "5.2 MB", "2025-11-10"),
-            ("Regulations.docx", "23 pages", "1.8 MB", "2025-11-09"),
-            ("Precedent Analysis.pdf", "59 pages", "7.3 MB", "2025-11-08")
-        ]):
+        for i, doc in enumerate(
+            [
+                ("Case Law 2023.pdf", "45 pages", "5.2 MB", "2025-11-10"),
+                ("Regulations.docx", "23 pages", "1.8 MB", "2025-11-09"),
+                ("Precedent Analysis.pdf", "59 pages", "7.3 MB", "2025-11-08"),
+            ]
+        ):
             with st.container():
                 col_a, col_b, col_c = st.columns([3, 2, 1])
                 with col_a:
@@ -101,7 +103,7 @@ with tab1:
             "Provide context for better verification",
             placeholder="Enter case background, relevant statutes, key arguments...",
             height=150,
-            label_visibility="collapsed"
+            label_visibility="collapsed",
         )
         st.caption("Optional: Helps AI understand verification context")
 
@@ -135,23 +137,30 @@ with tab2:
                 "Document to verify",
                 type=["pdf", "docx"],
                 key="verify_doc",
-                label_visibility="collapsed"
+                label_visibility="collapsed",
             )
             if uploaded_doc:
                 st.success(f"✅ {uploaded_doc.name}")
-                st.button("📤 Process", type="primary", use_container_width=True, key="process_btn")
+                st.button(
+                    "📤 Process",
+                    type="primary",
+                    use_container_width=True,
+                    key="process_btn",
+                )
 
         st.divider()
 
         # Step 2: Chunking
         with st.container():
-            st.markdown("### Step 2: Chunking Mode")
+            st.markdown("### Step 2: Splitting Mode")
             chunking = st.radio(
                 "Mode",
                 ["📝 Paragraph-level", "📄 Sentence-level"],
-                label_visibility="collapsed"
+                label_visibility="collapsed",
             )
-            st.caption("Paragraph mode groups related content; Sentence mode provides granular verification")
+            st.caption(
+                "Paragraph mode groups related content; Sentence mode provides granular verification"
+            )
 
         st.divider()
 
@@ -161,7 +170,12 @@ with tab2:
 
             if True:  # Mock corpus active
                 st.info("🤖 Corpus ready for verification")
-                st.button("▶️ Run Verification", type="primary", use_container_width=True, key="verify_btn")
+                st.button(
+                    "▶️ Run Verification",
+                    type="primary",
+                    use_container_width=True,
+                    key="verify_btn",
+                )
             else:
                 st.warning("⚠️ No corpus available. Upload reference documents first.")
 
@@ -173,10 +187,21 @@ with tab2:
             output = st.selectbox(
                 "Output format",
                 ["Word (Landscape)", "Word (Portrait)", "Excel", "CSV", "JSON"],
-                label_visibility="collapsed"
+                label_visibility="collapsed",
             )
-            st.button("📄 Generate", type="primary", use_container_width=True, key="generate_btn", disabled=True)
-            st.button("⬇️ Download", use_container_width=True, key="download_btn", disabled=True)
+            st.button(
+                "📄 Generate",
+                type="primary",
+                use_container_width=True,
+                key="generate_btn",
+                disabled=True,
+            )
+            st.button(
+                "⬇️ Download",
+                use_container_width=True,
+                key="download_btn",
+                disabled=True,
+            )
 
         st.divider()
 
@@ -193,7 +218,7 @@ with tab2:
             "View",
             ["📈 Overview", "📋 Detailed Table", "🔍 By Confidence", "📄 By Page"],
             horizontal=True,
-            label_visibility="collapsed"
+            label_visibility="collapsed",
         )
 
         st.divider()
@@ -229,7 +254,9 @@ with tab2:
                 with col_a:
                     st.button("✅ Mark Verified", key="mark1", use_container_width=True)
                 with col_b:
-                    st.button("🔍 Show Sources", key="sources1", use_container_width=True)
+                    st.button(
+                        "🔍 Show Sources", key="sources1", use_container_width=True
+                    )
 
             with st.expander("⚠️ Page 3, Item 7 - Unverified"):
                 st.markdown("> The plaintiff contends...")
@@ -250,7 +277,7 @@ with tab2:
                         "As stated in precedent...",
                         "The defendant argues...",
                         "Section 42 provides...",
-                        "Historical context shows..."
+                        "Historical context shows...",
                     ],
                     "Status": ["✅", "✅", "✅", "⚠️", "✅", "⚠️", "✅", "✅"],
                     "Score": [8.5, 9.1, 9.2, 4.2, 8.8, 3.9, 9.4, 8.7],
@@ -262,12 +289,12 @@ with tab2:
                         "Precedent.pdf:34",
                         "—",
                         "Regulations.docx:8",
-                        "Precedent.pdf:67"
-                    ]
+                        "Precedent.pdf:67",
+                    ],
                 },
                 use_container_width=True,
                 hide_index=True,
-                height=400
+                height=400,
             )
 
             st.caption("Click any row to see detailed verification information")

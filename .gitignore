@@ -240,6 +240,9 @@ CLAUDE.md
 .uv-cache
 .pytest_cache/
 .playwright-mcp/
+**/mockups/
+verification_shell.json
+verification_results.json
 
 # OS specific
 .DS_Store

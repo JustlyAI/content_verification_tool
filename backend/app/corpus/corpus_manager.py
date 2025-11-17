@@ -7,18 +7,64 @@ import os
 import time
 import json
 import hashlib
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 from datetime import datetime
+from pathlib import Path
 from termcolor import cprint
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
 from google import genai
 from google.genai import types
+from pypdf import PdfReader
 
 load_dotenv()
 
 from app.models import DocumentMetadata
+
+
+def _count_pages_simple(file_path: str) -> int:
+    """
+    Simple page counter for PDF and DOCX files
+
+    Args:
+        file_path: Path to the file
+
+    Returns:
+        Number of pages (0 if unable to determine)
+    """
+    try:
+        suffix = Path(file_path).suffix.lower()
+
+        if suffix == '.pdf':
+            # Count PDF pages using pypdf
+            try:
+                with open(file_path, 'rb') as f:
+                    reader = PdfReader(f)
+                    return len(reader.pages)
+            except Exception as e:
+                cprint(f"[Corpus] Warning: Failed to count PDF pages: {e}", "yellow")
+                return 0
+
+        elif suffix in ['.docx', '.doc']:
+            # Try to count DOCX pages (rough estimate based on content)
+            try:
+                from docx import Document
+                doc = Document(file_path)
+                # Rough estimate: assume 500 words per page
+                word_count = sum(len(paragraph.text.split()) for paragraph in doc.paragraphs)
+                return max(1, word_count // 500)
+            except ImportError:
+                # python-docx not available, return 0
+                return 0
+            except Exception:
+                # Failed to read DOCX
+                return 0
+        else:
+            return 0
+
+    except Exception:
+        return 0
 
 
 class MetadataResponse(BaseModel):
@@ -72,8 +118,37 @@ class CorpusManager:
             cprint(f"[Corpus] ✗ Error creating store: {e}", "red")
             raise
 
+    def delete_store(self, store_id: str) -> bool:
+        """
+        Delete a File Search store and all its documents
+
+        Args:
+            store_id: ID of the store to delete
+
+        Returns:
+            True if deletion was successful, False otherwise
+        """
+        if not self.client:
+            raise ValueError("Gemini client not initialized - check GEMINI_API_KEY")
+
+        try:
+            cprint(f"[Corpus] Deleting File Search store: {store_id}", "cyan")
+
+            # Delete the store with force flag to delete all documents
+            self.client.file_search_stores.delete(
+                name=store_id,
+                config={'force': True}
+            )
+
+            cprint(f"[Corpus] ✓ Store deleted successfully: {store_id}", "green")
+            return True
+
+        except Exception as e:
+            cprint(f"[Corpus] ✗ Error deleting store: {e}", "red")
+            return False
+
     def _generate_metadata_from_file(
-        self, uploaded_file, filename: str, case_context: str
+        self, uploaded_file, filename: str, case_context: Optional[str], file_path: str
     ) -> DocumentMetadata:
         """
         Generate metadata for a reference document from an already-uploaded file
@@ -81,7 +156,8 @@ class CorpusManager:
         Args:
             uploaded_file: Already uploaded Gemini file object
             filename: Original filename
-            case_context: Context about the verification case
+            case_context: Context about the verification case (optional)
+            file_path: Path to the file (for extracting size and page count)
 
         Returns:
             DocumentMetadata object with AI-generated metadata
@@ -89,11 +165,17 @@ class CorpusManager:
         try:
             cprint(f"[Corpus] Generating metadata for {filename}", "cyan")
 
-            prompt = f"""Analyze this document in the context of: {case_context}
+            # Build prompt with optional case context
+            if case_context:
+                context_instruction = f"Analyze this document in the context of: {case_context}\n\n"
+                contextualization_field = "- contextualization: How this document relates to the case context"
+            else:
+                context_instruction = "Analyze this document.\n\n"
+                contextualization_field = "- contextualization: General description of the document's purpose and key topics"
 
-Provide a JSON response with the following fields:
+            prompt = f"""{context_instruction}Provide a JSON response with the following fields:
 - summary: A 2-3 sentence summary of the document
-- contextualization: How this document relates to the case context
+{contextualization_field}
 - document_type: The type of document (e.g., contract, invoice, receipt, report)
 - keywords: A list of 5-10 key terms or concepts from the document
 
@@ -118,6 +200,10 @@ Return only valid JSON, no markdown formatting."""
 
             document_id = hashlib.md5(filename.encode()).hexdigest()
 
+            # Extract file size and page count
+            file_size_bytes = os.path.getsize(file_path) if os.path.exists(file_path) else 0
+            page_count = _count_pages_simple(file_path)
+
             metadata = DocumentMetadata(
                 document_id=document_id,
                 filename=filename,
@@ -126,9 +212,11 @@ Return only valid JSON, no markdown formatting."""
                 document_type=metadata_response.document_type[:256],  # Truncate to API limit
                 keywords=metadata_response.keywords,
                 generated_at=datetime.now(),
+                file_size_bytes=file_size_bytes,
+                page_count=page_count,
             )
 
-            cprint(f"[Corpus] ✓ Metadata generated for {filename}", "green")
+            cprint(f"[Corpus] ✓ Metadata generated for {filename} ({page_count} pages, {file_size_bytes/1024:.1f} KB)", "green")
             return metadata
 
         except Exception as e:
@@ -136,7 +224,7 @@ Return only valid JSON, no markdown formatting."""
             raise
 
     def generate_metadata(
-        self, file_path: str, filename: str, case_context: str
+        self, file_path: str, filename: str, case_context: Optional[str] = None
     ) -> DocumentMetadata:
         """
         Generate metadata for a reference document from a file path
@@ -144,7 +232,7 @@ Return only valid JSON, no markdown formatting."""
         Args:
             file_path: Path to the file
             filename: Original filename
-            case_context: Context about the verification case
+            case_context: Context about the verification case (optional)
 
         Returns:
             DocumentMetadata object with AI-generated metadata
@@ -169,7 +257,7 @@ Return only valid JSON, no markdown formatting."""
 
             # Generate metadata
             metadata = self._generate_metadata_from_file(
-                uploaded_file, filename, case_context
+                uploaded_file, filename, case_context, file_path
             )
 
             # Clean up uploaded file
@@ -183,7 +271,7 @@ Return only valid JSON, no markdown formatting."""
             raise
 
     def upload_reference_with_metadata(
-        self, file_path: str, filename: str, store_name: str, case_context: str
+        self, file_path: str, filename: str, store_name: str, case_context: Optional[str] = None
     ) -> Tuple[DocumentMetadata, str]:
         """
         Upload a reference document with metadata generation (optimized - single upload)
@@ -192,7 +280,7 @@ Return only valid JSON, no markdown formatting."""
             file_path: Path to the file to upload
             filename: Original filename
             store_name: Name of the File Search store
-            case_context: Context about the verification case
+            case_context: Context about the verification case (optional)
 
         Returns:
             Tuple of (DocumentMetadata, uploaded_file_name)
@@ -224,7 +312,7 @@ Return only valid JSON, no markdown formatting."""
 
             # Generate metadata using the uploaded file
             metadata = self._generate_metadata_from_file(
-                uploaded_file, filename, case_context
+                uploaded_file, filename, case_context, file_path
             )
 
             # Create custom metadata for file search store

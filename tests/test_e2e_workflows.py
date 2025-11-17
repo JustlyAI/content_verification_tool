@@ -2,6 +2,7 @@
 End-to-end workflow tests
 Tests complete workflows from document upload to final output
 """
+
 import pytest
 import asyncio
 from fastapi.testclient import TestClient
@@ -25,7 +26,9 @@ def test_client():
 class TestBasicWorkflow:
     """Test suite for basic document processing workflow (no AI verification)"""
 
-    def test_complete_document_workflow_paragraph(self, test_client, sample_docx_content):
+    def test_complete_document_workflow_paragraph(
+        self, test_client, sample_docx_content
+    ):
         """
         Test complete workflow: Upload → Chunk (paragraph) → Export (Excel) → Download
         """
@@ -33,19 +36,27 @@ class TestBasicWorkflow:
 
         # Step 1: Upload document
         cprint("[TEST] Step 1: Uploading document...", "cyan")
-        files = {"file": ("contract.docx", io.BytesIO(sample_docx_content), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")}
+        files = {
+            "file": (
+                "contract.docx",
+                io.BytesIO(sample_docx_content),
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        }
         upload_response = test_client.post("/upload", files=files)
 
         assert upload_response.status_code == 200
         document_id = upload_response.json()["document_id"]
         page_count = upload_response.json()["page_count"]
-        cprint(f"[TEST] ✓ Document uploaded: {document_id} ({page_count} pages)", "green")
+        cprint(
+            f"[TEST] ✓ Document uploaded: {document_id} ({page_count} pages)", "green"
+        )
 
         # Step 2: Chunk document
         cprint("[TEST] Step 2: Chunking document...", "cyan")
         chunk_request = {
             "document_id": document_id,
-            "chunking_mode": ChunkingMode.PARAGRAPH.value
+            "splitting_mode": ChunkingMode.PARAGRAPH.value,
         }
         chunk_response = test_client.post("/chunk", json=chunk_request)
 
@@ -65,8 +76,8 @@ class TestBasicWorkflow:
         cprint("[TEST] Step 3: Exporting to Excel...", "cyan")
         export_request = {
             "document_id": document_id,
-            "chunking_mode": ChunkingMode.PARAGRAPH.value,
-            "output_format": OutputFormat.EXCEL.value
+            "splitting_mode": ChunkingMode.PARAGRAPH.value,
+            "output_format": OutputFormat.EXCEL.value,
         }
         export_response = test_client.post("/export", json=export_request)
 
@@ -80,25 +91,35 @@ class TestBasicWorkflow:
 
         assert download_response.status_code == 200
         assert len(download_response.content) > 0
-        cprint(f"[TEST] ✓ File downloaded: {len(download_response.content)} bytes", "green")
+        cprint(
+            f"[TEST] ✓ File downloaded: {len(download_response.content)} bytes", "green"
+        )
 
         cprint("[TEST] ✓ Complete workflow successful!", "green", attrs=["bold"])
 
-    def test_complete_document_workflow_sentence(self, test_client, sample_docx_content):
+    def test_complete_document_workflow_sentence(
+        self, test_client, sample_docx_content
+    ):
         """
         Test complete workflow: Upload → Chunk (sentence) → Export (Word) → Download
         """
         cprint("\n[TEST] Testing complete document workflow (sentence mode)", "cyan")
 
         # Step 1: Upload
-        files = {"file": ("contract.docx", io.BytesIO(sample_docx_content), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")}
+        files = {
+            "file": (
+                "contract.docx",
+                io.BytesIO(sample_docx_content),
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        }
         upload_response = test_client.post("/upload", files=files)
         document_id = upload_response.json()["document_id"]
 
         # Step 2: Chunk (sentence mode)
         chunk_request = {
             "document_id": document_id,
-            "chunking_mode": ChunkingMode.SENTENCE.value
+            "splitting_mode": ChunkingMode.SENTENCE.value,
         }
         chunk_response = test_client.post("/chunk", json=chunk_request)
         total_chunks = chunk_response.json()["total_chunks"]
@@ -106,15 +127,17 @@ class TestBasicWorkflow:
 
         # Verify hierarchical numbering
         for chunk in chunks:
-            assert "." in chunk["item_number"], "Sentence mode should use hierarchical numbering"
+            assert (
+                "." in chunk["item_number"]
+            ), "Sentence mode should use hierarchical numbering"
 
         cprint(f"[TEST] ✓ Sentence chunking: {total_chunks} sentences", "green")
 
         # Step 3: Export as Word landscape
         export_request = {
             "document_id": document_id,
-            "chunking_mode": ChunkingMode.SENTENCE.value,
-            "output_format": OutputFormat.WORD_LANDSCAPE.value
+            "splitting_mode": ChunkingMode.SENTENCE.value,
+            "output_format": OutputFormat.WORD_LANDSCAPE.value,
         }
         export_response = test_client.post("/export", json=export_request)
 
@@ -135,7 +158,13 @@ class TestBasicWorkflow:
         cprint("\n[TEST] Testing multiple export formats", "cyan")
 
         # Upload and chunk
-        files = {"file": ("contract.docx", io.BytesIO(sample_docx_content), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")}
+        files = {
+            "file": (
+                "contract.docx",
+                io.BytesIO(sample_docx_content),
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        }
         upload_response = test_client.post("/upload", files=files)
         document_id = upload_response.json()["document_id"]
 
@@ -144,14 +173,14 @@ class TestBasicWorkflow:
             OutputFormat.WORD_PORTRAIT,
             OutputFormat.EXCEL,
             OutputFormat.CSV,
-            OutputFormat.JSON
+            OutputFormat.JSON,
         ]
 
         for output_format in formats_to_test:
             export_request = {
                 "document_id": document_id,
-                "chunking_mode": ChunkingMode.PARAGRAPH.value,
-                "output_format": output_format.value
+                "splitting_mode": ChunkingMode.PARAGRAPH.value,
+                "output_format": output_format.value,
             }
             export_response = test_client.post("/export", json=export_request)
 
@@ -183,11 +212,7 @@ class TestAIVerificationWorkflow:
                 pass
 
     def test_full_ai_verification_workflow(
-        self,
-        test_client,
-        sample_docx_content,
-        sample_case_context,
-        temp_dir
+        self, test_client, sample_docx_content, sample_case_context, temp_dir
     ):
         """
         Test complete AI verification workflow:
@@ -204,7 +229,13 @@ class TestAIVerificationWorkflow:
 
         # Step 1: Upload target document
         cprint("[TEST] Step 1: Uploading target document...", "cyan")
-        files = {"file": ("target.docx", io.BytesIO(sample_docx_content), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")}
+        files = {
+            "file": (
+                "target.docx",
+                io.BytesIO(sample_docx_content),
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        }
         upload_response = test_client.post("/upload", files=files)
 
         assert upload_response.status_code == 200
@@ -226,16 +257,14 @@ class TestAIVerificationWorkflow:
         metadata = self.service.generate_metadata(
             file_path=str(temp_file),
             filename="reference.docx",
-            case_context=sample_case_context
+            case_context=sample_case_context,
         )
         cprint(f"[TEST] ✓ Metadata generated: {metadata.document_type}", "green")
 
         # Step 4: Upload reference document to store
         cprint("[TEST] Step 4: Uploading reference to File Search store...", "cyan")
         file_name = self.service.upload_to_store(
-            file_path=str(temp_file),
-            store_name=store_name,
-            metadata=metadata
+            file_path=str(temp_file), store_name=store_name, metadata=metadata
         )
         cprint(f"[TEST] ✓ Reference uploaded: {file_name}", "green")
 
@@ -243,7 +272,7 @@ class TestAIVerificationWorkflow:
         cprint("[TEST] Step 5: Chunking target document...", "cyan")
         chunk_request = {
             "document_id": document_id,
-            "chunking_mode": ChunkingMode.PARAGRAPH.value
+            "splitting_mode": ChunkingMode.PARAGRAPH.value,
         }
         chunk_response = test_client.post("/chunk", json=chunk_request)
 
@@ -259,7 +288,7 @@ class TestAIVerificationWorkflow:
             "document_id": document_id,
             "store_id": store_name,
             "case_context": sample_case_context,
-            "chunking_mode": ChunkingMode.PARAGRAPH.value
+            "splitting_mode": ChunkingMode.PARAGRAPH.value,
         }
         verify_response = test_client.post("/api/verify/execute", json=verify_request)
 
@@ -270,14 +299,17 @@ class TestAIVerificationWorkflow:
         total_chunks = verify_data["total_chunks"]
         processing_time = verify_data["processing_time_seconds"]
 
-        cprint(f"[TEST] ✓ Verification complete: {total_verified}/{total_chunks} verified in {processing_time:.2f}s", "green")
+        cprint(
+            f"[TEST] ✓ Verification complete: {total_verified}/{total_chunks} verified in {processing_time:.2f}s",
+            "green",
+        )
 
         # Step 7: Export verified document
         cprint("[TEST] Step 7: Exporting verified document...", "cyan")
         export_request = {
             "document_id": document_id,
-            "chunking_mode": ChunkingMode.PARAGRAPH.value,
-            "output_format": OutputFormat.EXCEL.value
+            "splitting_mode": ChunkingMode.PARAGRAPH.value,
+            "output_format": OutputFormat.EXCEL.value,
         }
         export_response = test_client.post("/export", json=export_request)
 
@@ -296,7 +328,7 @@ class TestAIVerificationWorkflow:
         output_file = temp_dir / "verified_output.xlsx"
         output_file.write_bytes(download_response.content)
 
-        df = pd.read_excel(output_file, sheet_name='Verification')
+        df = pd.read_excel(output_file, sheet_name="Verification")
 
         # Verify Excel has verification columns
         assert "Verified ☑" in df.columns
@@ -308,11 +340,20 @@ class TestAIVerificationWorkflow:
         has_verification = df["Verification Score"].notna().any()
         assert has_verification, "Output should contain verification data"
 
-        cprint(f"[TEST] ✓ Verified content downloaded: {len(download_response.content)} bytes", "green")
+        cprint(
+            f"[TEST] ✓ Verified content downloaded: {len(download_response.content)} bytes",
+            "green",
+        )
 
-        cprint("[TEST] ✓✓✓ FULL AI VERIFICATION WORKFLOW SUCCESSFUL! ✓✓✓", "green", attrs=["bold"])
+        cprint(
+            "[TEST] ✓✓✓ FULL AI VERIFICATION WORKFLOW SUCCESSFUL! ✓✓✓",
+            "green",
+            attrs=["bold"],
+        )
 
-    def test_upload_references_endpoint(self, test_client, sample_docx_content, sample_case_context):
+    def test_upload_references_endpoint(
+        self, test_client, sample_docx_content, sample_case_context
+    ):
         """
         Test the /api/verify/upload-references endpoint for bulk reference upload
         """
@@ -320,13 +361,29 @@ class TestAIVerificationWorkflow:
 
         # Upload multiple reference files
         files = [
-            ("files", ("reference1.docx", io.BytesIO(sample_docx_content), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")),
-            ("files", ("reference2.docx", io.BytesIO(sample_docx_content), "application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
+            (
+                "files",
+                (
+                    "reference1.docx",
+                    io.BytesIO(sample_docx_content),
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                ),
+            ),
+            (
+                "files",
+                (
+                    "reference2.docx",
+                    io.BytesIO(sample_docx_content),
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                ),
+            ),
         ]
 
         data = {"case_context": sample_case_context}
 
-        response = test_client.post("/api/verify/upload-references", data=data, files=files)
+        response = test_client.post(
+            "/api/verify/upload-references", data=data, files=files
+        )
 
         assert response.status_code == 200
         result = response.json()
@@ -342,16 +399,27 @@ class TestAIVerificationWorkflow:
         # Track for cleanup
         self.stores_to_cleanup.append(result["store_id"])
 
-        cprint(f"[TEST] ✓ Uploaded {result['documents_uploaded']} references to store {result['store_id']}", "green")
+        cprint(
+            f"[TEST] ✓ Uploaded {result['documents_uploaded']} references to store {result['store_id']}",
+            "green",
+        )
 
-    def test_verification_reset(self, test_client, sample_docx_content, sample_case_context, temp_dir):
+    def test_verification_reset(
+        self, test_client, sample_docx_content, sample_case_context, temp_dir
+    ):
         """
         Test resetting verification results for a document
         """
         cprint("\n[TEST] Testing verification reset", "cyan")
 
         # Upload document
-        files = {"file": ("target.docx", io.BytesIO(sample_docx_content), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")}
+        files = {
+            "file": (
+                "target.docx",
+                io.BytesIO(sample_docx_content),
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        }
         upload_response = test_client.post("/upload", files=files)
         document_id = upload_response.json()["document_id"]
 
@@ -362,7 +430,9 @@ class TestAIVerificationWorkflow:
         temp_file = temp_dir / "ref.docx"
         temp_file.write_bytes(sample_docx_content)
 
-        metadata = self.service.generate_metadata(str(temp_file), "ref.docx", sample_case_context)
+        metadata = self.service.generate_metadata(
+            str(temp_file), "ref.docx", sample_case_context
+        )
         self.service.upload_to_store(str(temp_file), store_name, metadata)
 
         # Verify chunks
@@ -370,7 +440,7 @@ class TestAIVerificationWorkflow:
             "document_id": document_id,
             "store_id": store_name,
             "case_context": sample_case_context,
-            "chunking_mode": ChunkingMode.PARAGRAPH.value
+            "splitting_mode": ChunkingMode.PARAGRAPH.value,
         }
         test_client.post("/api/verify/execute", json=verify_request)
 
@@ -400,7 +470,7 @@ class TestErrorHandling:
         # Try chunking
         chunk_request = {
             "document_id": invalid_id,
-            "chunking_mode": ChunkingMode.PARAGRAPH.value
+            "splitting_mode": ChunkingMode.PARAGRAPH.value,
         }
         chunk_response = test_client.post("/chunk", json=chunk_request)
         assert chunk_response.status_code == 404
@@ -408,8 +478,8 @@ class TestErrorHandling:
         # Try exporting
         export_request = {
             "document_id": invalid_id,
-            "chunking_mode": ChunkingMode.PARAGRAPH.value,
-            "output_format": OutputFormat.EXCEL.value
+            "splitting_mode": ChunkingMode.PARAGRAPH.value,
+            "output_format": OutputFormat.EXCEL.value,
         }
         export_response = test_client.post("/export", json=export_request)
         assert export_response.status_code == 404
@@ -425,7 +495,13 @@ class TestErrorHandling:
         cprint("\n[TEST] Testing download without export", "cyan")
 
         # Upload only
-        files = {"file": ("test.docx", io.BytesIO(sample_docx_content), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")}
+        files = {
+            "file": (
+                "test.docx",
+                io.BytesIO(sample_docx_content),
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        }
         upload_response = test_client.post("/upload", files=files)
         document_id = upload_response.json()["document_id"]
 

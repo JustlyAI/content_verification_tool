@@ -2,6 +2,7 @@
 Integration tests for FastAPI endpoints
 Tests all API routes and request/response handling
 """
+
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
@@ -61,7 +62,9 @@ class TestUploadEndpoint:
         """Test PDF document upload"""
         cprint("\n[TEST] Testing PDF upload endpoint", "cyan")
 
-        files = {"file": ("test.pdf", io.BytesIO(sample_document_content), "application/pdf")}
+        files = {
+            "file": ("test.pdf", io.BytesIO(sample_document_content), "application/pdf")
+        }
         response = test_client.post("/upload", files=files)
 
         assert response.status_code == 200
@@ -85,7 +88,13 @@ class TestUploadEndpoint:
         """Test DOCX document upload"""
         cprint("\n[TEST] Testing DOCX upload endpoint", "cyan")
 
-        files = {"file": ("test.docx", io.BytesIO(sample_docx_content), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")}
+        files = {
+            "file": (
+                "test.docx",
+                io.BytesIO(sample_docx_content),
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        }
         response = test_client.post("/upload", files=files)
 
         assert response.status_code == 200
@@ -118,14 +127,20 @@ class TestChunkEndpoint:
         cprint("\n[TEST] Testing paragraph chunking endpoint", "cyan")
 
         # First upload document
-        files = {"file": ("test.docx", io.BytesIO(sample_docx_content), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")}
+        files = {
+            "file": (
+                "test.docx",
+                io.BytesIO(sample_docx_content),
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        }
         upload_response = test_client.post("/upload", files=files)
         document_id = upload_response.json()["document_id"]
 
         # Then chunk it
         chunk_request = {
             "document_id": document_id,
-            "chunking_mode": ChunkingMode.PARAGRAPH.value
+            "splitting_mode": ChunkingMode.PARAGRAPH.value,
         }
         response = test_client.post("/chunk", json=chunk_request)
 
@@ -133,11 +148,11 @@ class TestChunkEndpoint:
         data = response.json()
 
         assert "document_id" in data
-        assert "chunking_mode" in data
+        assert "splitting_mode" in data
         assert "chunks" in data
         assert "total_chunks" in data
 
-        assert data["chunking_mode"] == ChunkingMode.PARAGRAPH.value
+        assert data["splitting_mode"] == ChunkingMode.PARAGRAPH.value
         assert data["total_chunks"] > 0
         assert len(data["chunks"]) == data["total_chunks"]
 
@@ -148,35 +163,49 @@ class TestChunkEndpoint:
             assert "text" in chunk
             assert "is_overlap" in chunk
 
-        cprint(f"[TEST] ✓ Paragraph chunking complete: {data['total_chunks']} chunks", "green")
+        cprint(
+            f"[TEST] ✓ Paragraph chunking complete: {data['total_chunks']} chunks",
+            "green",
+        )
 
     def test_chunk_sentence_mode(self, test_client, sample_docx_content):
         """Test sentence chunking endpoint"""
         cprint("\n[TEST] Testing sentence chunking endpoint", "cyan")
 
         # First upload document
-        files = {"file": ("test.docx", io.BytesIO(sample_docx_content), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")}
+        files = {
+            "file": (
+                "test.docx",
+                io.BytesIO(sample_docx_content),
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        }
         upload_response = test_client.post("/upload", files=files)
         document_id = upload_response.json()["document_id"]
 
         # Then chunk it
         chunk_request = {
             "document_id": document_id,
-            "chunking_mode": ChunkingMode.SENTENCE.value
+            "splitting_mode": ChunkingMode.SENTENCE.value,
         }
         response = test_client.post("/chunk", json=chunk_request)
 
         assert response.status_code == 200
         data = response.json()
 
-        assert data["chunking_mode"] == ChunkingMode.SENTENCE.value
+        assert data["splitting_mode"] == ChunkingMode.SENTENCE.value
         assert data["total_chunks"] > 0
 
         # Verify hierarchical numbering in sentence mode
         for chunk in data["chunks"]:
-            assert "." in chunk["item_number"], "Sentence mode should use hierarchical numbering"
+            assert (
+                "." in chunk["item_number"]
+            ), "Sentence mode should use hierarchical numbering"
 
-        cprint(f"[TEST] ✓ Sentence chunking complete: {data['total_chunks']} chunks", "green")
+        cprint(
+            f"[TEST] ✓ Sentence chunking complete: {data['total_chunks']} chunks",
+            "green",
+        )
 
     def test_chunk_nonexistent_document(self, test_client):
         """Test chunking with nonexistent document ID"""
@@ -184,7 +213,7 @@ class TestChunkEndpoint:
 
         chunk_request = {
             "document_id": "nonexistent_id_12345",
-            "chunking_mode": ChunkingMode.PARAGRAPH.value
+            "splitting_mode": ChunkingMode.PARAGRAPH.value,
         }
         response = test_client.post("/chunk", json=chunk_request)
 
@@ -197,14 +226,20 @@ class TestChunkEndpoint:
         cprint("\n[TEST] Testing chunk caching", "cyan")
 
         # Upload document
-        files = {"file": ("test.docx", io.BytesIO(sample_docx_content), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")}
+        files = {
+            "file": (
+                "test.docx",
+                io.BytesIO(sample_docx_content),
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        }
         upload_response = test_client.post("/upload", files=files)
         document_id = upload_response.json()["document_id"]
 
         # Chunk twice with same mode
         chunk_request = {
             "document_id": document_id,
-            "chunking_mode": ChunkingMode.PARAGRAPH.value
+            "splitting_mode": ChunkingMode.PARAGRAPH.value,
         }
 
         response1 = test_client.post("/chunk", json=chunk_request)
@@ -231,15 +266,21 @@ class TestExportEndpoint:
         cprint("\n[TEST] Testing Word landscape export", "cyan")
 
         # Upload and chunk
-        files = {"file": ("test.docx", io.BytesIO(sample_docx_content), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")}
+        files = {
+            "file": (
+                "test.docx",
+                io.BytesIO(sample_docx_content),
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        }
         upload_response = test_client.post("/upload", files=files)
         document_id = upload_response.json()["document_id"]
 
         # Export
         export_request = {
             "document_id": document_id,
-            "chunking_mode": ChunkingMode.PARAGRAPH.value,
-            "output_format": OutputFormat.WORD_LANDSCAPE.value
+            "splitting_mode": ChunkingMode.PARAGRAPH.value,
+            "output_format": OutputFormat.WORD_LANDSCAPE.value,
         }
         response = test_client.post("/export", json=export_request)
 
@@ -261,15 +302,21 @@ class TestExportEndpoint:
         cprint("\n[TEST] Testing Excel export", "cyan")
 
         # Upload and chunk
-        files = {"file": ("test.docx", io.BytesIO(sample_docx_content), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")}
+        files = {
+            "file": (
+                "test.docx",
+                io.BytesIO(sample_docx_content),
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        }
         upload_response = test_client.post("/upload", files=files)
         document_id = upload_response.json()["document_id"]
 
         # Export
         export_request = {
             "document_id": document_id,
-            "chunking_mode": ChunkingMode.PARAGRAPH.value,
-            "output_format": OutputFormat.EXCEL.value
+            "splitting_mode": ChunkingMode.PARAGRAPH.value,
+            "output_format": OutputFormat.EXCEL.value,
         }
         response = test_client.post("/export", json=export_request)
 
@@ -286,15 +333,21 @@ class TestExportEndpoint:
         cprint("\n[TEST] Testing CSV export", "cyan")
 
         # Upload and chunk
-        files = {"file": ("test.docx", io.BytesIO(sample_docx_content), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")}
+        files = {
+            "file": (
+                "test.docx",
+                io.BytesIO(sample_docx_content),
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        }
         upload_response = test_client.post("/upload", files=files)
         document_id = upload_response.json()["document_id"]
 
         # Export
         export_request = {
             "document_id": document_id,
-            "chunking_mode": ChunkingMode.PARAGRAPH.value,
-            "output_format": OutputFormat.CSV.value
+            "splitting_mode": ChunkingMode.PARAGRAPH.value,
+            "output_format": OutputFormat.CSV.value,
         }
         response = test_client.post("/export", json=export_request)
 
@@ -311,15 +364,21 @@ class TestExportEndpoint:
         cprint("\n[TEST] Testing JSON export", "cyan")
 
         # Upload and chunk
-        files = {"file": ("test.docx", io.BytesIO(sample_docx_content), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")}
+        files = {
+            "file": (
+                "test.docx",
+                io.BytesIO(sample_docx_content),
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        }
         upload_response = test_client.post("/upload", files=files)
         document_id = upload_response.json()["document_id"]
 
         # Export
         export_request = {
             "document_id": document_id,
-            "chunking_mode": ChunkingMode.PARAGRAPH.value,
-            "output_format": OutputFormat.JSON.value
+            "splitting_mode": ChunkingMode.PARAGRAPH.value,
+            "output_format": OutputFormat.JSON.value,
         }
         response = test_client.post("/export", json=export_request)
 
@@ -341,14 +400,20 @@ class TestDownloadEndpoint:
         cprint("\n[TEST] Testing file download", "cyan")
 
         # Upload, chunk, and export
-        files = {"file": ("test.docx", io.BytesIO(sample_docx_content), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")}
+        files = {
+            "file": (
+                "test.docx",
+                io.BytesIO(sample_docx_content),
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        }
         upload_response = test_client.post("/upload", files=files)
         document_id = upload_response.json()["document_id"]
 
         export_request = {
             "document_id": document_id,
-            "chunking_mode": ChunkingMode.PARAGRAPH.value,
-            "output_format": OutputFormat.EXCEL.value
+            "splitting_mode": ChunkingMode.PARAGRAPH.value,
+            "output_format": OutputFormat.EXCEL.value,
         }
         test_client.post("/export", json=export_request)
 
@@ -357,7 +422,10 @@ class TestDownloadEndpoint:
 
         assert response.status_code == 200
         assert len(response.content) > 0
-        assert "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" in response.headers.get("content-type", "")
+        assert (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            in response.headers.get("content-type", "")
+        )
 
         cprint(f"[TEST] ✓ File downloaded: {len(response.content)} bytes", "green")
 

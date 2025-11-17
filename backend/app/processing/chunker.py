@@ -283,7 +283,7 @@ class DocumentChunker:
 
         Args:
             chunks: List of chunk dictionaries
-            mode: Chunking mode (determines numbering scheme)
+            mode: Splitting mode (determines numbering scheme)
 
         Returns:
             List of DocumentChunk objects with item numbers
@@ -386,7 +386,7 @@ class DocumentChunker:
 
         Args:
             docling_document: Docling document object
-            mode: Chunking mode (paragraph or sentence)
+            mode: Splitting mode (paragraph or sentence)
 
         Returns:
             List of DocumentChunk objects with metadata
@@ -402,7 +402,7 @@ class DocumentChunker:
         elif mode == ChunkingMode.SENTENCE:
             chunks = self._apply_sentence_splitting(base_chunks)
         else:
-            raise ValueError(f"Unknown chunking mode: {mode}")
+            raise ValueError(f"Unknown splitting mode: {mode}")
 
         # Step 3: Assign item numbers (pass mode for hierarchical numbering in sentence mode)
         final_chunks = self._assign_item_numbers(chunks, mode)

@@ -148,11 +148,11 @@ def upload_document(
 def export_document(payload: Dict[str, str]) -> Optional[Dict[str, Any]]:
     """Export document to specified format with comprehensive error handling"""
     try:
-        logger.info(f"User selected chunking mode: {payload.get('chunking_mode')}")
+        logger.info(f"User selected splitting mode: {payload.get('splitting_mode')}")
         logger.info(f"User generated export: {payload.get('output_format')}")
 
         cprint(
-            f"[FRONTEND] Exporting document: {payload['document_id']} ({payload['chunking_mode']} -> {payload['output_format']})",
+            f"[FRONTEND] Exporting document: {payload['document_id']} ({payload['splitting_mode']} -> {payload['output_format']})",
             "cyan",
         )
 
@@ -271,7 +271,11 @@ def upload_reference_documents(
 
 
 def execute_verification(
-    document_id: str, store_id: str, case_context: str, chunking_mode: str, timeout: int = 600
+    document_id: str,
+    store_id: str,
+    case_context: str,
+    splitting_mode: str,
+    timeout: int = 600,
 ) -> Optional[Dict[str, Any]]:
     """Execute AI verification against uploaded corpus"""
     try:
@@ -282,7 +286,7 @@ def execute_verification(
                 "document_id": document_id,
                 "store_id": store_id,
                 "case_context": case_context,
-                "chunking_mode": chunking_mode,
+                "splitting_mode": splitting_mode,
             },
             timeout=timeout,
         )
@@ -351,4 +355,47 @@ def reset_verification(document_id: str, timeout: int = 10) -> bool:
     except Exception as e:
         st.error(f"❌ Error during reset: {str(e)}")
         logger.error(f"Unexpected error during reset: {e}")
+        return False
+
+
+def delete_corpus(store_id: str, timeout: int = 10) -> bool:
+    """Delete a File Search corpus/store"""
+    try:
+        cprint(f"[FRONTEND] Deleting corpus: {store_id}", "cyan")
+
+        response = API_SESSION.delete(
+            f"{BACKEND_URL}/api/corpus/{store_id}",
+            timeout=timeout,
+        )
+
+        response.raise_for_status()
+        result = response.json()
+
+        cprint(
+            f"[FRONTEND] Corpus deleted successfully: {result.get('store_id', 'N/A')}",
+            "green",
+        )
+        return True
+
+    except requests.exceptions.Timeout:
+        st.error("⚠️ Deletion timed out. Please try again.")
+        logger.error("Delete corpus timeout")
+        return False
+
+    except requests.exceptions.ConnectionError:
+        st.error("⚠️ Cannot connect to backend server. Please contact support.")
+        logger.error("Connection error during corpus deletion")
+        return False
+
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 404:
+            st.error("⚠️ Corpus not found. It may have already been deleted.")
+        else:
+            st.error(f"❌ Deletion failed: {e.response.text}")
+        logger.error(f"HTTP error during corpus deletion: {e}")
+        return False
+
+    except Exception as e:
+        st.error(f"❌ Error during corpus deletion: {str(e)}")
+        logger.error(f"Unexpected error during corpus deletion: {e}")
         return False

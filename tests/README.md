@@ -7,18 +7,21 @@ Comprehensive test suite for the Document Verification Assistant, covering file 
 ### Test Categories
 
 1. **Unit Tests** (`@pytest.mark.unit`)
+
    - Document processor and file upload
    - Document chunker (paragraph/sentence modes)
    - Output generator (Word/Excel/CSV/JSON)
    - Fast tests with no external dependencies
 
 2. **Gemini AI Tests** (`@pytest.mark.gemini`)
+
    - Flash-lite metadata extraction
    - Flash verification loop
    - File Search store management
    - Requires `GEMINI_API_KEY`
 
 3. **Integration Tests** (`@pytest.mark.integration`)
+
    - FastAPI endpoint testing
    - API request/response validation
    - End-to-end workflows
@@ -144,7 +147,8 @@ pytest tests/test_document_processor.py -v
 ```
 
 **Covers:**
-- File size validation (< 10MB)
+
+- File size validation (< 100MB)
 - Supported formats (PDF, DOCX)
 - Docling conversion
 - Document caching
@@ -157,6 +161,7 @@ pytest tests/test_gemini_metadata_extraction.py -v -m gemini
 ```
 
 **Covers:**
+
 - AI-powered metadata generation
 - Document type classification
 - Keyword extraction
@@ -171,6 +176,7 @@ pytest tests/test_gemini_verification_loop.py -v -m gemini
 ```
 
 **Covers:**
+
 - File Search store creation
 - Reference document upload and indexing
 - Single chunk verification
@@ -187,6 +193,7 @@ pytest tests/test_e2e_workflows.py::TestAIVerificationWorkflow -v -m gemini
 ```
 
 **Workflow Steps:**
+
 1. Upload target document
 2. Create File Search store
 3. Generate metadata (Flash-lite)
@@ -199,12 +206,14 @@ pytest tests/test_e2e_workflows.py::TestAIVerificationWorkflow -v -m gemini
 ## Test Fixtures
 
 ### Document Fixtures
+
 - `sample_document_content`: Minimal PDF for testing
 - `sample_docx_content`: DOCX with test paragraphs
 - `sample_chunks_data`: Pre-chunked document data
 - `sample_verified_chunks_data`: Chunks with verification results
 
 ### Gemini Fixtures
+
 - `gemini_api_key`: Loads API key from environment
 - `gemini_client`: Initialized Gemini client
 - `mock_file_search_store`: Temporary File Search store
@@ -212,6 +221,7 @@ pytest tests/test_e2e_workflows.py::TestAIVerificationWorkflow -v -m gemini
 - `sample_metadata`: Sample DocumentMetadata object
 
 ### Utility Fixtures
+
 - `temp_dir`: Temporary directory for test outputs
 - `test_client`: FastAPI TestClient for API testing
 
@@ -249,26 +259,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.11'
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.11"
 
-    - name: Install dependencies
-      run: |
-        pip install -r requirements.txt
-        pip install pytest pytest-asyncio
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio
 
-    - name: Run unit tests (no API key required)
-      run: pytest tests/ -m "unit and not gemini"
+      - name: Run unit tests (no API key required)
+        run: pytest tests/ -m "unit and not gemini"
 
-    - name: Run Gemini tests (with API key)
-      env:
-        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      run: pytest tests/ -m gemini
-      if: env.GEMINI_API_KEY != ''
+      - name: Run Gemini tests (with API key)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: pytest tests/ -m gemini
+        if: env.GEMINI_API_KEY != ''
 ```
 
 ## Troubleshooting
@@ -276,16 +286,21 @@ jobs:
 ### Common Issues
 
 1. **Missing GEMINI_API_KEY**
+
    ```
    SKIPPED [1] conftest.py:48: GEMINI_API_KEY not found
    ```
+
    **Solution:** Set `GEMINI_API_KEY` in `.env` file
 
 2. **LibreOffice not found (for DOCX conversion)**
+
    ```
    FileNotFoundError: libreoffice command not found
    ```
+
    **Solution:** Install LibreOffice
+
    ```bash
    # macOS
    brew install libreoffice
@@ -295,10 +310,13 @@ jobs:
    ```
 
 3. **SpaCy model not found**
+
    ```
    OSError: Can't find model 'en_core_web_sm'
    ```
+
    **Solution:** Install SpaCy model
+
    ```bash
    python -m spacy download en_core_web_sm
    ```
@@ -322,6 +340,7 @@ pytest tests/ --cov=backend --cov-report=html --cov-report=term
 ```
 
 View HTML report:
+
 ```bash
 open htmlcov/index.html
 ```
@@ -331,12 +350,14 @@ open htmlcov/index.html
 ### Adding New Tests
 
 1. **Choose the right marker:**
+
    - `@pytest.mark.unit` - Fast, isolated tests
    - `@pytest.mark.integration` - API/workflow tests
    - `@pytest.mark.gemini` - Requires Gemini API
    - `@pytest.mark.slow` - Long-running tests
 
 2. **Use fixtures from conftest.py**
+
    ```python
    def test_my_feature(self, sample_docx_content, gemini_client):
        # Test implementation
@@ -344,6 +365,7 @@ open htmlcov/index.html
    ```
 
 3. **Add cleanup logic for Gemini resources**
+
    ```python
    def teardown_method(self):
        for store_name in self.stores_to_cleanup:
@@ -351,6 +373,7 @@ open htmlcov/index.html
    ```
 
 4. **Use cprint for clear test output**
+
    ```python
    from termcolor import cprint
 
@@ -371,11 +394,13 @@ open htmlcov/index.html
 ### Optimization Tips
 
 1. Run fast tests first:
+
    ```bash
    pytest tests/ -m "unit and not slow"
    ```
 
 2. Parallel execution:
+
    ```bash
    pip install pytest-xdist
    pytest tests/ -n auto
@@ -389,6 +414,7 @@ open htmlcov/index.html
 ## Contact
 
 For questions or issues with the test suite, please check:
+
 - Project documentation in `/docs`
 - GitHub issues
 - Implementation reports in project root

@@ -2,7 +2,7 @@
 Gemini Verification Service - Unified interface for tests
 Combines CorpusManager and GeminiVerifier functionality
 """
-from typing import List
+from typing import List, Optional
 import asyncio
 
 from app.corpus.corpus_manager import CorpusManager, corpus_manager
@@ -27,7 +27,7 @@ class GeminiVerificationService:
         return self.corpus_manager.create_store(case_id)
 
     def generate_metadata(
-        self, file_path: str, filename: str, case_context: str
+        self, file_path: str, filename: str, case_context: Optional[str] = None
     ) -> DocumentMetadata:
         """Generate metadata for a reference document"""
         return self.corpus_manager.generate_metadata(file_path, filename, case_context)
@@ -39,7 +39,7 @@ class GeminiVerificationService:
         return self.corpus_manager.upload_to_store(file_path, store_name, metadata)
 
     def verify_chunk(
-        self, chunk: DocumentChunk, store_name: str, case_context: str
+        self, chunk: DocumentChunk, store_name: str, case_context: Optional[str] = None
     ) -> DocumentChunk:
         """Verify a single chunk"""
         return self.verifier.verify_chunk(chunk, store_name, case_context)
@@ -48,7 +48,7 @@ class GeminiVerificationService:
         self,
         chunks: List[DocumentChunk],
         store_name: str,
-        case_context: str,
+        case_context: Optional[str] = None,
         batch_size: int = 3,
     ) -> List[DocumentChunk]:
         """Verify multiple chunks in batches"""

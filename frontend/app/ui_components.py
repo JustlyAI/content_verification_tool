@@ -9,22 +9,16 @@ from .state import reset_all_state, reset_verification_state
 
 
 def render_header() -> None:
-    """Render the main header"""
-    st.title("📋 Content Verification Tool")
+    """Render the Firm-inspired header with Gemini badge"""
     st.markdown(
         """
-    Convert legal documents (PDF/DOCX) into structured verification checklists.
-    Upload your document and generate a table for systematic verification of each sentence or paragraph.
-    """
+<div class="fm-header">
+    <div class="fm-header-title">Content Verification Assistant</div>
+    <div class="fm-gemini-badge">🔷 Powered by Gemini</div>
+</div>
+""",
+        unsafe_allow_html=True,
     )
-
-    # Powered by Gemini
-    col1, col2, col3 = st.columns([2, 1, 2])
-    with col2:
-        st.markdown("**Powered by**")
-        st.image("gemini-logo.png", width=200)
-
-    st.divider()
 
 
 def render_backend_status() -> None:
@@ -53,7 +47,7 @@ def render_sidebar() -> None:
         ### Features
         - **Document Upload**: PDF or DOCX files (max {MAX_FILE_SIZE_MB} MB)
         - **AI Verification**: Upload reference documents for automated verification
-        - **Chunking Modes**:
+        - **Splitting modes**:
           - Paragraph-level (default)
           - Sentence-level
         - **Output Formats**:
@@ -66,7 +60,7 @@ def render_sidebar() -> None:
         ### How It Works
         1. (Optional) Create AI reference corpus
         2. Upload your document
-        3. Select chunking mode
+        3. Select splitting mode
         4. Run AI verification (if corpus active)
         5. Choose output format
         6. Generate and download
@@ -109,11 +103,31 @@ def render_sidebar() -> None:
 
 
 def render_footer() -> None:
-    """Render the footer"""
-    st.divider()
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.caption("Content Verification Tool v1.0.0 | Built with Streamlit & FastAPI")
+    """Render the Firm-inspired footer with connection status"""
+    from .api_client import check_backend_health
+
+    # Check backend health status
+    backend_healthy = check_backend_health()
+    status_indicator = "🟢 Connected" if backend_healthy else "🔴 Disconnected"
+    status_class = (
+        "fm-status-connected" if backend_healthy else "fm-status-disconnected"
+    )
+
+    st.markdown(
+        f"""
+<div class="fm-footer">
+    <div class="fm-footer-left">
+        Powered by <span class="fm-footer-highlight">Gemini 2.5 Flash</span> and <span class="fm-footer-highlight">Gemini File Search API</span>•
+        Content Verification Tool v2.1 •
+        Built for Demo
+    </div>
+    <div class="fm-footer-right">
+        <span class="{status_class}">{status_indicator}</span>
+    </div>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
 
 
 def render_verification_results_summary() -> None:

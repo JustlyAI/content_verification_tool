@@ -50,12 +50,16 @@ with tab1:
                 type=["pdf", "docx"],
                 accept_multiple_files=True,
                 key="corpus_upload",
-                label_visibility="collapsed"
+                label_visibility="collapsed",
             )
 
             if uploaded_files:
                 st.info(f"Selected {len(uploaded_files)} file(s)")
-                st.button("🚀 Process & Add to Corpus", type="primary", use_container_width=True)
+                st.button(
+                    "🚀 Process & Add to Corpus",
+                    type="primary",
+                    use_container_width=True,
+                )
 
         st.divider()
 
@@ -66,14 +70,18 @@ with tab1:
             # Sample data in a table
             st.dataframe(
                 {
-                    "Document": ["Case Law 2023.pdf", "Regulations.docx", "Precedent Analysis.pdf"],
+                    "Document": [
+                        "Case Law 2023.pdf",
+                        "Regulations.docx",
+                        "Precedent Analysis.pdf",
+                    ],
                     "Pages": [45, 23, 59],
                     "Size": ["5.2 MB", "1.8 MB", "7.3 MB"],
                     "Added": ["2025-11-10", "2025-11-09", "2025-11-08"],
-                    "Status": ["✅ Indexed", "✅ Indexed", "✅ Indexed"]
+                    "Status": ["✅ Indexed", "✅ Indexed", "✅ Indexed"],
                 },
                 use_container_width=True,
-                hide_index=True
+                hide_index=True,
             )
 
     with col2:
@@ -85,19 +93,21 @@ with tab1:
                 "Case Context",
                 placeholder="Enter relevant case context...",
                 height=150,
-                help="Provide context to improve verification accuracy"
+                help="Provide context to improve verification accuracy",
             )
 
             st.selectbox(
                 "Verification Model",
                 ["Gemini 1.5 Pro", "Gemini 1.5 Flash", "GPT-4"],
-                help="Select the AI model for verification"
+                help="Select the AI model for verification",
             )
 
             st.slider(
                 "Confidence Threshold",
-                0.0, 1.0, 0.7,
-                help="Minimum confidence score for verification"
+                0.0,
+                1.0,
+                0.7,
+                help="Minimum confidence score for verification",
             )
 
             st.divider()
@@ -116,9 +126,7 @@ with tab2:
         # Upload section
         st.subheader("1️⃣ Upload Document")
         uploaded_doc = st.file_uploader(
-            "Choose document to verify",
-            type=["pdf", "docx"],
-            key="doc_upload"
+            "Choose document to verify", type=["pdf", "docx"], key="doc_upload"
         )
 
         if uploaded_doc:
@@ -127,13 +135,13 @@ with tab2:
 
         st.divider()
 
-        # Chunking mode
-        st.subheader("2️⃣ Chunking Mode")
+        # Splitting mode
+        st.subheader("2️⃣ Splitting mode")
         chunking = st.radio(
             "Select mode",
             ["Paragraph", "Sentence"],
             horizontal=True,
-            label_visibility="collapsed"
+            label_visibility="collapsed",
         )
 
         st.divider()
@@ -153,11 +161,13 @@ with tab2:
         output_format = st.selectbox(
             "Select format",
             ["Word (Landscape)", "Word (Portrait)", "Excel", "CSV", "JSON"],
-            label_visibility="collapsed"
+            label_visibility="collapsed",
         )
 
         st.button("📄 Generate Document", type="primary", use_container_width=True)
-        st.button("⬇️ Download", type="secondary", use_container_width=True, disabled=True)
+        st.button(
+            "⬇️ Download", type="secondary", use_container_width=True, disabled=True
+        )
 
     with right_col:
         # Results pane
@@ -213,7 +223,7 @@ with tab2:
                         "The court held that...",
                         "This provision complies...",
                         "Furthermore, the analysis...",
-                        "As stated in precedent..."
+                        "As stated in precedent...",
                     ],
                     "Verified": ["✅", "✅", "✅", "⚠️", "✅"],
                     "Score": [8.5, 9.1, 9.2, 4.2, 8.8],
@@ -222,11 +232,11 @@ with tab2:
                         "Case Law 2023.pdf:12",
                         "Case Law 2023.pdf:12",
                         "—",
-                        "Precedent.pdf:34"
-                    ]
+                        "Precedent.pdf:34",
+                    ],
                 },
                 use_container_width=True,
-                hide_index=True
+                hide_index=True,
             )
 
 st.divider()
