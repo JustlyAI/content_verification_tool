@@ -451,7 +451,7 @@ def render_verification_workflow() -> None:
         st.markdown(
             '<div class="fm-card">'
             '<div class="fm-card-number">STEP 2</div>'
-            '<div class="fm-card-title">Splitting</div>',
+            '<div class="fm-card-title">Split</div>',
             unsafe_allow_html=True,
         )
         render_chunking_card()
