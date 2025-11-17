@@ -35,8 +35,6 @@ def init_session_state() -> None:
         st.session_state.verification_results = None
     if "verification_in_progress" not in st.session_state:
         st.session_state.verification_in_progress = False
-    if "trigger_verification" not in st.session_state:
-        st.session_state.trigger_verification = False
 
     # Processing state
     if "splitting_mode" not in st.session_state:
@@ -65,7 +63,6 @@ def reset_verification_state() -> None:
     st.session_state.verification_complete = False
     st.session_state.verification_results = None
     st.session_state.verification_in_progress = False
-    st.session_state.trigger_verification = False
     st.session_state.splitting_mode = "paragraph"
 
 

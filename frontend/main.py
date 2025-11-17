@@ -193,30 +193,22 @@ def render_verify_card() -> None:
     )
     st.info(f"🔷 Corpus Ready ({doc_count} docs)")
 
-    # Run verification button with callback pattern to prevent double-rendering
-    def run_verification_callback():
-        """Callback to initiate verification (sets flag only)"""
-        # Only set flag if not already processing
-        if not st.session_state.get("verification_in_progress", False):
-            st.session_state.trigger_verification = True
-
-    # Check if we're already processing to prevent double-click
+    # Check if we're already processing
     is_processing = st.session_state.get("verification_in_progress", False)
 
-    st.button(
+    # Use button with key to track clicks (no callback needed)
+    verify_clicked = st.button(
         "▶ Run Verification",
         type="primary",
         use_container_width=True,
         disabled=is_processing,
         key="verify_gemini",
-        on_click=run_verification_callback,
     )
 
-    # Process verification AFTER button callback (only once)
-    if st.session_state.get("trigger_verification", False) and not is_processing:
-        # Immediately set processing flag and clear trigger to prevent double-execution
+    # Process verification when button is clicked (only once per click)
+    if verify_clicked and not is_processing:
+        # Set processing flag immediately to prevent double-execution
         st.session_state.verification_in_progress = True
-        st.session_state.trigger_verification = False
 
         progress_bar = st.progress(0)
         status_text = st.empty()
@@ -233,17 +225,16 @@ def render_verify_card() -> None:
         if result:
             st.session_state.verification_complete = True
             st.session_state.verification_results = result
-            st.session_state.verification_in_progress = False
 
             progress_bar.progress(100)
             status_text.success("✅ Verification complete!")
         else:
-            st.session_state.verification_in_progress = False
             progress_bar.empty()
             status_text.empty()
 
-        # Explicit rerun after completion
-        st.rerun()
+        # Clear processing flag
+        st.session_state.verification_in_progress = False
+        # Streamlit will automatically rerun when session state changes
 
 
 def render_export_card() -> None:
