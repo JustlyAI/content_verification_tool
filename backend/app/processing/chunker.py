@@ -84,7 +84,7 @@ class DocumentChunker:
                         page_no = (
                             first_item.prov[0].page_no
                             if first_item.prov[0].page_no is not None
-                            else 1
+                            else 0  # Default to 0 (0-indexed) instead of 1
                         )
                         return page_no + 1  # Convert to 1-indexed
 

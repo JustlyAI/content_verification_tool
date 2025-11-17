@@ -50,25 +50,23 @@ def render_corpus_creation() -> None:
                 st.session_state.reference_docs_uploaded = True
                 st.session_state.case_context = case_context
                 st.session_state.corpus_metadata = result.get("metadata", [])
-
-                st.success(
-                    f"✅ Uploaded {result['documents_uploaded']} reference documents"
-                )
-                st.info(f"📦 Store ID: `{result['store_id']}`")
-
-                # Show metadata
-                if result.get("metadata"):
-                    with st.expander("View Document Metadata"):
-                        for meta in result["metadata"]:
-                            st.markdown(f"**{meta['filename']}**")
-                            st.caption(f"Type: {meta['document_type']}")
-                            st.caption(f"Summary: {meta['summary']}")
-
+                st.session_state.corpus_just_created = True
+                # Force rerun to update sidebar status immediately
                 st.rerun()
 
 
 def render_active_corpus() -> None:
     """Render active corpus information and management"""
+    # Show one-time success message if corpus was just created
+    if st.session_state.get("corpus_just_created", False):
+        doc_count = (
+            len(st.session_state.corpus_metadata)
+            if st.session_state.corpus_metadata
+            else 0
+        )
+        st.success(f"✅ Uploaded {doc_count} reference document(s) successfully!")
+        st.session_state.corpus_just_created = False
+
     st.success("✅ Corpus is active and ready for verification")
 
     # Display corpus information
@@ -95,7 +93,7 @@ def render_active_corpus() -> None:
     with col3:
         if st.button("🗑️ Clear Corpus", type="secondary", use_container_width=True):
             reset_corpus_state()
-            st.rerun()
+            # Streamlit will automatically rerun when session state changes
 
 
 def render_corpus_sidebar() -> None:
@@ -154,14 +152,12 @@ def render_corpus_sidebar() -> None:
             st.metric("Pages", total_pages)
             st.metric("Chunks", "N/A")  # Not available from File Search
 
-        st.markdown("---")
-
     # Quick Upload / Corpus Creation
     if not st.session_state.reference_docs_uploaded:
         case_context = st.text_area(
             "Case Context",
             placeholder="Brief description of case or project...",
-            height=80,
+            height=120,
             key="case_context_sidebar",
             label_visibility="collapsed",
         )
@@ -191,13 +187,22 @@ def render_corpus_sidebar() -> None:
                         st.session_state.reference_docs_uploaded = True
                         st.session_state.case_context = case_context
                         st.session_state.corpus_metadata = result.get("metadata", [])
-                        st.success(f"✅ {len(uploaded_refs)} file(s) uploaded")
+                        st.session_state.corpus_just_created = True
+                        # Force rerun to update sidebar status immediately
                         st.rerun()
-
-        st.markdown("---")
 
     # Actions (if corpus is active)
     if st.session_state.reference_docs_uploaded:
+        # Show one-time success message if corpus was just created
+        if st.session_state.get("corpus_just_created", False):
+            doc_count = (
+                len(st.session_state.corpus_metadata)
+                if st.session_state.corpus_metadata
+                else 0
+            )
+            st.success(f"✅ Created! {doc_count} document(s) uploaded")
+            st.session_state.corpus_just_created = False
+
         st.markdown("**Actions**")
 
         if st.button(
@@ -210,7 +215,7 @@ def render_corpus_sidebar() -> None:
                 st.session_state.view_library_expanded = (
                     not st.session_state.view_library_expanded
                 )
-            st.rerun()
+            # Streamlit will automatically rerun when session state changes
 
         if st.button(
             "⚙️ Configure",
@@ -234,18 +239,17 @@ def render_corpus_sidebar() -> None:
                     success = delete_corpus(st.session_state.store_id)
                     if success:
                         reset_corpus_state()
-                        st.success("✅ Corpus deleted successfully!")
-                        st.rerun()
+                        # Streamlit will automatically rerun when session state changes
                     else:
                         st.error(
                             "❌ Failed to delete corpus. Clearing local state only."
                         )
                         reset_corpus_state()
-                        st.rerun()
+                        # Streamlit will automatically rerun when session state changes
             else:
                 # No store_id, just reset state
                 reset_corpus_state()
-                st.rerun()
+                # Streamlit will automatically rerun when session state changes
 
     # View Library Expander (show when toggled)
     if st.session_state.reference_docs_uploaded and st.session_state.get(
