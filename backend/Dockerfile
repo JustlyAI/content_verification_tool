@@ -25,8 +25,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Download spacy model
 RUN python -m spacy download en_core_web_sm
 
-# Pre-download OCR models to avoid first-request delay
-RUN python -c "from docling.document_converter import DocumentConverter; from docling.datamodel.base_models import InputFormat; from docling.datamodel.pipeline_options import PdfPipelineOptions; from docling.document_converter import PdfFormatOption; opts = PdfPipelineOptions(); opts.do_ocr = True; converter = DocumentConverter(format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=opts)}); print('OCR models downloaded')"
+# Verify Docling installation
+RUN python -c "from docling.document_converter import DocumentConverter; print('✓ Docling installed successfully')"
 
 # Copy application code
 COPY ./app ./app
