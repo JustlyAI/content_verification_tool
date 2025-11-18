@@ -27,7 +27,7 @@ EXPOSE 8501
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV BACKEND_URL=http://backend:8080
-ENV PORT=8501
+ENV PORT=8080
 
 # Health check (use PORT variable)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

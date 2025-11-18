@@ -31,8 +31,20 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Download spacy model
 RUN python -m spacy download en_core_web_sm
 
-# Verify Docling installation (no model downloads needed - table structure and OCR disabled)
-RUN python -c "from docling.document_converter import DocumentConverter; \
+# Create a minimal test PDF and process it to cache all required models
+RUN python -c "\
+from reportlab.pdfgen import canvas; \
+from reportlab.lib.pagesizes import letter; \
+import tempfile; \
+from pathlib import Path; \
+tmp = tempfile.NamedTemporaryFile(suffix='.pdf', delete=False); \
+test_pdf = tmp.name; \
+c = canvas.Canvas(test_pdf, pagesize=letter); \
+c.drawString(100, 750, 'Test document for model caching'); \
+c.save(); \
+tmp.close(); \
+print('✓ Created test PDF'); \
+from docling.document_converter import DocumentConverter; \
 from docling.datamodel.pipeline_options import PdfPipelineOptions; \
 from docling.datamodel.base_models import InputFormat; \
 from docling.document_converter import PdfFormatOption; \
@@ -40,7 +52,12 @@ pipeline_options = PdfPipelineOptions(); \
 pipeline_options.do_table_structure = False; \
 pipeline_options.do_ocr = False; \
 converter = DocumentConverter(format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)}); \
-print('✓ Docling installed and verified successfully')"
+print('✓ Processing test PDF to download and cache models...'); \
+result = converter.convert(test_pdf); \
+print(f'✓ Successfully processed test document ({len(result.document.pages)} pages)'); \
+print('✓ All required models downloaded and cached'); \
+Path(test_pdf).unlink(); \
+"
 
 # Copy application code
 COPY ./app ./app
