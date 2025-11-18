@@ -70,12 +70,12 @@ BACKEND_URL=$(gcloud run services describe verification-backend \
 
 echo "✅ Backend deployed: $BACKEND_URL"
 
-# Update backend CORS with wildcard for Cloud Run frontend
+# Update backend CORS with regex pattern for Cloud Run frontend
 echo ""
 echo "🔧 Updating backend CORS..."
 gcloud run services update verification-backend \
   --region=$REGION \
-  --set-env-vars=ALLOWED_ORIGINS=$BACKEND_URL,https://verification-frontend-*.run.app \
+  --update-env-vars=ALLOWED_ORIGINS="${BACKEND_URL}",ALLOWED_ORIGIN_REGEX="https://verification-frontend-.*\.run\.app" \
   --quiet
 
 # Deploy frontend with backend URL
@@ -87,6 +87,7 @@ gcloud run deploy verification-frontend \
   --platform=managed \
   --memory=512Mi \
   --cpu=1 \
+  --port=8080 \
   --set-env-vars=BACKEND_URL=$BACKEND_URL \
   --allow-unauthenticated \
   --quiet

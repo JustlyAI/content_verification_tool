@@ -43,13 +43,11 @@ class DocumentProcessor:
                 "yellow",
             )
 
-        # Minimal pipeline configuration for offline operation
+        # Minimal pipeline configuration
         # Disable OCR (most expensive operation)
         # Disable table structure detection (removes TableFormer model dependency)
-        # Set artifacts_path to use pre-downloaded models (no runtime downloads)
-        pipeline_options = PdfPipelineOptions(
-            artifacts_path="/app/.cache/docling_artifacts"  # Use cached models for offline operation
-        )
+        # No artifacts_path needed since we're not using model-based features
+        pipeline_options = PdfPipelineOptions()
         pipeline_options.do_table_structure = False  # CHANGED: Disabled to remove model dependency
         pipeline_options.do_ocr = False
 
@@ -68,7 +66,6 @@ class DocumentProcessor:
         cprint("  ✓ Default PyPdfiumDocumentBackend (standard PDF parsing)", "green")
         cprint("  ✓ OCR disabled (already digital PDFs)", "green")
         cprint("  ✓ Table structure detection disabled (no model downloads)", "green")
-        cprint("  ✓ Offline mode enabled (artifacts_path: /app/.cache/docling_artifacts)", "green")
 
     def _find_libreoffice(self) -> Optional[str]:
         """

@@ -31,17 +31,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Download spacy model
 RUN python -m spacy download en_core_web_sm
 
-# Pre-download Docling models for offline operation
-# This initializes DocumentConverter with the same config as runtime to cache all required models
+# Verify Docling installation (no model downloads needed - table structure and OCR disabled)
 RUN python -c "from docling.document_converter import DocumentConverter; \
 from docling.datamodel.pipeline_options import PdfPipelineOptions; \
 from docling.datamodel.base_models import InputFormat; \
 from docling.document_converter import PdfFormatOption; \
-pipeline_options = PdfPipelineOptions(artifacts_path='/app/.cache/docling_artifacts'); \
+pipeline_options = PdfPipelineOptions(); \
 pipeline_options.do_table_structure = False; \
 pipeline_options.do_ocr = False; \
 converter = DocumentConverter(format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)}); \
-print('✓ Docling models cached successfully for offline operation')"
+print('✓ Docling installed and verified successfully')"
 
 # Copy application code
 COPY ./app ./app
