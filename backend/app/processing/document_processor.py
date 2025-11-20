@@ -1,6 +1,6 @@
 """
 Document processing module using Docling for PDF/DOCX conversion
-OPTIMIZED VERSION with 1.5-2x performance improvements
+MINIMAL MVP VERSION - simplified configuration
 """
 
 from pathlib import Path
@@ -11,12 +11,7 @@ import shutil
 from termcolor import cprint
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.pipeline_options import (
-    PdfPipelineOptions,
-    TableFormerMode,
-)
-from docling.datamodel.accelerator_options import AcceleratorOptions, AcceleratorDevice
-from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
+from docling.datamodel.pipeline_options import PdfPipelineOptions
 
 from app.processing.cache import document_cache
 
@@ -29,12 +24,12 @@ SUPPORTED_EXTENSIONS = {".pdf", ".docx"}
 
 
 class DocumentProcessor:
-    """Handles document conversion using Docling with optimized performance"""
+    """Handles document conversion using Docling with minimal configuration"""
 
     def __init__(self):
-        """Initialize the document processor with performance optimizations"""
+        """Initialize the document processor with minimal configuration"""
         cprint(
-            "[PROCESSOR] Initializing Docling DocumentConverter with optimizations...",
+            "[PROCESSOR] Initializing Docling DocumentConverter (minimal configuration)...",
             "cyan",
         )
 
@@ -48,72 +43,29 @@ class DocumentProcessor:
                 "yellow",
             )
 
-        # Configure hardware acceleration
-        # On macOS with Apple Silicon, this will use MPS (Metal Performance Shaders)
-        # On CUDA systems, it will use GPU
-        # Falls back to multi-threaded CPU if neither available
-        accelerator_options = AcceleratorOptions(
-            num_threads=8,  # Increase from default for better CPU utilization
-            device=AcceleratorDevice.AUTO,  # Auto-detect best device (MPS/CUDA/CPU)
-        )
+        # Minimal pipeline configuration
+        # Disable OCR (most expensive operation)
+        # Disable table structure detection (removes TableFormer model dependency)
+        # No artifacts_path needed since we're not using model-based features
+        pipeline_options = PdfPipelineOptions()
+        pipeline_options.do_table_structure = False  # CHANGED: Disabled to remove model dependency
+        pipeline_options.do_ocr = False
 
-        cprint(
-            f"[PROCESSOR] Hardware acceleration: AUTO (will detect MPS/CUDA/CPU)",
-            "cyan",
-        )
-
-        # OPTIMIZATION 1: Disable OCR (already done, but keeping it explicit)
-        # OCR is the MOST expensive operation - only enable if you need it
-
-        # OPTIMIZATION 2: Use FAST table mode instead of ACCURATE
-        # This provides significant speedup with minimal quality loss
-        # Change to TableFormerMode.ACCURATE if you need perfect table extraction
-        pipeline_options_fast = PdfPipelineOptions()
-        pipeline_options_fast.do_table_structure = True
-        pipeline_options_fast.table_structure_options.mode = (
-            TableFormerMode.FAST
-        )  # Changed from default
-        pipeline_options_fast.do_ocr = False
-        pipeline_options_fast.accelerator_options = accelerator_options
-
-        # For DOCX-converted PDFs (already digital text)
-        pipeline_options_no_ocr = PdfPipelineOptions()
-        pipeline_options_no_ocr.do_table_structure = True
-        pipeline_options_no_ocr.table_structure_options.mode = TableFormerMode.FAST
-        pipeline_options_no_ocr.do_ocr = False
-        pipeline_options_no_ocr.accelerator_options = accelerator_options
-
-        # OPTIMIZATION 3: Use DoclingParseV2DocumentBackend
-        # This provides 5-10x speedup for PDF parsing (0.05s/page vs 0.25s/page)
-        cprint(
-            "[PROCESSOR] Using DoclingParseV2DocumentBackend (5-10x faster)", "green"
-        )
-
-        # Initialize converter with optimizations
-        self.converter_with_ocr = DocumentConverter(
+        # Initialize single converter with minimal config
+        # Uses default PyPdfiumDocumentBackend (no backend parameter needed)
+        self.converter = DocumentConverter(
             format_options={
                 InputFormat.PDF: PdfFormatOption(
-                    pipeline_options=pipeline_options_fast,
-                    backend=DoclingParseV2DocumentBackend,  # ⚡ V2 backend
+                    pipeline_options=pipeline_options,
+                    # No backend parameter - uses default PyPdfiumDocumentBackend
                 )
             }
         )
 
-        # Initialize converter without OCR (for DOCX-converted PDFs)
-        self.converter_no_ocr = DocumentConverter(
-            format_options={
-                InputFormat.PDF: PdfFormatOption(
-                    pipeline_options=pipeline_options_no_ocr,
-                    backend=DoclingParseV2DocumentBackend,  # ⚡ V2 backend
-                )
-            }
-        )
-
-        cprint("[PROCESSOR] DocumentConverter initialized with optimizations:", "green")
-        cprint("  ✓ DoclingParseV2DocumentBackend (5-10x faster parsing)", "green")
-        cprint("  ✓ Hardware acceleration enabled (MPS/CUDA/CPU)", "green")
-        cprint("  ✓ FAST table mode (faster with good quality)", "green")
+        cprint("[PROCESSOR] DocumentConverter initialized with minimal configuration:", "green")
+        cprint("  ✓ Default PyPdfiumDocumentBackend (standard PDF parsing)", "green")
         cprint("  ✓ OCR disabled (already digital PDFs)", "green")
+        cprint("  ✓ Table structure detection disabled (no model downloads)", "green")
 
     def _find_libreoffice(self) -> Optional[str]:
         """
@@ -332,10 +284,9 @@ class DocumentProcessor:
                     "cyan",
                 )
 
-            # Convert document using Docling with optimizations
-            converter = self.converter_no_ocr if is_docx else self.converter_with_ocr
+            # Convert document using Docling with minimal configuration
             cprint(
-                f"[PROCESSOR] Running optimized Docling conversion on {conversion_path.name}...",
+                f"[PROCESSOR] Running Docling conversion on {conversion_path.name}...",
                 "cyan",
             )
 
@@ -343,7 +294,7 @@ class DocumentProcessor:
 
             start_time = time.time()
 
-            result = converter.convert(conversion_path)
+            result = self.converter.convert(conversion_path)
 
             elapsed_time = time.time() - start_time
 
@@ -355,9 +306,10 @@ class DocumentProcessor:
                 len(docling_document.pages) if hasattr(docling_document, "pages") else 0
             )
 
+            avg_pages_per_sec = page_count / elapsed_time if elapsed_time > 0 else 0
             cprint(
                 f"[PROCESSOR] Conversion successful: {page_count} pages in {elapsed_time:.2f}s "
-                f"({page_count/elapsed_time:.2f} pages/sec)",
+                f"({avg_pages_per_sec:.2f} pages/sec)",
                 "green",
             )
 

@@ -56,8 +56,13 @@ logger = logging.getLogger(__name__)
 # Removed render_corpus_tab() - using single-screen layout now
 
 
+@st.fragment
 def render_upload_card() -> None:
-    """Render Card 1: Upload document section"""
+    """Render Card 1: Upload document section
+
+    Uses @st.fragment to isolate reruns - only this card updates during upload,
+    preventing other steps from disappearing due to blocking HTTP calls.
+    """
     uploaded_file = st.file_uploader(
         "Document to verify",
         type=SUPPORTED_FILE_TYPES,
@@ -114,12 +119,13 @@ def render_upload_card() -> None:
                     st.session_state.document_info = result
                     st.session_state.upload_in_progress = False
                     status_text.success(f"✅ {result['message']}")
+                    # Force full page rerun so Steps 2-4 can react to new document state
+                    st.rerun()
                 elif result:
                     st.session_state.upload_in_progress = False
                     status_text.error("⚠️ Invalid response from server")
                 else:
                     st.session_state.upload_in_progress = False
-                # Streamlit will automatically rerun when session state changes
         else:
             st.success("✓ Ready to Verify")
             st.caption(
@@ -180,8 +186,13 @@ def render_chunking_card() -> None:
     st.caption(f"Split into {splitting_mode}s for detailed analysis")
 
 
+@st.fragment
 def render_verify_card() -> None:
-    """Render Card 3: AI Verification with Gemini branding"""
+    """Render Card 3: AI Verification with Gemini branding
+
+    Uses @st.fragment to isolate reruns - only this card updates during verification,
+    preventing Step 4 from disappearing due to blocking HTTP calls.
+    """
     if st.session_state.verification_complete:
         st.success("✅ Verification complete")
         st.caption("Results displayed below")
@@ -241,11 +252,12 @@ def render_verify_card() -> None:
 
             progress_bar.progress(100)
             status_text.success("✅ Verification complete!")
+            # Force full page rerun so results section can display verification data
+            st.rerun()
         else:
             st.session_state.verification_in_progress = False
             progress_bar.empty()
             status_text.empty()
-        # Streamlit will automatically rerun when session state changes
 
 
 def render_export_card() -> None:

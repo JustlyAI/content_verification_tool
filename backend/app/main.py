@@ -49,12 +49,16 @@ app = FastAPI(
 
 # Add CORS middleware to allow frontend communication
 # Get allowed origins from environment variable (comma-separated list)
-allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:8501").split(",")
-allowed_origins = [origin.strip() for origin in allowed_origins]  # Remove whitespace
+allowed_origins_str = os.getenv("ALLOWED_ORIGINS", "http://localhost:8501")
+allowed_origins = [origin.strip() for origin in allowed_origins_str.split(",")]
+
+# Support regex patterns for Cloud Run dynamic URLs
+allowed_origin_regex = os.getenv("ALLOWED_ORIGIN_REGEX", None)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=allowed_origins if not allowed_origin_regex else ["*"],  # Use * if regex is set
+    allow_origin_regex=allowed_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -76,6 +80,8 @@ async def startup_event():
     cprint("[API] Initializing output generator...", "cyan")
     cprint("[API] All services initialized successfully ✓", "green")
     cprint(f"[API] CORS allowed origins: {', '.join(allowed_origins)}", "cyan")
+    if allowed_origin_regex:
+        cprint(f"[API] CORS origin regex: {allowed_origin_regex}", "cyan")
     cprint("=" * 80, "cyan")
 
 

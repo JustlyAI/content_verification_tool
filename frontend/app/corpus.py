@@ -65,7 +65,8 @@ def render_corpus_creation() -> None:
 
         # Clear processing flag
         st.session_state.corpus_creation_in_progress = False
-        # Streamlit will automatically rerun when session state changes
+        # Force UI update to show corpus stats immediately
+        st.rerun()
 
 
 def render_active_corpus() -> None:
@@ -237,7 +238,8 @@ def render_corpus_sidebar() -> None:
 
                 # Clear processing flag
                 st.session_state.corpus_creation_in_progress = False
-                # Streamlit will automatically rerun when session state changes
+                # Force UI update to show corpus stats immediately
+                st.rerun()
 
     # Actions (if corpus is active)
     if st.session_state.reference_docs_uploaded:

@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: verification-backend
     ports:
-      - "8000:8000"
+      - "8000:8080"
     volumes:
       - document_cache:/tmp/document_cache
       - output_files:/tmp/output
@@ -15,8 +15,9 @@ services:
       - PYTHONUNBUFFERED=1
       - DOCLING_LIBREOFFICE_CMD=/usr/bin/libreoffice
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://frontend:8501,http://localhost:8501}
+      - PORT=8080
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -31,9 +32,9 @@ services:
       dockerfile: Dockerfile
     container_name: verification-frontend
     ports:
-      - "8501:8501"
+      - "8501:8080"
     environment:
-      - BACKEND_URL=http://backend:8000
+      - BACKEND_URL=http://backend:8080
       - PYTHONUNBUFFERED=1
     depends_on:
       backend:

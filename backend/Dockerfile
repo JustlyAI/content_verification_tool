@@ -4,6 +4,12 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
 
+# Set HuggingFace cache location before installing dependencies
+ENV HF_HOME=/app/.cache/huggingface
+
+# Create cache directories for models
+RUN mkdir -p /app/.cache/huggingface/transformers /app/.cache/huggingface/datasets /app/.cache/torch /app/.cache/docling_artifacts
+
 # Install system dependencies including OpenGL libraries for Docling and LibreOffice
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -25,8 +31,33 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Download spacy model
 RUN python -m spacy download en_core_web_sm
 
-# Pre-download OCR models to avoid first-request delay
-RUN python -c "from docling.document_converter import DocumentConverter; from docling.datamodel.base_models import InputFormat; from docling.datamodel.pipeline_options import PdfPipelineOptions; from docling.document_converter import PdfFormatOption; opts = PdfPipelineOptions(); opts.do_ocr = True; converter = DocumentConverter(format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=opts)}); print('OCR models downloaded')"
+# Create a minimal test PDF and process it to cache all required models
+RUN python -c "\
+from reportlab.pdfgen import canvas; \
+from reportlab.lib.pagesizes import letter; \
+import tempfile; \
+from pathlib import Path; \
+tmp = tempfile.NamedTemporaryFile(suffix='.pdf', delete=False); \
+test_pdf = tmp.name; \
+c = canvas.Canvas(test_pdf, pagesize=letter); \
+c.drawString(100, 750, 'Test document for model caching'); \
+c.save(); \
+tmp.close(); \
+print('✓ Created test PDF'); \
+from docling.document_converter import DocumentConverter; \
+from docling.datamodel.pipeline_options import PdfPipelineOptions; \
+from docling.datamodel.base_models import InputFormat; \
+from docling.document_converter import PdfFormatOption; \
+pipeline_options = PdfPipelineOptions(); \
+pipeline_options.do_table_structure = False; \
+pipeline_options.do_ocr = False; \
+converter = DocumentConverter(format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)}); \
+print('✓ Processing test PDF to download and cache models...'); \
+result = converter.convert(test_pdf); \
+print(f'✓ Successfully processed test document ({len(result.document.pages)} pages)'); \
+print('✓ All required models downloaded and cached'); \
+Path(test_pdf).unlink(); \
+"
 
 # Copy application code
 COPY ./app ./app
@@ -35,16 +66,13 @@ COPY ./app ./app
 RUN mkdir -p /tmp/document_cache /tmp/output
 
 # Expose port
-EXPOSE 8000
+EXPOSE 8080
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV DOCLING_LIBREOFFICE_CMD=/usr/bin/libreoffice
+ENV PORT=8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
-
-# Run the application - respects PORT environment variable (Cloud Run uses 8080)
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Run the application
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]

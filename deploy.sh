@@ -33,17 +33,17 @@ gcloud secrets add-iam-policy-binding GEMINI_API_KEY \
   --role="roles/secretmanager.secretAccessor" \
   --quiet 2>/dev/null || echo "Permission already granted"
 
-# Build and push backend
+# Build and push backend (WITH PLATFORM FLAG)
 echo ""
-echo "🔨 Building backend image..."
-docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/backend:latest ./backend
+echo "🔨 Building backend image for linux/amd64..."
+docker build --platform linux/amd64 -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/backend:latest ./backend
 echo "⬆️  Pushing backend image..."
 docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/backend:latest
 
-# Build and push frontend
+# Build and push frontend (WITH PLATFORM FLAG)
 echo ""
-echo "🔨 Building frontend image..."
-docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/frontend:latest ./frontend
+echo "🔨 Building frontend image for linux/amd64..."
+docker build --platform linux/amd64 -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/frontend:latest ./frontend
 echo "⬆️  Pushing frontend image..."
 docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/frontend:latest
 
@@ -60,6 +60,8 @@ gcloud run deploy verification-backend \
   --max-instances=10 \
   --set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest \
   --allow-unauthenticated \
+  --port=8080 \
+  --no-cpu-throttling \
   --quiet
 
 # Get backend URL
@@ -68,12 +70,12 @@ BACKEND_URL=$(gcloud run services describe verification-backend \
 
 echo "✅ Backend deployed: $BACKEND_URL"
 
-# Update backend CORS with wildcard for Cloud Run frontend
+# Update backend CORS with regex pattern for Cloud Run frontend
 echo ""
 echo "🔧 Updating backend CORS..."
 gcloud run services update verification-backend \
   --region=$REGION \
-  --set-env-vars=ALLOWED_ORIGINS=$BACKEND_URL,https://verification-frontend-*.run.app \
+  --update-env-vars=ALLOWED_ORIGINS="${BACKEND_URL}",ALLOWED_ORIGIN_REGEX="https://verification-frontend-.*\.run\.app" \
   --quiet
 
 # Deploy frontend with backend URL
@@ -85,6 +87,7 @@ gcloud run deploy verification-frontend \
   --platform=managed \
   --memory=512Mi \
   --cpu=1 \
+  --port=8080 \
   --set-env-vars=BACKEND_URL=$BACKEND_URL \
   --allow-unauthenticated \
   --quiet
